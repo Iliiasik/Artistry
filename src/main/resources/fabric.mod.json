@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "artistry",
+  "version": "${version}",
+  "name": "Artistry",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+    ],
+    "client": [
+      "iliiasik.artistry.client.ArtistryClient"
+    ],
+    "main": [
+      "iliiasik.artistry.Artistry"
+    ]
+  },
+  "mixins": [
+    "artistry.mixins.json",
+    {
+      "config": "artistry.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

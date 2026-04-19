@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "paint:block/poster", "y": 0 },
+    "facing=east":  { "model": "paint:block/poster", "y": 90 },
+    "facing=south": { "model": "paint:block/poster", "y": 180 },
+    "facing=west":  { "model": "paint:block/poster", "y": 270 }
+  }
+}
