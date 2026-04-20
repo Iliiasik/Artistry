@@ -17,13 +17,6 @@
       "iliiasik.artistry.Artistry"
     ]
   },
-  "mixins": [
-    "artistry.mixins.json",
-    {
-      "config": "artistry.client.mixins.json",
-      "environment": "client"
-    }
-  ],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",

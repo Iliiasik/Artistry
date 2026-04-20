@@ -63,10 +63,6 @@ public final class BlockPalette {
         loaded = true;
     }
 
-    public static void invalidate() {
-        loaded = false;
-    }
-
     public static Sprite getSprite(int index) {
         if (index <= 0 || index > COUNT) return null;
         return SPRITE_CACHE[index];
