@@ -63,8 +63,8 @@ public class PosterBlockEntityRenderer
                                   net.minecraft.client.render.command.ModelCommandRenderer
                                           .@Nullable CrumblingOverlayCommand crumblingOverlay) {
         BlockEntityRenderState.updateBlockEntityRenderState(entity, state, crumblingOverlay);
-        state.facing    = entity.getCachedState().get(PosterBlock.FACING);
-        state.posKey    = entity.getPos().asLong();
+        state.facing     = entity.getCachedState().get(PosterBlock.FACING);
+        state.posKey     = entity.getPos().asLong();
         state.canvasData = entity.canvasData;
     }
 
@@ -89,15 +89,12 @@ public class PosterBlockEntityRenderer
                     vc.vertex(mat, 0f, 1f, Z_CANVAS).texture(1f, 0f)
                             .color(255, 255, 255, 255).overlay(overlay)
                             .light(packedLight).normal(entry, 0, 0, 1);
-
                     vc.vertex(mat, 1f, 1f, Z_CANVAS).texture(0f, 0f)
                             .color(255, 255, 255, 255).overlay(overlay)
                             .light(packedLight).normal(entry, 0, 0, 1);
-
                     vc.vertex(mat, 1f, 0f, Z_CANVAS).texture(0f, 1f)
                             .color(255, 255, 255, 255).overlay(overlay)
                             .light(packedLight).normal(entry, 0, 0, 1);
-
                     vc.vertex(mat, 0f, 0f, Z_CANVAS).texture(1f, 1f)
                             .color(255, 255, 255, 255).overlay(overlay)
                             .light(packedLight).normal(entry, 0, 0, 1);
@@ -113,8 +110,6 @@ public class PosterBlockEntityRenderer
             case EAST  -> matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(-90f)));
             case SOUTH -> matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(180f)));
             case WEST  -> matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(90f)));
-            case UP    -> matrices.multiply(new Quaternionf().rotationX((float) Math.toRadians(-90f)));
-            case DOWN  -> matrices.multiply(new Quaternionf().rotationX((float) Math.toRadians(90f)));
         }
         matrices.translate(-0.5, -0.5, -0.5);
     }
@@ -125,11 +120,11 @@ public class PosterBlockEntityRenderer
     }
 
     public static class PosterTexture {
-        private final NativeImage             image;
+        private final NativeImage              image;
         private final NativeImageBackedTexture texture;
-        private final Identifier              textureId;
-        private final short[][]               snapshot = new short[SIZE][SIZE];
-        private       boolean                 dirty    = true;
+        private final Identifier               textureId;
+        private final short[][]                snapshot = new short[SIZE][SIZE];
+        private       boolean                  dirty    = true;
 
         public PosterTexture() {
             String uuid = UUID.randomUUID().toString().replace("-", "");

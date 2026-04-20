@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class PosterBlockEntity extends BlockEntity {
     public final CanvasData canvasData = new CanvasData();
+    private boolean dropped = false;
 
     public PosterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.POSTER, pos, state);
@@ -58,5 +59,21 @@ public class PosterBlockEntity extends BlockEntity {
         if (world != null && !world.isClient()) {
             world.updateListeners(pos, getCachedState(), getCachedState(), 3);
         }
+    }
+
+    public void dropWithCanvas(BlockPos pos) {
+        if (world == null || world.isClient() || dropped) return;
+        dropped = true;
+        ItemStack stack = new ItemStack(iliiasik.artistry.item.ModItems.POSTER);
+        NbtCompound tag = new NbtCompound();
+        tag.put("canvas", canvasData.toNbt());
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+        net.minecraft.util.ItemScatterer.spawn(world, pos, new net.minecraft.inventory.SimpleInventory(stack));
+    }
+
+    @Override
+    public void onBlockReplaced(BlockPos pos, BlockState oldState) {
+        dropWithCanvas(pos);
+        super.onBlockReplaced(pos, oldState);
     }
 }

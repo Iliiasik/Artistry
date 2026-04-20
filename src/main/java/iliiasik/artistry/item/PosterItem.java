@@ -30,9 +30,11 @@ public class PosterItem extends Item {
         if (player == null) return ActionResult.PASS;
         if (!player.isSneaking()) return ActionResult.PASS;
 
+        Direction face = ctx.getSide();
+        if (face == Direction.UP || face == Direction.DOWN) return ActionResult.PASS;
+
         World world = ctx.getWorld();
         BlockPos pos = ctx.getBlockPos();
-        Direction face = ctx.getSide();
         BlockPos placePos = pos.offset(face);
 
         if (!world.getBlockState(placePos).isAir()) return ActionResult.FAIL;

@@ -10,13 +10,13 @@ import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.WorldView;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldView;
+import net.minecraft.world.tick.ScheduledTickView;
+import net.minecraft.entity.player.PlayerEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class PosterBlock extends BlockWithEntity {
@@ -25,14 +25,12 @@ public class PosterBlock extends BlockWithEntity {
             () -> new PosterBlock(AbstractBlock.Settings.create())
     );
 
-    public static final EnumProperty<Direction> FACING = Properties.FACING;
+    public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
 
-    private static final VoxelShape SHAPE_NORTH  = Block.createCuboidShape(0, 0, 15.9, 16, 16, 16);
-    private static final VoxelShape SHAPE_SOUTH  = Block.createCuboidShape(0, 0, 0, 16, 16, 0.1);
-    private static final VoxelShape SHAPE_WEST   = Block.createCuboidShape(15.9, 0, 0, 16, 16, 16);
-    private static final VoxelShape SHAPE_EAST   = Block.createCuboidShape(0, 0, 0, 0.1, 16, 16);
-    private static final VoxelShape SHAPE_UP     = Block.createCuboidShape(0, 0, 0, 16, 0.1, 16);
-    private static final VoxelShape SHAPE_DOWN   = Block.createCuboidShape(0, 15.9, 0, 16, 16, 16);
+    private static final VoxelShape SHAPE_NORTH = Block.createCuboidShape(0, 0, 15.9, 16, 16, 16);
+    private static final VoxelShape SHAPE_SOUTH = Block.createCuboidShape(0, 0, 0, 16, 16, 0.1);
+    private static final VoxelShape SHAPE_WEST  = Block.createCuboidShape(15.9, 0, 0, 16, 16, 16);
+    private static final VoxelShape SHAPE_EAST  = Block.createCuboidShape(0, 0, 0, 0.1, 16, 16);
 
     public PosterBlock(Settings settings) {
         super(settings);
@@ -51,7 +49,9 @@ public class PosterBlock extends BlockWithEntity {
 
     @Override
     public @Nullable BlockState getPlacementState(ItemPlacementContext ctx) {
-        return getDefaultState().with(FACING, ctx.getSide());
+        Direction side = ctx.getSide();
+        if (side == Direction.UP || side == Direction.DOWN) return null;
+        return getDefaultState().with(FACING, side);
     }
 
     @Override
@@ -60,8 +60,6 @@ public class PosterBlock extends BlockWithEntity {
             case SOUTH -> SHAPE_SOUTH;
             case WEST  -> SHAPE_WEST;
             case EAST  -> SHAPE_EAST;
-            case UP    -> SHAPE_UP;
-            case DOWN  -> SHAPE_DOWN;
             default    -> SHAPE_NORTH;
         };
     }
@@ -83,35 +81,25 @@ public class PosterBlock extends BlockWithEntity {
     }
 
     @Override
-    public BlockState getStateForNeighborUpdate(
-            BlockState state,
-            WorldView world,
-            net.minecraft.world.tick.ScheduledTickView tickView,
-            BlockPos pos,
-            Direction direction,
-            BlockPos neighborPos,
-            BlockState neighborState,
-            net.minecraft.util.math.random.Random random) {
+    public BlockState getStateForNeighborUpdate(BlockState state, WorldView world,
+                                                ScheduledTickView tickView, BlockPos pos,
+                                                Direction direction, BlockPos neighborPos,
+                                                BlockState neighborState, Random random) {
         if (direction == state.get(FACING).getOpposite() && !state.canPlaceAt(world, pos)) {
             return Blocks.AIR.getDefaultState();
         }
-        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
+        return super.getStateForNeighborUpdate(state, world, tickView, pos, direction,
+                neighborPos, neighborState, random);
     }
 
     @Override
     public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        if (!world.isClient()) {
+        if (!world.isClient() && !player.isCreative()) {
             BlockEntity be = world.getBlockEntity(pos);
             if (be instanceof PosterBlockEntity poster) {
-                ItemStack stack = new ItemStack(iliiasik.artistry.item.ModItems.POSTER);
-                NbtCompound tag = new NbtCompound();
-                tag.put("canvas", poster.canvasData.toNbt());
-                stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_DATA,
-                        net.minecraft.component.type.NbtComponent.of(tag));
-                dropStack(world, pos, stack);
+                poster.dropWithCanvas(pos);
             }
         }
-        super.onBreak(world, pos, state, player);
-        return state;
+        return super.onBreak(world, pos, state, player);
     }
 }
