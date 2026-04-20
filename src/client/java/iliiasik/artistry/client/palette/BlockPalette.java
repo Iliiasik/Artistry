@@ -1,9 +1,8 @@
-package iliiasik.artistry.client.ui.palette;
+package iliiasik.artistry.client.palette;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.block.BlockRenderManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
@@ -53,15 +52,19 @@ public final class BlockPalette {
     public static void ensureLoaded() {
         if (loaded) return;
         MinecraftClient mc = MinecraftClient.getInstance();
-        BlockRenderManager brm = mc.getBlockRenderManager();
         for (int i = 0; i < COUNT; i++) {
-            Block block = Registries.BLOCK.get(Identifier.of(BLOCK_IDS[i]));
+            Identifier blockId = Identifier.of(BLOCK_IDS[i]);
+            Block block = Registries.BLOCK.get(blockId);
             BlockState state = block.getDefaultState();
             try {
-                SPRITE_CACHE[i + 1] = brm.getModel(state).particleSprite();
+                SPRITE_CACHE[i + 1] = mc.getBlockRenderManager().getModel(state).particleSprite();
             } catch (Exception ignored) {}
         }
         loaded = true;
+    }
+
+    public static void invalidate() {
+        loaded = false;
     }
 
     public static Sprite getSprite(int index) {

@@ -1,7 +1,7 @@
 package iliiasik.artistry.client.ui.widget;
 
 import iliiasik.artistry.client.tools.DrawingTool;
-import iliiasik.artistry.client.ui.util.ModTextures;
+import iliiasik.artistry.client.util.ModTextures;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;

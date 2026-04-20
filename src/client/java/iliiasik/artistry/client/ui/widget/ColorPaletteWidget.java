@@ -1,7 +1,7 @@
 package iliiasik.artistry.client.ui.widget;
 
-import iliiasik.artistry.client.ui.util.ModTextures;
-import iliiasik.artistry.client.ui.palette.BlockPalette;
+import iliiasik.artistry.client.util.ModTextures;
+import iliiasik.artistry.client.palette.BlockPalette;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;

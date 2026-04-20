@@ -3,7 +3,7 @@ package iliiasik.artistry.client.ui.screen;
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.ui.renderer.CanvasRenderer;
-import iliiasik.artistry.client.ui.util.ModTextures;
+import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.client.ui.widget.ColorPaletteWidget;
 import iliiasik.artistry.client.ui.widget.SizeSwitcherWidget;
 import iliiasik.artistry.client.ui.widget.ToolSwitchWidget;
@@ -11,26 +11,33 @@ import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.network.SaveCanvasC2SPacket;
+import iliiasik.artistry.network.SaveItemCanvasC2SPacket;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.Hand;
 
 import java.util.List;
 
 public class PaintScreen extends Screen {
-    private static final Identifier FRAME_TEXTURE = ModTextures.FRAME;
 
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
     private final CanvasData snapshotBeforeEdit = new CanvasData();
     private final PixelPainter pixelPainter = new PixelPainter();
     private final CanvasRenderer canvasRenderer = new CanvasRenderer();
+
     private final PosterBlockEntity targetEntity;
+    private final ItemStack targetStack;
+    private final Hand targetHand;
 
     private ToolSwitchWidget toolSwitchWidget;
     private SizeSwitcherWidget sizeSwitcherWidget;
@@ -40,8 +47,27 @@ public class PaintScreen extends Screen {
     public PaintScreen(PosterBlockEntity entity) {
         super(Text.empty());
         this.targetEntity = entity;
+        this.targetStack = null;
+        this.targetHand = null;
         this.canvasData.copyFrom(entity.canvasData);
         this.snapshotBeforeEdit.copyFrom(entity.canvasData);
+    }
+
+    public PaintScreen(ItemStack stack, Hand hand) {
+        super(Text.empty());
+        this.targetEntity = null;
+        this.targetStack = stack;
+        this.targetHand = hand;
+        loadFromStack(stack);
+        this.snapshotBeforeEdit.copyFrom(this.canvasData);
+    }
+
+    private void loadFromStack(ItemStack stack) {
+        NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (comp != null) {
+            NbtCompound tag = comp.copyNbt();
+            tag.getCompound("canvas").ifPresent(canvasData::fromNbt);
+        }
     }
 
     @Override
@@ -79,13 +105,15 @@ public class PaintScreen extends Screen {
     @Override
     public void removed() {
         canvasRenderer.close();
-        saveToEntity();
+        if (targetEntity != null) {
+            saveToEntity();
+        } else if (targetStack != null) {
+            saveToItem();
+        }
         super.removed();
     }
 
     private void saveToEntity() {
-        if (targetEntity == null) return;
-
         List<CanvasData.PixelChange> changes = canvasData.diff(snapshotBeforeEdit);
         if (changes.isEmpty()) return;
 
@@ -94,6 +122,19 @@ public class PaintScreen extends Screen {
 
         if (MinecraftClient.getInstance().getNetworkHandler() != null) {
             ClientPlayNetworking.send(new SaveCanvasC2SPacket(targetEntity.getPos(), changes));
+        }
+    }
+
+    private void saveToItem() {
+        List<CanvasData.PixelChange> changes = canvasData.diff(snapshotBeforeEdit);
+        if (changes.isEmpty()) return;
+
+        NbtCompound tag = new NbtCompound();
+        tag.put("canvas", canvasData.toNbt());
+        targetStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+
+        if (MinecraftClient.getInstance().getNetworkHandler() != null) {
+            ClientPlayNetworking.send(new SaveItemCanvasC2SPacket(targetHand, changes));
         }
     }
 
@@ -155,7 +196,7 @@ public class PaintScreen extends Screen {
 
         context.drawTexture(
                 RenderPipelines.GUI_TEXTURED,
-                FRAME_TEXTURE,
+                ModTextures.FRAME,
                 dims.canvasX, dims.canvasY,
                 0.0F, 0.0F,
                 dims.canvasSize, dims.canvasSize,

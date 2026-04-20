@@ -1,6 +1,6 @@
 package iliiasik.artistry.client.ui.renderer;
 
-import iliiasik.artistry.client.ui.palette.BlockPalette;
+import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.data.CanvasData;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
@@ -26,7 +26,7 @@ public class CanvasRenderer {
     private boolean dirty = true;
 
     public CanvasRenderer() {
-        textureId = Identifier.of("paint", "canvas_" + UUID.randomUUID().toString().replace("-", ""));
+        textureId = Identifier.of("artistry", "canvas_" + UUID.randomUUID().toString().replace("-", ""));
         texture = new NativeImageBackedTexture(textureId.toString(), TEX_SIZE, TEX_SIZE, false);
         image = texture.getImage();
         clearImage();

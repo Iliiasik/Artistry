@@ -1,22 +1,24 @@
 package iliiasik.artistry.client;
 
-import iliiasik.artistry.client.ui.screen.PaintScreen;
 import iliiasik.artistry.block.PosterBlock;
 import iliiasik.artistry.block.entity.ModBlockEntities;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
+import iliiasik.artistry.client.ui.screen.PaintScreen;
+import iliiasik.artistry.item.PosterItem;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.util.ActionResult;
 
 public class ArtistryClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        BlockEntityRendererRegistry.register(ModBlockEntities.POSTER,
+        BlockEntityRendererFactories.register(ModBlockEntities.POSTER,
                 ctx -> new PosterBlockEntityRenderer());
 
         ClientPlayNetworking.registerGlobalReceiver(SyncCanvasS2CPacket.ID,
@@ -29,15 +31,22 @@ public class ArtistryClient implements ClientModInitializer {
                     PosterBlockEntityRenderer.invalidate(payload.pos());
                 }));
 
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            if (!world.isClient()) return ActionResult.PASS;
+            var stack = player.getStackInHand(hand);
+            if (!(stack.getItem() instanceof PosterItem)) return ActionResult.PASS;
+            MinecraftClient.getInstance().setScreen(new PaintScreen(stack, hand));
+            return ActionResult.SUCCESS;
+        });
+
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-            if (world.isClient()) {
-                var state = world.getBlockState(hitResult.getBlockPos());
-                if (state.getBlock() instanceof PosterBlock) {
-                    var be = world.getBlockEntity(hitResult.getBlockPos());
-                    if (be instanceof PosterBlockEntity poster) {
-                        MinecraftClient.getInstance().setScreen(new PaintScreen(poster));
-                        return ActionResult.SUCCESS;
-                    }
+            if (!world.isClient()) return ActionResult.PASS;
+            var state = world.getBlockState(hitResult.getBlockPos());
+            if (state.getBlock() instanceof PosterBlock) {
+                var be = world.getBlockEntity(hitResult.getBlockPos());
+                if (be instanceof PosterBlockEntity poster) {
+                    MinecraftClient.getInstance().setScreen(new PaintScreen(poster));
+                    return ActionResult.SUCCESS;
                 }
             }
             return ActionResult.PASS;

@@ -9,8 +9,7 @@
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
-    "fabric-datagen": [
-    ],
+    "fabric-datagen": [],
     "client": [
       "iliiasik.artistry.client.ArtistryClient"
     ],

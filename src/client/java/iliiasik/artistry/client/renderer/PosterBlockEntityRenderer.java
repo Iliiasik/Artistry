@@ -1,6 +1,6 @@
 package iliiasik.artistry.client.renderer;
 
-import iliiasik.artistry.client.ui.palette.BlockPalette;
+import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.block.PosterBlock;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.data.CanvasData;
@@ -107,24 +107,22 @@ public class PosterBlockEntityRenderer
     }
 
     private static void applyFacingRotation(MatrixStack matrices, Direction facing) {
-        float angle = switch (facing) {
-            case NORTH -> 0f;
-            case EAST  -> -90f;
-            case SOUTH -> 180f;
-            case WEST  -> 90f;
-            default    -> 0f;
-        };
         matrices.translate(0.5, 0.5, 0.5);
-        matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(angle)));
+        switch (facing) {
+            case NORTH -> matrices.multiply(new Quaternionf().rotationY(0f));
+            case EAST  -> matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(-90f)));
+            case SOUTH -> matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(180f)));
+            case WEST  -> matrices.multiply(new Quaternionf().rotationY((float) Math.toRadians(90f)));
+            case UP    -> matrices.multiply(new Quaternionf().rotationX((float) Math.toRadians(-90f)));
+            case DOWN  -> matrices.multiply(new Quaternionf().rotationX((float) Math.toRadians(90f)));
+        }
         matrices.translate(-0.5, -0.5, -0.5);
     }
-
 
     public static void invalidate(BlockPos pos) {
         PosterTexture tex = CACHE.remove(pos.asLong());
         if (tex != null) tex.close();
     }
-
 
     public static class PosterTexture {
         private final NativeImage             image;

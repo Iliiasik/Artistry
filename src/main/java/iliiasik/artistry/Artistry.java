@@ -8,7 +8,7 @@ import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 
 public class Artistry implements ModInitializer {
-    public static final String MOD_ID = "paint";
+    public static final String MOD_ID = "artistry";
 
     public static Identifier id(String path) {
         return Identifier.of(MOD_ID, path);
