@@ -14,6 +14,7 @@ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.math.BlockPos;
 
 public class ArtistryClient implements ClientModInitializer {
     @Override
@@ -25,10 +26,21 @@ public class ArtistryClient implements ClientModInitializer {
                 (payload, ctx) -> ctx.client().execute(() -> {
                     MinecraftClient mc = ctx.client();
                     if (mc.world == null) return;
-                    if (!(mc.world.getBlockEntity(payload.pos()) instanceof PosterBlockEntity poster)) return;
-                    for (var c : payload.changes())
-                        poster.canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
-                    PosterBlockEntityRenderer.invalidate(payload.pos());
+
+                    BlockPos pos = payload.pos();
+
+                    if (mc.world.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
+                        for (var c : payload.changes())
+                            poster.canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
+                        PosterBlockEntityRenderer.invalidate(pos);
+                    }
+
+                    if (mc.currentScreen instanceof PaintScreen screen) {
+                        BlockPos screenPos = screen.getTargetPos();
+                        if (pos.equals(screenPos)) {
+                            screen.applyRemoteChanges(payload.changes());
+                        }
+                    }
                 }));
 
         UseItemCallback.EVENT.register((player, world, hand) -> {

@@ -8,7 +8,6 @@ import iliiasik.artistry.client.ui.widget.ColorPaletteWidget;
 import iliiasik.artistry.client.ui.widget.SizeSwitcherWidget;
 import iliiasik.artistry.client.ui.widget.ToolSwitchWidget;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
-import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.network.SaveCanvasC2SPacket;
 import iliiasik.artistry.network.SaveItemCanvasC2SPacket;
@@ -24,6 +23,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ public class PaintScreen extends Screen {
 
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
-    private final CanvasData snapshotBeforeEdit = new CanvasData();
+    private final CanvasData strokeSnapshot = new CanvasData();
     private final PixelPainter pixelPainter = new PixelPainter();
     private final CanvasRenderer canvasRenderer = new CanvasRenderer();
 
@@ -50,7 +50,7 @@ public class PaintScreen extends Screen {
         this.targetStack = null;
         this.targetHand = null;
         this.canvasData.copyFrom(entity.canvasData);
-        this.snapshotBeforeEdit.copyFrom(entity.canvasData);
+        this.strokeSnapshot.copyFrom(entity.canvasData);
     }
 
     public PaintScreen(ItemStack stack, Hand hand) {
@@ -59,7 +59,7 @@ public class PaintScreen extends Screen {
         this.targetStack = stack;
         this.targetHand = hand;
         loadFromStack(stack);
-        this.snapshotBeforeEdit.copyFrom(this.canvasData);
+        this.strokeSnapshot.copyFrom(this.canvasData);
     }
 
     private void loadFromStack(ItemStack stack) {
@@ -67,6 +67,26 @@ public class PaintScreen extends Screen {
         if (comp != null) {
             NbtCompound tag = comp.copyNbt();
             tag.getCompound("canvas").ifPresent(canvasData::fromNbt);
+        }
+    }
+
+    public BlockPos getTargetPos() {
+        return targetEntity != null ? targetEntity.getPos() : null;
+    }
+
+    public void applyRemoteChanges(List<CanvasData.PixelChange> changes) {
+        for (CanvasData.PixelChange c : changes) {
+            canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
+        }
+    }
+
+    public void closeIfPosterRemoved() {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.world == null) return;
+        BlockPos pos = getTargetPos();
+        if (pos == null) return;
+        if (!(mc.world.getBlockEntity(pos) instanceof PosterBlockEntity)) {
+            mc.setScreen(null);
         }
     }
 
@@ -105,34 +125,28 @@ public class PaintScreen extends Screen {
     @Override
     public void removed() {
         canvasRenderer.close();
-        if (targetEntity != null) {
-            saveToEntity();
-        } else if (targetStack != null) {
+        if (targetStack != null) {
             saveToItem();
         }
         super.removed();
     }
 
-    private void saveToEntity() {
-        List<CanvasData.PixelChange> changes = canvasData.diff(snapshotBeforeEdit);
+    private void flushStrokeToServer() {
+        if (targetEntity == null) return;
+        List<CanvasData.PixelChange> changes = canvasData.diff(strokeSnapshot);
         if (changes.isEmpty()) return;
-
-        targetEntity.canvasData.copyFrom(canvasData);
-        PosterBlockEntityRenderer.invalidate(targetEntity.getPos());
-
+        strokeSnapshot.copyFrom(canvasData);
         if (MinecraftClient.getInstance().getNetworkHandler() != null) {
             ClientPlayNetworking.send(new SaveCanvasC2SPacket(targetEntity.getPos(), changes));
         }
     }
 
     private void saveToItem() {
-        List<CanvasData.PixelChange> changes = canvasData.diff(snapshotBeforeEdit);
+        List<CanvasData.PixelChange> changes = canvasData.diff(strokeSnapshot);
         if (changes.isEmpty()) return;
-
         NbtCompound tag = new NbtCompound();
         tag.put("canvas", canvasData.toNbt());
         targetStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
-
         if (MinecraftClient.getInstance().getNetworkHandler() != null) {
             ClientPlayNetworking.send(new SaveItemCanvasC2SPacket(targetHand, changes));
         }
@@ -172,6 +186,7 @@ public class PaintScreen extends Screen {
         if (isDrawing && click.button() == 0) {
             pixelPainter.endStroke();
             isDrawing = false;
+            flushStrokeToServer();
             return true;
         }
         return super.mouseReleased(click);
@@ -179,6 +194,8 @@ public class PaintScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        closeIfPosterRemoved();
+
         dims.calculate(width, height);
 
         if (toolSwitchWidget != null) {
