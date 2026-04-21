@@ -2,6 +2,7 @@ package iliiasik.artistry;
 
 import iliiasik.artistry.block.ModBlocks;
 import iliiasik.artistry.block.entity.ModBlockEntities;
+import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.item.ModItems;
 import iliiasik.artistry.network.ModNetwork;
 import net.fabricmc.api.ModInitializer;
@@ -16,6 +17,7 @@ public class Artistry implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        ArtistryConfig.get();
         ModBlocks.register();
         ModItems.register();
         ModBlockEntities.register();

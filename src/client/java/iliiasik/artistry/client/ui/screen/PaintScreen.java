@@ -29,7 +29,8 @@ import java.util.List;
 
 public class PaintScreen extends Screen {
 
-    private static final long BATCH_INTERVAL_MS = 50;
+    private static final long BATCH_INTERVAL_MS =
+            iliiasik.artistry.config.ArtistryConfig.get().network.batchIntervalMs;
 
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
