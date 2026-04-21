@@ -29,9 +29,11 @@ import java.util.List;
 
 public class PaintScreen extends Screen {
 
+    private static final long BATCH_INTERVAL_MS = 50;
+
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
-    private final CanvasData strokeSnapshot = new CanvasData();
+    private final CanvasData lastSentSnapshot = new CanvasData();
     private final PixelPainter pixelPainter = new PixelPainter();
     private final CanvasRenderer canvasRenderer = new CanvasRenderer();
 
@@ -44,13 +46,16 @@ public class PaintScreen extends Screen {
     private ColorPaletteWidget colorPaletteWidget;
     private boolean isDrawing = false;
 
+    private long lastFlushTime = 0;
+    private boolean pendingClose = false;
+
     public PaintScreen(PosterBlockEntity entity) {
         super(Text.empty());
         this.targetEntity = entity;
         this.targetStack = null;
         this.targetHand = null;
         this.canvasData.copyFrom(entity.canvasData);
-        this.strokeSnapshot.copyFrom(entity.canvasData);
+        this.lastSentSnapshot.copyFrom(entity.canvasData);
     }
 
     public PaintScreen(ItemStack stack, Hand hand) {
@@ -59,7 +64,7 @@ public class PaintScreen extends Screen {
         this.targetStack = stack;
         this.targetHand = hand;
         loadFromStack(stack);
-        this.strokeSnapshot.copyFrom(this.canvasData);
+        this.lastSentSnapshot.copyFrom(this.canvasData);
     }
 
     private void loadFromStack(ItemStack stack) {
@@ -76,18 +81,15 @@ public class PaintScreen extends Screen {
 
     public void applyRemoteChanges(List<CanvasData.PixelChange> changes) {
         for (CanvasData.PixelChange c : changes) {
-            canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
+            int x = c.x() & 0xFF;
+            int y = c.y() & 0xFF;
+            canvasData.pixels[y][x] = c.blockIndex();
+            lastSentSnapshot.pixels[y][x] = c.blockIndex();
         }
     }
 
-    public void closeIfPosterRemoved() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.world == null) return;
-        BlockPos pos = getTargetPos();
-        if (pos == null) return;
-        if (!(mc.world.getBlockEntity(pos) instanceof PosterBlockEntity)) {
-            mc.setScreen(null);
-        }
+    public void scheduledClose() {
+        pendingClose = true;
     }
 
     @Override
@@ -125,30 +127,40 @@ public class PaintScreen extends Screen {
     @Override
     public void removed() {
         canvasRenderer.close();
+        flushToServer();
         if (targetStack != null) {
             saveToItem();
         }
         super.removed();
     }
 
-    private void flushStrokeToServer() {
+    private void flushToServer() {
         if (targetEntity == null) return;
-        List<CanvasData.PixelChange> changes = canvasData.diff(strokeSnapshot);
+        List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
         if (changes.isEmpty()) return;
-        strokeSnapshot.copyFrom(canvasData);
+        lastSentSnapshot.copyFrom(canvasData);
+        lastFlushTime = System.currentTimeMillis();
         if (MinecraftClient.getInstance().getNetworkHandler() != null) {
             ClientPlayNetworking.send(new SaveCanvasC2SPacket(targetEntity.getPos(), changes));
         }
     }
 
     private void saveToItem() {
-        List<CanvasData.PixelChange> changes = canvasData.diff(strokeSnapshot);
+        List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
         if (changes.isEmpty()) return;
         NbtCompound tag = new NbtCompound();
         tag.put("canvas", canvasData.toNbt());
         targetStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
         if (MinecraftClient.getInstance().getNetworkHandler() != null) {
             ClientPlayNetworking.send(new SaveItemCanvasC2SPacket(targetHand, changes));
+        }
+    }
+
+    private void tickBatch() {
+        if (targetEntity == null) return;
+        long now = System.currentTimeMillis();
+        if (now - lastFlushTime >= BATCH_INTERVAL_MS) {
+            flushToServer();
         }
     }
 
@@ -186,7 +198,6 @@ public class PaintScreen extends Screen {
         if (isDrawing && click.button() == 0) {
             pixelPainter.endStroke();
             isDrawing = false;
-            flushStrokeToServer();
             return true;
         }
         return super.mouseReleased(click);
@@ -194,7 +205,12 @@ public class PaintScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        closeIfPosterRemoved();
+        if (pendingClose) {
+            MinecraftClient.getInstance().setScreen(null);
+            return;
+        }
+
+        tickBatch();
 
         dims.calculate(width, height);
 

@@ -13,10 +13,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.tick.ScheduledTickView;
-import net.minecraft.entity.player.PlayerEntity;
 import org.jetbrains.annotations.Nullable;
 
 public class PosterBlock extends BlockWithEntity {
@@ -90,16 +88,5 @@ public class PosterBlock extends BlockWithEntity {
         }
         return super.getStateForNeighborUpdate(state, world, tickView, pos, direction,
                 neighborPos, neighborState, random);
-    }
-
-    @Override
-    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        if (!world.isClient() && !player.isCreative()) {
-            BlockEntity be = world.getBlockEntity(pos);
-            if (be instanceof PosterBlockEntity poster) {
-                poster.dropWithCanvas(pos);
-            }
-        }
-        return super.onBreak(world, pos, state, player);
     }
 }

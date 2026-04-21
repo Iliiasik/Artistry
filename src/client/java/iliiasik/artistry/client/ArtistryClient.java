@@ -43,6 +43,18 @@ public class ArtistryClient implements ClientModInitializer {
                     }
                 }));
 
+        ClientPlayNetworking.registerGlobalReceiver(
+                iliiasik.artistry.network.PosterRemovedS2CPacket.ID,
+                (payload, ctx) -> ctx.client().execute(() -> {
+                    MinecraftClient mc = ctx.client();
+                    if (mc.currentScreen instanceof PaintScreen screen) {
+                        BlockPos screenPos = screen.getTargetPos();
+                        if (payload.pos().equals(screenPos)) {
+                            screen.scheduledClose();
+                        }
+                    }
+                }));
+
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient()) return ActionResult.PASS;
             var stack = player.getStackInHand(hand);

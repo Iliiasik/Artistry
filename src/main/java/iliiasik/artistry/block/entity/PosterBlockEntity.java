@@ -61,19 +61,23 @@ public class PosterBlockEntity extends BlockEntity {
         }
     }
 
-    public void dropWithCanvas(BlockPos pos) {
+    private void dropWithCanvas(BlockPos dropPos) {
         if (world == null || world.isClient() || dropped) return;
         dropped = true;
         ItemStack stack = new ItemStack(iliiasik.artistry.item.ModItems.POSTER);
         NbtCompound tag = new NbtCompound();
         tag.put("canvas", canvasData.toNbt());
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
-        net.minecraft.util.ItemScatterer.spawn(world, pos, new net.minecraft.inventory.SimpleInventory(stack));
+        net.minecraft.util.ItemScatterer.spawn(world, dropPos,
+                new net.minecraft.inventory.SimpleInventory(stack));
     }
 
     @Override
-    public void onBlockReplaced(BlockPos pos, BlockState oldState) {
-        dropWithCanvas(pos);
-        super.onBlockReplaced(pos, oldState);
+    public void onBlockReplaced(BlockPos replacedPos, BlockState oldState) {
+        if (world instanceof net.minecraft.server.world.ServerWorld serverWorld) {
+            iliiasik.artistry.network.ModNetwork.broadcastPosterRemoved(serverWorld, replacedPos);
+        }
+        dropWithCanvas(replacedPos);
+        super.onBlockReplaced(replacedPos, oldState);
     }
 }
