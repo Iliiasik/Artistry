@@ -1,34 +1,26 @@
 package iliiasik.artistry.client.ui.widget;
 
 import iliiasik.artistry.client.util.ModTextures;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
-import java.util.function.IntConsumer;
+import java.util.function.Consumer;
 
-public class SizeSwitcherWidget extends ClickableWidget {
-    private static final Identifier TEXTURE = ModTextures.SIZE_SWITCHER;
+public class PaletteSwitcherWidget extends ClickableWidget {
 
-    private static final int[] SIZES = {1, 2, 3, 4, 5};
-    private static final int TEXT_COLOR = 0xFF666155;
+    public enum PaletteMode { BLOCKS, COLORS }
 
-    private int sizeIndex = 0;
-    private final IntConsumer onSizeChanged;
+    private PaletteMode mode = PaletteMode.BLOCKS;
+    private final Consumer<PaletteMode> onModeChanged;
     private final HoverFadeHelper hoverFade = new HoverFadeHelper();
 
-    public SizeSwitcherWidget(int x, int y, int w, int h, IntConsumer onSizeChanged) {
+    public PaletteSwitcherWidget(int x, int y, int w, int h, Consumer<PaletteMode> onModeChanged) {
         super(x, y, w, h, Text.empty());
-        this.onSizeChanged = onSizeChanged;
-    }
-
-    public int getCurrentSize() {
-        return SIZES[sizeIndex];
+        this.onModeChanged = onModeChanged;
     }
 
     @Override
@@ -38,7 +30,7 @@ public class SizeSwitcherWidget extends ClickableWidget {
 
         ctx.drawTexture(
                 RenderPipelines.GUI_TEXTURED,
-                TEXTURE,
+                ModTextures.PALETTE_SWITCHER,
                 getX(), getY(),
                 0f, 0f,
                 getWidth(), getHeight(),
@@ -46,19 +38,13 @@ public class SizeSwitcherWidget extends ClickableWidget {
                 32, 32,
                 color
         );
-
-        String label = String.valueOf(SIZES[sizeIndex]);
-        MinecraftClient client = MinecraftClient.getInstance();
-        int textX = getX() + getWidth() / 2 - client.textRenderer.getWidth(label) / 2;
-        int textY = getY() + getHeight() / 2 - 4;
-        ctx.drawText(client.textRenderer, label, textX, textY, TEXT_COLOR, false);
     }
 
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
         if (click.button() == 0 && isMouseOver(click.x(), click.y())) {
-            sizeIndex = (sizeIndex + 1) % SIZES.length;
-            onSizeChanged.accept(SIZES[sizeIndex]);
+            mode = (mode == PaletteMode.BLOCKS) ? PaletteMode.COLORS : PaletteMode.BLOCKS;
+            onModeChanged.accept(mode);
             return true;
         }
         return false;

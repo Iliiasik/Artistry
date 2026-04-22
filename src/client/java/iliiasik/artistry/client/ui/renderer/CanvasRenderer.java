@@ -23,6 +23,7 @@ public class CanvasRenderer {
     private final NativeImageBackedTexture texture;
     private final Identifier textureId;
     private final short[][] lastSnapshot = new short[SIZE][SIZE];
+    private final int[][] colorSnapshot = new int[SIZE][SIZE];
     private boolean dirty = true;
 
     public CanvasRenderer() {
@@ -35,39 +36,9 @@ public class CanvasRenderer {
     }
 
     private void clearImage() {
-        for (int y = 0; y < TEX_SIZE; y++) {
-            for (int x = 0; x < TEX_SIZE; x++) {
+        for (int y = 0; y < TEX_SIZE; y++)
+            for (int x = 0; x < TEX_SIZE; x++)
                 image.setColorArgb(x, y, BG_COLOR);
-            }
-        }
-    }
-
-    private void blitSprite(Sprite sp, int cellX, int cellY) {
-        NativeImage img = null;
-        try {
-            java.lang.reflect.Field f = sp.getContents().getClass().getDeclaredField("mipmapLevelsImages");
-            f.setAccessible(true);
-            img = ((NativeImage[]) f.get(sp.getContents()))[0];
-        } catch (Exception e) {
-            for (int py = 0; py < CELL; py++) {
-                for (int px = 0; px < CELL; px++) {
-                    image.setColorArgb(cellX + px, cellY + py, BG_COLOR);
-                }
-            }
-            return;
-        }
-
-        int sprW = sp.getContents().getWidth();
-        int sprH = sp.getContents().getHeight();
-
-        for (int py = 0; py < CELL; py++) {
-            for (int px = 0; px < CELL; px++) {
-                int sx = Math.min(px * sprW / CELL, sprW - 1);
-                int sy = Math.min(py * sprH / CELL, sprH - 1);
-                int color = img.getColorArgb(sx, sy);
-                image.setColorArgb(cellX + px, cellY + py, color);
-            }
-        }
     }
 
     public void update(CanvasData data) {
@@ -77,29 +48,28 @@ public class CanvasRenderer {
         for (int y = 0; y < SIZE; y++) {
             for (int x = 0; x < SIZE; x++) {
                 short idx = data.pixels[y][x];
-                if (idx == lastSnapshot[y][x]) continue;
+                int col = data.colors[y][x];
+                if (!dirty && idx == lastSnapshot[y][x] && col == colorSnapshot[y][x]) continue;
                 lastSnapshot[y][x] = idx;
+                colorSnapshot[y][x] = col;
                 changed = true;
 
                 int cellX = x * CELL;
                 int cellY = y * CELL;
 
+                if (idx == CanvasData.COLOR_PIXEL) {
+                    fillCellWithColor(cellX, cellY, col);
+                    continue;
+                }
+
                 if (idx <= 0) {
-                    for (int py = 0; py < CELL; py++) {
-                        for (int px = 0; px < CELL; px++) {
-                            image.setColorArgb(cellX + px, cellY + py, BG_COLOR);
-                        }
-                    }
+                    fillCell(cellX, cellY);
                     continue;
                 }
 
                 Sprite sp = BlockPalette.getSprite(idx);
                 if (sp == null) {
-                    for (int py = 0; py < CELL; py++) {
-                        for (int px = 0; px < CELL; px++) {
-                            image.setColorArgb(cellX + px, cellY + py, BG_COLOR);
-                        }
-                    }
+                    fillCell(cellX, cellY);
                     continue;
                 }
 
@@ -107,7 +77,7 @@ public class CanvasRenderer {
             }
         }
 
-        if (changed || dirty) {
+        if (changed) {
             texture.upload();
             dirty = false;
         }
@@ -128,5 +98,38 @@ public class CanvasRenderer {
 
     public void close() {
         texture.close();
+    }
+
+    private void fillCell(int cx, int cy) {
+        for (int py = 0; py < CELL; py++)
+            for (int px = 0; px < CELL; px++)
+                image.setColorArgb(cx + px, cy + py, BG_COLOR);
+    }
+
+    private void fillCellWithColor(int cx, int cy, int argb) {
+        for (int py = 0; py < CELL; py++)
+            for (int px = 0; px < CELL; px++)
+                image.setColorArgb(cx + px, cy + py, argb);
+    }
+
+    private void blitSprite(Sprite sp, int cellX, int cellY) {
+        NativeImage img;
+        try {
+            java.lang.reflect.Field f = sp.getContents().getClass().getDeclaredField("mipmapLevelsImages");
+            f.setAccessible(true);
+            img = ((NativeImage[]) f.get(sp.getContents()))[0];
+        } catch (Exception e) {
+            fillCell(cellX, cellY);
+            return;
+        }
+        int sprW = sp.getContents().getWidth();
+        int sprH = sp.getContents().getHeight();
+        for (int py = 0; py < CELL; py++) {
+            for (int px = 0; px < CELL; px++) {
+                int sx = Math.min(px * sprW / CELL, sprW - 1);
+                int sy = Math.min(py * sprH / CELL, sprH - 1);
+                image.setColorArgb(cellX + px, cellY + py, img.getColorArgb(sx, sy));
+            }
+        }
     }
 }

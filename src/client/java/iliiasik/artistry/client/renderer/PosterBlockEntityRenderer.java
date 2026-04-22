@@ -123,8 +123,9 @@ public class PosterBlockEntityRenderer
         private final NativeImage              image;
         private final NativeImageBackedTexture texture;
         private final Identifier               textureId;
-        private final short[][]                snapshot = new short[SIZE][SIZE];
-        private       boolean                  dirty    = true;
+        private final short[][]                snapshot       = new short[SIZE][SIZE];
+        private final int[][]                  colorSnapshot  = new int[SIZE][SIZE];
+        private       boolean                  dirty          = true;
 
         public PosterTexture() {
             String uuid = UUID.randomUUID().toString().replace("-", "");
@@ -146,14 +147,17 @@ public class PosterBlockEntityRenderer
             for (int y = 0; y < SIZE; y++) {
                 for (int x = 0; x < SIZE; x++) {
                     short idx = data.pixels[y][x];
-                    if (!dirty && idx == snapshot[y][x]) continue;
-                    snapshot[y][x] = idx;
+                    int col   = data.colors[y][x];
+                    if (!dirty && idx == snapshot[y][x] && col == colorSnapshot[y][x]) continue;
+                    snapshot[y][x]      = idx;
+                    colorSnapshot[y][x] = col;
                     changed = true;
                     int cx = x * CELL, cy = y * CELL;
-                    if (idx <= 0) {
-                        fillCell(cx, cy);
+                    if (idx == CanvasData.COLOR_PIXEL) {
+                        fillCellWithColor(cx, cy, col);
                         continue;
                     }
+                    if (idx <= 0) { fillCell(cx, cy); continue; }
                     Sprite sp = BlockPalette.getSprite(idx);
                     if (sp == null) { fillCell(cx, cy); continue; }
                     blitSprite(sp, cx, cy);
@@ -174,13 +178,19 @@ public class PosterBlockEntityRenderer
         private void fillImage() {
             for (int y = 0; y < TEX_SIZE; y++)
                 for (int x = 0; x < TEX_SIZE; x++)
-                    image.setColorArgb(x, y, PosterBlockEntityRenderer.BG_COLOR);
+                    image.setColorArgb(x, y, BG_COLOR);
         }
 
         private void fillCell(int cx, int cy) {
             for (int py = 0; py < CELL; py++)
                 for (int px = 0; px < CELL; px++)
-                    image.setColorArgb(cx + px, cy + py, PosterBlockEntityRenderer.BG_COLOR);
+                    image.setColorArgb(cx + px, cy + py, BG_COLOR);
+        }
+
+        private void fillCellWithColor(int cx, int cy, int argb) {
+            for (int py = 0; py < CELL; py++)
+                for (int px = 0; px < CELL; px++)
+                    image.setColorArgb(cx + px, cy + py, argb);
         }
 
         private void blitSprite(Sprite sp, int cellX, int cellY) {

@@ -24,8 +24,10 @@ public class ModNetwork {
                     ServerWorld world = ctx.player().getEntityWorld();
                     BlockPos pos = payload.pos();
                     if (!(world.getBlockEntity(pos) instanceof PosterBlockEntity poster)) return;
-                    for (CanvasData.PixelChange c : payload.changes())
+                    for (CanvasData.PixelChange c : payload.changes()) {
                         poster.canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
+                        poster.canvasData.colors[c.y() & 0xFF][c.x() & 0xFF] = c.color();
+                    }
                     poster.markDirtyAndSync();
                     broadcastToWatchers(world, pos, ctx.player(),
                             new SyncCanvasS2CPacket(pos, payload.changes()));
@@ -41,8 +43,10 @@ public class ModNetwork {
                     NbtCompound canvasNbt = tag.getCompound("canvas").orElse(new NbtCompound());
                     CanvasData data = new CanvasData();
                     data.fromNbt(canvasNbt);
-                    for (CanvasData.PixelChange c : payload.changes())
+                    for (CanvasData.PixelChange c : payload.changes()) {
                         data.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
+                        data.colors[c.y() & 0xFF][c.x() & 0xFF] = c.color();
+                    }
                     tag.put("canvas", data.toNbt());
                     stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
                 }));

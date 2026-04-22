@@ -2,6 +2,7 @@ package iliiasik.artistry.client.ui.widget;
 
 import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.client.palette.BlockPalette;
+import iliiasik.artistry.client.palette.ColorPalette;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -9,35 +10,41 @@ import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
-import java.util.function.IntConsumer;
 
 public class ColorPaletteWidget extends ClickableWidget {
 
-    private static final Identifier TEXTURE = ModTextures.PALETTE;
-
-    private static final int COLS = 7;
-    private static final int TEX_W = 32;
-    private static final int TEX_H = 162;
-    private static final int BORDER = 2;
-    private static final int CELL = 4;
-    private static final int PREVIEW = 28;
-
-    private final IntConsumer onBlockChanged;
-    private int selectedIndex = 1;
-
-    public ColorPaletteWidget(int x, int y, int w, int h, IntConsumer onBlockChanged) {
-        super(x, y, w, h, Text.empty());
-        this.onBlockChanged = onBlockChanged;
+    public interface SelectionListener {
+        void onBlockSelected(int blockIndex);
+        void onColorSelected(int argbColor);
     }
 
-    public void setSelectedIndex(int index) {
-        this.selectedIndex = index;
+    private static final int COLS    = 7;
+    private static final int TEX_W   = 32;
+    private static final int TEX_H   = 162;
+    private static final int BORDER  = 2;
+    private static final int CELL    = 4;
+    private static final int PREVIEW = 28;
+
+    private final SelectionListener listener;
+    private int selectedBlockIndex = 1;
+    private int selectedColorIndex = 0;
+    private PaletteSwitcherWidget.PaletteMode mode = PaletteSwitcherWidget.PaletteMode.BLOCKS;
+
+    public ColorPaletteWidget(int x, int y, int w, int h, SelectionListener listener) {
+        super(x, y, w, h, Text.empty());
+        this.listener = listener;
+    }
+
+    public void setMode(PaletteSwitcherWidget.PaletteMode mode) {
+        this.mode = mode;
     }
 
     public int getSelectedIndex() {
-        return selectedIndex;
+        return selectedBlockIndex;
+    }
+
+    private int cellsStartY() {
+        return BORDER + PREVIEW + BORDER;
     }
 
     @Override
@@ -54,45 +61,55 @@ public class ColorPaletteWidget extends ClickableWidget {
         ctx.getMatrices().translate((float) getX(), (float) getY());
         ctx.getMatrices().scale(scaleX, scaleY);
 
-        ctx.drawTexture(
-                RenderPipelines.GUI_TEXTURED,
-                TEXTURE,
-                0, 0,
-                0f, 0f,
-                TEX_W, TEX_H,
-                TEX_W, TEX_H,
-                0xFFFFFFFF
-        );
+        ctx.drawTexture(RenderPipelines.GUI_TEXTURED, ModTextures.PALETTE,
+                0, 0, 0f, 0f, TEX_W, TEX_H, TEX_W, TEX_H, 0xFFFFFFFF);
 
         int sx = BORDER;
         int previewY = BORDER;
 
-        Sprite previewSprite = BlockPalette.getSprite(selectedIndex);
-        if (previewSprite != null) {
-            ctx.drawSpriteStretched(RenderPipelines.GUI_TEXTURED, previewSprite, sx, previewY, PREVIEW, PREVIEW, 0xFFFFFFFF);
+        if (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS) {
+            Sprite previewSprite = BlockPalette.getSprite(selectedBlockIndex);
+            if (previewSprite != null) {
+                ctx.drawSpriteStretched(RenderPipelines.GUI_TEXTURED, previewSprite,
+                        sx, previewY, PREVIEW, PREVIEW, 0xFFFFFFFF);
+            } else {
+                ctx.fill(sx, previewY, sx + PREVIEW, previewY + PREVIEW, 0xFFFDF7E8);
+            }
         } else {
-            ctx.fill(sx, previewY, sx + PREVIEW, previewY + PREVIEW, 0xFFFDF7E8);
+            int previewColor = (selectedColorIndex >= 0 && selectedColorIndex < ColorPalette.COUNT)
+                    ? ColorPalette.COLORS[selectedColorIndex] : 0xFFFFFFFF;
+            ctx.fill(sx, previewY, sx + PREVIEW, previewY + PREVIEW, previewColor);
         }
 
-        int startY = BORDER + PREVIEW + BORDER;
+        int startY = cellsStartY();
         int maxY = TEX_H - BORDER;
+        int count = (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS)
+                ? BlockPalette.COUNT : ColorPalette.COUNT;
 
-        for (int i = 0; i < BlockPalette.COUNT; i++) {
+        for (int i = 0; i < count; i++) {
             int col = i % COLS;
             int row = i / COLS;
             int cx = sx + col * CELL;
             int cy = startY + row * CELL;
             if (cy + CELL > maxY) break;
 
-            Sprite sp = BlockPalette.getSprite(i + 1);
-            if (sp != null) {
-                ctx.drawSpriteStretched(RenderPipelines.GUI_TEXTURED, sp, cx, cy, CELL, CELL, 0xFFFFFFFF);
+            if (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS) {
+                Sprite sp = BlockPalette.getSprite(i + 1);
+                if (sp != null) {
+                    ctx.drawSpriteStretched(RenderPipelines.GUI_TEXTURED, sp,
+                            cx, cy, CELL, CELL, 0xFFFFFFFF);
+                } else {
+                    ctx.fill(cx, cy, cx + CELL, cy + CELL, 0xFF888888);
+                }
+                if (i + 1 == selectedBlockIndex) {
+                    ctx.drawStrokedRectangle(cx, cy, CELL, CELL, 0xFFFFFFFF);
+                }
             } else {
-                ctx.fill(cx, cy, cx + CELL, cy + CELL, 0xFF888888);
-            }
-
-            if (i + 1 == selectedIndex) {
-                ctx.drawStrokedRectangle(cx, cy, CELL, CELL, 0xFFFFFFFF);
+                int argb = ColorPalette.COLORS[i];
+                ctx.fill(cx, cy, cx + CELL, cy + CELL, argb);
+                if (i == selectedColorIndex) {
+                    ctx.drawStrokedRectangle(cx, cy, CELL, CELL, 0xFFFFFFFF);
+                }
             }
 
             if (vMouseX >= cx && vMouseX < cx + CELL && vMouseY >= cy && vMouseY < cy + CELL) {
@@ -114,20 +131,26 @@ public class ColorPaletteWidget extends ClickableWidget {
         int vClickX = (int) ((click.x() - getX()) / scaleX);
         int vClickY = (int) ((click.y() - getY()) / scaleY);
 
-        int sx = BORDER;
-        int startY = BORDER + PREVIEW + BORDER;
+        int startY = cellsStartY();
         int maxY = TEX_H - BORDER;
+        int count = (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS)
+                ? BlockPalette.COUNT : ColorPalette.COUNT;
 
-        for (int i = 0; i < BlockPalette.COUNT; i++) {
+        for (int i = 0; i < count; i++) {
             int col = i % COLS;
             int row = i / COLS;
-            int cx = sx + col * CELL;
+            int cx = BORDER + col * CELL;
             int cy = startY + row * CELL;
             if (cy + CELL > maxY) break;
 
             if (vClickX >= cx && vClickX < cx + CELL && vClickY >= cy && vClickY < cy + CELL) {
-                selectedIndex = i + 1;
-                onBlockChanged.accept(selectedIndex);
+                if (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS) {
+                    selectedBlockIndex = i + 1;
+                    listener.onBlockSelected(selectedBlockIndex);
+                } else {
+                    selectedColorIndex = i;
+                    listener.onColorSelected(ColorPalette.COLORS[i]);
+                }
                 return true;
             }
         }

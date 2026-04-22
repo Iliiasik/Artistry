@@ -3,6 +3,7 @@ package iliiasik.artistry.client.ui.screen;
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.ui.renderer.CanvasRenderer;
+import iliiasik.artistry.client.ui.widget.PaletteSwitcherWidget;
 import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.client.ui.widget.ColorPaletteWidget;
 import iliiasik.artistry.client.ui.widget.SizeSwitcherWidget;
@@ -45,6 +46,7 @@ public class PaintScreen extends Screen {
     private ToolSwitchWidget toolSwitchWidget;
     private SizeSwitcherWidget sizeSwitcherWidget;
     private ColorPaletteWidget colorPaletteWidget;
+    private PaletteSwitcherWidget paletteSwitcherWidget;
     private boolean isDrawing = false;
 
     private long lastFlushTime = 0;
@@ -85,7 +87,9 @@ public class PaintScreen extends Screen {
             int x = c.x() & 0xFF;
             int y = c.y() & 0xFF;
             canvasData.pixels[y][x] = c.blockIndex();
+            canvasData.colors[y][x] = c.color();
             lastSentSnapshot.pixels[y][x] = c.blockIndex();
+            lastSentSnapshot.colors[y][x] = c.color();
         }
     }
 
@@ -116,13 +120,28 @@ public class PaintScreen extends Screen {
         colorPaletteWidget = new ColorPaletteWidget(
                 dims.paletteX, dims.paletteY,
                 dims.paletteW, dims.paletteH,
-                index -> {
-                    pixelPainter.setBlock(index);
-                    colorPaletteWidget.setSelectedIndex(index);
+                new ColorPaletteWidget.SelectionListener() {
+                    @Override
+                    public void onBlockSelected(int blockIndex) {
+                        pixelPainter.setColorMode(false);
+                        pixelPainter.setBlock(blockIndex);
+                    }
+                    @Override
+                    public void onColorSelected(int argbColor) {
+                        pixelPainter.setColor(argbColor);
+                    }
                 }
         );
+
         pixelPainter.setBlock(colorPaletteWidget.getSelectedIndex());
         addDrawableChild(colorPaletteWidget);
+
+        paletteSwitcherWidget = new PaletteSwitcherWidget(
+                dims.paletteSwitcherX, dims.paletteSwitcherY,
+                dims.paletteSwitcherW, dims.paletteSwitcherH,
+                mode -> colorPaletteWidget.setMode(mode)
+        );
+        addDrawableChild(paletteSwitcherWidget);
     }
 
     @Override
@@ -212,7 +231,6 @@ public class PaintScreen extends Screen {
         }
 
         tickBatch();
-
         dims.calculate(width, height);
 
         if (toolSwitchWidget != null) {
@@ -226,6 +244,10 @@ public class PaintScreen extends Screen {
         if (colorPaletteWidget != null) {
             colorPaletteWidget.setPosition(dims.paletteX, dims.paletteY);
             colorPaletteWidget.setDimensions(dims.paletteW, dims.paletteH);
+        }
+        if (paletteSwitcherWidget != null) {
+            paletteSwitcherWidget.setPosition(dims.paletteSwitcherX, dims.paletteSwitcherY);
+            paletteSwitcherWidget.setDimensions(dims.paletteSwitcherW, dims.paletteSwitcherH);
         }
 
         context.drawTexture(

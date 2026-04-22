@@ -1,10 +1,5 @@
 package iliiasik.artistry.client.ui.layout;
 
-/**
- This file is responsible for the placement of elements in the virtual space;
- the overall UI layout is implemented through this file
- **/
-
 public class PaintDimensions {
     public static final float BASE_W = 900.0f;
     public static final float BASE_H = 600.0f;
@@ -36,6 +31,11 @@ public class PaintDimensions {
     public int paletteW;
     public int paletteH;
 
+    public int paletteSwitcherX;
+    public int paletteSwitcherY;
+    public int paletteSwitcherW;
+    public int paletteSwitcherH;
+
     public void calculate(int screenWidth, int screenHeight) {
         float scaleX = screenWidth / BASE_W;
         float scaleY = screenHeight / BASE_H;
@@ -60,13 +60,18 @@ public class PaintDimensions {
         sizeSwitchX = toolSwitchX;
         sizeSwitchY = toolSwitchY + toolSwitchH + s(PANEL_GAP);
 
-        float rawScale = uiScale * 2.0f;
+        float rawScale = uiScale * 2.5f;
         float perfectScale = Math.max(0.5f, Math.round(rawScale * 2.0f) / 2.0f);
 
         paletteW = Math.round(32 * perfectScale);
         paletteH = Math.round(162 * perfectScale);
         paletteX = canvasX - s(12) - paletteW;
         paletteY = canvasY;
+
+        paletteSwitcherW = Math.round(32 * perfectScale);
+        paletteSwitcherH = Math.round(32 * perfectScale);
+        paletteSwitcherX = paletteX;
+        paletteSwitcherY = paletteY + paletteH + s(PANEL_GAP);
     }
 
     public int s(int virtualValue) {
