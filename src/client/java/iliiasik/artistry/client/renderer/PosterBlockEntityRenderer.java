@@ -35,9 +35,8 @@ import java.util.UUID;
 public class PosterBlockEntityRenderer
         implements BlockEntityRenderer<PosterBlockEntity, PosterBlockEntityRenderer.PosterRenderState> {
 
-    private static final int SIZE     = CanvasData.SIZE;
+    private static final int MAX_SIZE = CanvasData.MAX_SIZE;
     private static final int TEX_SIZE = 512;
-    private static final int CELL     = TEX_SIZE / SIZE;
     private static final int BG_COLOR = 0xFFFDF7E8;
 
     private static final float Z_CANVAS = 15f / 16f - 0.001f;
@@ -47,8 +46,8 @@ public class PosterBlockEntityRenderer
     public PosterBlockEntityRenderer() {}
 
     public static class PosterRenderState extends BlockEntityRenderState {
-        public Direction  facing    = Direction.SOUTH;
-        public long       posKey    = 0L;
+        public Direction  facing     = Direction.SOUTH;
+        public long       posKey     = 0L;
         public CanvasData canvasData = null;
     }
 
@@ -123,9 +122,9 @@ public class PosterBlockEntityRenderer
         private final NativeImage              image;
         private final NativeImageBackedTexture texture;
         private final Identifier               textureId;
-        private final short[][]                snapshot       = new short[SIZE][SIZE];
-        private final int[][]                  colorSnapshot  = new int[SIZE][SIZE];
-        private       boolean                  dirty          = true;
+        private final short[][]                snapshot      = new short[MAX_SIZE][MAX_SIZE];
+        private final int[][]                  colorSnapshot = new int[MAX_SIZE][MAX_SIZE];
+        private       boolean                  dirty         = true;
 
         public PosterTexture() {
             String uuid = UUID.randomUUID().toString().replace("-", "");
@@ -142,25 +141,27 @@ public class PosterBlockEntityRenderer
         }
 
         public void update(CanvasData data) {
-            if (data == null) return;
+            if (data == null || !data.isSizeChosen()) return;
+            int size = data.canvasSize;
+            int cell = TEX_SIZE / size;
             boolean changed = false;
-            for (int y = 0; y < SIZE; y++) {
-                for (int x = 0; x < SIZE; x++) {
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
                     short idx = data.pixels[y][x];
                     int col   = data.colors[y][x];
                     if (!dirty && idx == snapshot[y][x] && col == colorSnapshot[y][x]) continue;
                     snapshot[y][x]      = idx;
                     colorSnapshot[y][x] = col;
                     changed = true;
-                    int cx = x * CELL, cy = y * CELL;
+                    int cx = x * cell, cy = y * cell;
                     if (idx == CanvasData.COLOR_PIXEL) {
-                        fillCellWithColor(cx, cy, col);
+                        fillCellWithColor(cx, cy, col, cell);
                         continue;
                     }
-                    if (idx <= 0) { fillCell(cx, cy); continue; }
+                    if (idx <= 0) { fillCell(cx, cy, cell); continue; }
                     Sprite sp = BlockPalette.getSprite(idx);
-                    if (sp == null) { fillCell(cx, cy); continue; }
-                    blitSprite(sp, cx, cy);
+                    if (sp == null) { fillCell(cx, cy, cell); continue; }
+                    blitSprite(sp, cx, cy, cell);
                 }
             }
             if (changed) {
@@ -181,19 +182,19 @@ public class PosterBlockEntityRenderer
                     image.setColorArgb(x, y, BG_COLOR);
         }
 
-        private void fillCell(int cx, int cy) {
-            for (int py = 0; py < CELL; py++)
-                for (int px = 0; px < CELL; px++)
+        private void fillCell(int cx, int cy, int cell) {
+            for (int py = 0; py < cell; py++)
+                for (int px = 0; px < cell; px++)
                     image.setColorArgb(cx + px, cy + py, BG_COLOR);
         }
 
-        private void fillCellWithColor(int cx, int cy, int argb) {
-            for (int py = 0; py < CELL; py++)
-                for (int px = 0; px < CELL; px++)
+        private void fillCellWithColor(int cx, int cy, int argb, int cell) {
+            for (int py = 0; py < cell; py++)
+                for (int px = 0; px < cell; px++)
                     image.setColorArgb(cx + px, cy + py, argb);
         }
 
-        private void blitSprite(Sprite sp, int cellX, int cellY) {
+        private void blitSprite(Sprite sp, int cellX, int cellY, int cell) {
             NativeImage img;
             try {
                 java.lang.reflect.Field f =
@@ -201,15 +202,15 @@ public class PosterBlockEntityRenderer
                 f.setAccessible(true);
                 img = ((NativeImage[]) f.get(sp.getContents()))[0];
             } catch (Exception e) {
-                fillCell(cellX, cellY);
+                fillCell(cellX, cellY, cell);
                 return;
             }
             int sprW = sp.getContents().getWidth();
             int sprH = sp.getContents().getHeight();
-            for (int py = 0; py < CELL; py++) {
-                for (int px = 0; px < CELL; px++) {
-                    int sx = Math.min(px * sprW / CELL, sprW - 1);
-                    int sy = Math.min(py * sprH / CELL, sprH - 1);
+            for (int py = 0; py < cell; py++) {
+                for (int px = 0; px < cell; px++) {
+                    int sx = Math.min(px * sprW / cell, sprW - 1);
+                    int sy = Math.min(py * sprH / cell, sprH - 1);
                     image.setColorArgb(cellX + px, cellY + py, img.getColorArgb(sx, sy));
                 }
             }

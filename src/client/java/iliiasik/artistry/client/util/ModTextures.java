@@ -14,6 +14,7 @@ public final class ModTextures {
     public static final Identifier ERASER        = Identifier.of("artistry", "textures/ui/eraser_active.png");
     public static final Identifier SIZE_SWITCHER = Identifier.of("artistry", "textures/ui/size_switcher.png");
     public static final Identifier PALETTE_SWITCHER = Identifier.of("artistry", "textures/ui/palette_switcher.png");
+    public static final Identifier SIZE_SCREEN = Identifier.of("artistry", "textures/ui/size_screen.png");
 
     private ModTextures() {}
 }

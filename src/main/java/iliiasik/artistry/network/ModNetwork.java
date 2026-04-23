@@ -16,8 +16,33 @@ public class ModNetwork {
     public static void register() {
         PayloadTypeRegistry.playC2S().register(SaveCanvasC2SPacket.ID, SaveCanvasC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(SaveItemCanvasC2SPacket.ID, SaveItemCanvasC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(SetCanvasSizeC2SPacket.ID, SetCanvasSizeC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(SetItemCanvasSizeC2SPacket.ID, SetItemCanvasSizeC2SPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(SyncCanvasS2CPacket.ID, SyncCanvasS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(PosterRemovedS2CPacket.ID, PosterRemovedS2CPacket.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(SetCanvasSizeC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    ServerWorld world = ctx.player().getEntityWorld();
+                    if (!(world.getBlockEntity(payload.pos()) instanceof PosterBlockEntity poster)) return;
+                    if (poster.canvasData.isSizeChosen()) return;
+                    poster.canvasData.canvasSize = payload.size();
+                    poster.markDirtyAndSync();
+                }));
+
+        ServerPlayNetworking.registerGlobalReceiver(SetItemCanvasSizeC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    ServerPlayerEntity player = ctx.player();
+                    var stack = player.getStackInHand(payload.hand());
+                    if (stack.isEmpty()) return;
+                    NbtComponent existing = stack.get(DataComponentTypes.CUSTOM_DATA);
+                    NbtCompound tag = existing != null ? existing.copyNbt() : new NbtCompound();
+                    NbtCompound canvasNbt = tag.getCompound("canvas").orElse(new NbtCompound());
+                    if (canvasNbt.getInt("size", 0) > 0) return;
+                    canvasNbt.putInt("size", payload.size());
+                    tag.put("canvas", canvasNbt);
+                    stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+                }));
 
         ServerPlayNetworking.registerGlobalReceiver(SaveCanvasC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {

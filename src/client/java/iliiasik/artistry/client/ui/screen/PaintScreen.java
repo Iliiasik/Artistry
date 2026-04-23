@@ -70,6 +70,16 @@ public class PaintScreen extends Screen {
         this.lastSentSnapshot.copyFrom(this.canvasData);
     }
 
+    public PaintScreen(ItemStack stack, Hand hand, int chosenSize) {
+        super(Text.empty());
+        this.targetEntity = null;
+        this.targetStack = stack;
+        this.targetHand = hand;
+        loadFromStack(stack);
+        this.canvasData.canvasSize = chosenSize;
+        this.lastSentSnapshot.copyFrom(this.canvasData);
+    }
+
     private void loadFromStack(ItemStack stack) {
         NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (comp != null) {
@@ -132,7 +142,6 @@ public class PaintScreen extends Screen {
                     }
                 }
         );
-
         pixelPainter.setBlock(colorPaletteWidget.getSelectedIndex());
         addDrawableChild(colorPaletteWidget);
 
@@ -192,7 +201,7 @@ public class PaintScreen extends Screen {
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
         if (click.button() == 0 && isInsideDrawingArea(click.x(), click.y())) {
-            double scale = (double) dims.drawingAreaSize / CanvasData.SIZE;
+            double scale = (double) dims.drawingAreaSize / canvasData.canvasSize;
             if (pixelPainter.beginStroke(canvasData, (int) click.x(), (int) click.y(),
                     dims.drawingAreaX, dims.drawingAreaY, scale)) {
                 isDrawing = true;
@@ -205,7 +214,7 @@ public class PaintScreen extends Screen {
     @Override
     public boolean mouseDragged(Click click, double deltaX, double deltaY) {
         if (isDrawing && click.button() == 0) {
-            double scale = (double) dims.drawingAreaSize / CanvasData.SIZE;
+            double scale = (double) dims.drawingAreaSize / canvasData.canvasSize;
             pixelPainter.continueStroke(canvasData, (int) click.x(), (int) click.y(),
                     dims.drawingAreaX, dims.drawingAreaY, scale);
             return true;

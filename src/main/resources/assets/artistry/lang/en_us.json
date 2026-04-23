@@ -1,5 +1,6 @@
 {
   "item.artistry.poster": "Poster",
   "block.artistry.poster": "Poster",
-  "itemGroup.artistry": "Artistry"
+  "itemGroup.artistry": "Artistry",
+  "screen.artistry.choose_size": "Choose canvas size"
 }
