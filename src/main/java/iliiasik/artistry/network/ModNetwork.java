@@ -6,9 +6,11 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
@@ -32,16 +34,14 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(SetItemCanvasSizeC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
-                    ServerPlayerEntity player = ctx.player();
-                    var stack = player.getStackInHand(payload.hand());
-                    if (stack.isEmpty()) return;
-                    NbtComponent existing = stack.get(DataComponentTypes.CUSTOM_DATA);
-                    NbtCompound tag = existing != null ? existing.copyNbt() : new NbtCompound();
-                    NbtCompound canvasNbt = tag.getCompound("canvas").orElse(new NbtCompound());
+                    NbtCompound[] result = getItemCanvasNbt(ctx.player(), payload.hand());
+                    if (result == null) return;
+                    NbtCompound tag = result[0], canvasNbt = result[1];
                     if (canvasNbt.getInt("size", 0) > 0) return;
                     canvasNbt.putInt("size", payload.size());
                     tag.put("canvas", canvasNbt);
-                    stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+                    ctx.player().getStackInHand(payload.hand())
+                            .set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
                 }));
 
         ServerPlayNetworking.registerGlobalReceiver(SaveCanvasC2SPacket.ID,
@@ -60,12 +60,9 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(SaveItemCanvasC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
-                    ServerPlayerEntity player = ctx.player();
-                    var stack = player.getStackInHand(payload.hand());
-                    if (stack.isEmpty()) return;
-                    NbtComponent existing = stack.get(DataComponentTypes.CUSTOM_DATA);
-                    NbtCompound tag = existing != null ? existing.copyNbt() : new NbtCompound();
-                    NbtCompound canvasNbt = tag.getCompound("canvas").orElse(new NbtCompound());
+                    NbtCompound[] result = getItemCanvasNbt(ctx.player(), payload.hand());
+                    if (result == null) return;
+                    NbtCompound tag = result[0], canvasNbt = result[1];
                     CanvasData data = new CanvasData();
                     data.fromNbt(canvasNbt);
                     for (CanvasData.PixelChange c : payload.changes()) {
@@ -73,8 +70,18 @@ public class ModNetwork {
                         data.colors[c.y() & 0xFF][c.x() & 0xFF] = c.color();
                     }
                     tag.put("canvas", data.toNbt());
-                    stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+                    ctx.player().getStackInHand(payload.hand())
+                            .set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
                 }));
+    }
+
+    private static NbtCompound[] getItemCanvasNbt(ServerPlayerEntity player, Hand hand) {
+        ItemStack stack = player.getStackInHand(hand);
+        if (stack.isEmpty()) return null;
+        NbtComponent existing = stack.get(DataComponentTypes.CUSTOM_DATA);
+        NbtCompound tag = existing != null ? existing.copyNbt() : new NbtCompound();
+        NbtCompound canvasNbt = tag.getCompound("canvas").orElse(new NbtCompound());
+        return new NbtCompound[]{tag, canvasNbt};
     }
 
     public static void broadcastPosterRemoved(ServerWorld world, BlockPos pos) {

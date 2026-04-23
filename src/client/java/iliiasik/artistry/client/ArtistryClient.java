@@ -6,6 +6,7 @@ import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.client.ui.screen.CanvasSizeScreen;
 import iliiasik.artistry.client.ui.screen.PaintScreen;
+import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.item.PosterItem;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import net.fabricmc.api.ClientModInitializer;
@@ -14,9 +15,6 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 
@@ -62,14 +60,7 @@ public class ArtistryClient implements ClientModInitializer {
             var stack = player.getStackInHand(hand);
             if (!(stack.getItem() instanceof PosterItem)) return ActionResult.PASS;
             MinecraftClient mc = MinecraftClient.getInstance();
-            NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
-            boolean sizeChosen = false;
-            if (comp != null) {
-                NbtCompound tag = comp.copyNbt();
-                var canvas = tag.getCompound("canvas");
-                sizeChosen = canvas.isPresent() && canvas.get().getInt("size", 0) > 0;
-            }
-            if (!sizeChosen) {
+            if (!CanvasData.isSizeChosenForStack(stack)) {
                 mc.setScreen(new CanvasSizeScreen(stack, hand));
             } else {
                 mc.setScreen(new PaintScreen(stack, hand));

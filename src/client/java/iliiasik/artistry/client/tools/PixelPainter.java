@@ -27,10 +27,6 @@ public class PixelPainter {
         this.colorMode = true;
     }
 
-    public void setColorMode(boolean colorMode) {
-        this.colorMode = colorMode;
-    }
-
     public void setSize(int size) {
         this.brushSize = Math.max(1, Math.min(5, size));
     }

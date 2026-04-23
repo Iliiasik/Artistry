@@ -22,6 +22,13 @@ public class CanvasData {
         return canvasSize > 0;
     }
 
+    public static boolean isSizeChosenForStack(net.minecraft.item.ItemStack stack) {
+        var comp = stack.get(net.minecraft.component.DataComponentTypes.CUSTOM_DATA);
+        if (comp == null) return false;
+        var canvas = comp.copyNbt().getCompound("canvas");
+        return canvas.isPresent() && canvas.get().getInt("size", 0) > 0;
+    }
+
     public void setColor(int x, int y, int argb) {
         pixels[y][x] = COLOR_PIXEL;
         colors[y][x] = argb;

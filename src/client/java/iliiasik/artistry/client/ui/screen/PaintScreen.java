@@ -2,7 +2,7 @@ package iliiasik.artistry.client.ui.screen;
 
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
-import iliiasik.artistry.client.ui.renderer.CanvasRenderer;
+import iliiasik.artistry.client.renderer.CanvasRenderer;
 import iliiasik.artistry.client.ui.widget.PaletteSwitcherWidget;
 import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.client.ui.widget.ColorPaletteWidget;
@@ -62,12 +62,7 @@ public class PaintScreen extends Screen {
     }
 
     public PaintScreen(ItemStack stack, Hand hand) {
-        super(Text.empty());
-        this.targetEntity = null;
-        this.targetStack = stack;
-        this.targetHand = hand;
-        loadFromStack(stack);
-        this.lastSentSnapshot.copyFrom(this.canvasData);
+        this(stack, hand, 0);
     }
 
     public PaintScreen(ItemStack stack, Hand hand, int chosenSize) {
@@ -75,17 +70,14 @@ public class PaintScreen extends Screen {
         this.targetEntity = null;
         this.targetStack = stack;
         this.targetHand = hand;
-        loadFromStack(stack);
-        this.canvasData.canvasSize = chosenSize;
-        this.lastSentSnapshot.copyFrom(this.canvasData);
-    }
-
-    private void loadFromStack(ItemStack stack) {
         NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (comp != null) {
-            NbtCompound tag = comp.copyNbt();
-            tag.getCompound("canvas").ifPresent(canvasData::fromNbt);
+            comp.copyNbt().getCompound("canvas").ifPresent(canvasData::fromNbt);
         }
+        if (chosenSize > 0) {
+            canvasData.canvasSize = chosenSize;
+        }
+        this.lastSentSnapshot.copyFrom(this.canvasData);
     }
 
     public BlockPos getTargetPos() {
@@ -133,7 +125,6 @@ public class PaintScreen extends Screen {
                 new ColorPaletteWidget.SelectionListener() {
                     @Override
                     public void onBlockSelected(int blockIndex) {
-                        pixelPainter.setColorMode(false);
                         pixelPainter.setBlock(blockIndex);
                     }
                     @Override
