@@ -150,7 +150,7 @@ public class CanvasSizeScreen extends Screen {
     }
 
     @Override
-    public boolean shouldCloseOnEsc() { return false; }
+    public boolean shouldCloseOnEsc() { return true; }
 
     @Override
     public boolean shouldPause() { return false; }
