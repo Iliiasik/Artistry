@@ -1,6 +1,5 @@
 package iliiasik.artistry.client.palette;
 
-import iliiasik.artistry.client.renderer.CanvasCellPainter;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -155,32 +154,25 @@ public final class BlockPalette {
 
     public static final int COUNT = BLOCK_IDS.length;
 
+    private static final Identifier BLOCK_ATLAS = Identifier.ofVanilla("textures/atlas/blocks.png");
     private static final Sprite[] SPRITE_CACHE = new Sprite[COUNT + 1];
     private static boolean loaded = false;
 
     public static void ensureLoaded() {
         if (loaded) return;
         MinecraftClient mc = MinecraftClient.getInstance();
-        SpriteAtlasTexture atlas = (SpriteAtlasTexture) mc.getTextureManager()
-                .getTexture(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+        SpriteAtlasTexture atlas = (SpriteAtlasTexture) mc.getTextureManager().getTexture(BLOCK_ATLAS);
         for (int i = 0; i < COUNT; i++) {
             try {
                 Block block = Registries.BLOCK.get(Identifier.of(BLOCK_IDS[i]));
                 BlockState state = block.getDefaultState();
                 Sprite particle = mc.getBlockRenderManager().getModel(state).particleSprite();
                 if (particle != null) {
-                    Identifier texId = particle.getContents().getId();
-                    SPRITE_CACHE[i + 1] = atlas.getSprite(texId);
+                    SPRITE_CACHE[i + 1] = atlas.getSprite(particle.getContents().getId());
                 }
             } catch (Exception ignored) {}
         }
         loaded = true;
-    }
-
-    public static void invalidate() {
-        loaded = false;
-        java.util.Arrays.fill(SPRITE_CACHE, null);
-        CanvasCellPainter.invalidateAtlas();
     }
 
     public static Sprite getSprite(int index) {
