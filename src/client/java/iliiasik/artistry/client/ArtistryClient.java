@@ -8,6 +8,7 @@ import iliiasik.artistry.client.ui.screen.CanvasSizeScreen;
 import iliiasik.artistry.client.ui.screen.PaintScreen;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.item.PosterItem;
+import iliiasik.artistry.network.PosterRemovedS2CPacket;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -44,10 +45,10 @@ public class ArtistryClient implements ClientModInitializer {
                     }
                 }));
 
-        ClientPlayNetworking.registerGlobalReceiver(
-                iliiasik.artistry.network.PosterRemovedS2CPacket.ID,
+        ClientPlayNetworking.registerGlobalReceiver(PosterRemovedS2CPacket.ID,
                 (payload, ctx) -> ctx.client().execute(() -> {
                     MinecraftClient mc = ctx.client();
+                    PosterBlockEntityRenderer.invalidate(payload.pos());
                     if (mc.currentScreen instanceof PaintScreen screen) {
                         if (payload.pos().equals(screen.getTargetPos())) {
                             screen.scheduledClose();
