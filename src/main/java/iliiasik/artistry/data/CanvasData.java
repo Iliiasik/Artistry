@@ -25,8 +25,9 @@ public class CanvasData {
     public static boolean isSizeChosenForStack(net.minecraft.item.ItemStack stack) {
         var comp = stack.get(net.minecraft.component.DataComponentTypes.CUSTOM_DATA);
         if (comp == null) return false;
-        var canvas = comp.copyNbt().getCompound("canvas");
-        return canvas.isPresent() && canvas.get().getInt("size", 0) > 0;
+        NbtCompound nbt = comp.copyNbt();
+        if (!nbt.contains("canvas")) return false;
+        return nbt.getCompound("canvas").getInt("size") > 0;
     }
 
     public void setColor(int x, int y, int argb) {
@@ -51,9 +52,9 @@ public class CanvasData {
     }
 
     public void fromNbt(NbtCompound nbt) {
-        canvasSize = nbt.getInt("size", 0);
+        canvasSize = nbt.getInt("size");
         if (nbt.contains("p")) {
-            byte[] bytes = nbt.getByteArray("p").orElse(new byte[0]);
+            byte[] bytes = nbt.getByteArray("p");
             if (bytes.length == MAX_SIZE * MAX_SIZE * 2) {
                 ByteBuffer buf = ByteBuffer.wrap(bytes);
                 for (int y = 0; y < MAX_SIZE; y++)
@@ -62,7 +63,7 @@ public class CanvasData {
             }
         }
         if (nbt.contains("c")) {
-            int[] flat = nbt.getIntArray("c").orElse(new int[0]);
+            int[] flat = nbt.getIntArray("c");
             if (flat.length == MAX_SIZE * MAX_SIZE) {
                 for (int y = 0; y < MAX_SIZE; y++)
                     System.arraycopy(flat, y * MAX_SIZE, colors[y], 0, MAX_SIZE);
@@ -106,4 +107,5 @@ public class CanvasData {
             return changes;
         }
     }
+
 }

@@ -1,86 +1,54 @@
 package iliiasik.artistry.client.renderer;
 
-import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.block.PosterBlock;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
+import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.data.CanvasData;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.block.entity.state.BlockEntityRenderState;
-import net.minecraft.client.render.command.OrderedRenderCommandQueue;
-import net.minecraft.client.render.state.CameraRenderState;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
-import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PosterBlockEntityRenderer
-        implements BlockEntityRenderer<PosterBlockEntity, PosterBlockEntityRenderer.PosterRenderState> {
+public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBlockEntity> {
 
-    private static final int MAX_SIZE = CanvasData.MAX_SIZE;
-    private static final int TEX_SIZE = 512;
-    private static final int BG_COLOR = 0xFFFDF7E8;
     private static final float Z_CANVAS = 15f / 16f - 0.001f;
 
     private static final Map<Long, PosterTexture> CACHE = new HashMap<>();
 
     public PosterBlockEntityRenderer() {}
 
-    public static class PosterRenderState extends BlockEntityRenderState {
-        public Direction  facing     = Direction.SOUTH;
-        public long       posKey     = 0L;
-        public CanvasData canvasData = null;
-    }
-
     @Override
-    public PosterRenderState createRenderState() {
-        return new PosterRenderState();
-    }
-
-    @Override
-    public void updateRenderState(PosterBlockEntity entity, PosterRenderState state,
-                                  float tickProgress, Vec3d cameraPos,
-                                  net.minecraft.client.render.command.ModelCommandRenderer
-                                          .@Nullable CrumblingOverlayCommand crumblingOverlay) {
-        BlockEntityRenderState.updateBlockEntityRenderState(entity, state, crumblingOverlay);
-        state.facing     = entity.getCachedState().get(PosterBlock.FACING);
-        state.posKey     = entity.getPos().asLong();
-        state.canvasData = entity.canvasData;
-    }
-
-    @Override
-    public void render(PosterRenderState state, MatrixStack matrices,
-                       OrderedRenderCommandQueue queue, CameraRenderState cameraState) {
+    public void render(PosterBlockEntity entity, float tickDelta, MatrixStack matrices,
+                       VertexConsumerProvider vertexConsumers, int light, int overlay) {
         BlockPalette.ensureLoaded();
 
-        PosterTexture tex = CACHE.computeIfAbsent(state.posKey, k -> new PosterTexture());
-        tex.update(state.canvasData);
+        PosterTexture tex = CACHE.computeIfAbsent(entity.getPos().asLong(), k -> new PosterTexture());
+        tex.update(entity.canvasData);
 
-        int packedLight = state.lightmapCoordinates;
+        Direction facing = entity.getCachedState().get(PosterBlock.FACING);
+
         matrices.push();
-        applyFacingRotation(matrices, state.facing);
+        applyFacingRotation(matrices, facing);
 
-        queue.submitCustom(matrices, RenderLayers.entityCutout(tex.getTextureId()),
-                (entry, vc) -> {
-                    Matrix4f mat = entry.getPositionMatrix();
-                    int overlay = OverlayTexture.DEFAULT_UV;
-                    vc.vertex(mat, 0f, 1f, Z_CANVAS).texture(1f, 0f).color(255,255,255,255).overlay(overlay).light(packedLight).normal(entry, 0, 0, 1);
-                    vc.vertex(mat, 1f, 1f, Z_CANVAS).texture(0f, 0f).color(255,255,255,255).overlay(overlay).light(packedLight).normal(entry, 0, 0, 1);
-                    vc.vertex(mat, 1f, 0f, Z_CANVAS).texture(0f, 1f).color(255,255,255,255).overlay(overlay).light(packedLight).normal(entry, 0, 0, 1);
-                    vc.vertex(mat, 0f, 0f, Z_CANVAS).texture(1f, 1f).color(255,255,255,255).overlay(overlay).light(packedLight).normal(entry, 0, 0, 1);
-                });
+        VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(tex.getTextureId()));
+        Matrix4f mat = matrices.peek().getPositionMatrix();
+        int ov = OverlayTexture.DEFAULT_UV;
+
+        vc.vertex(mat, 0f, 1f, Z_CANVAS).texture(1f, 0f).color(255, 255, 255, 255).overlay(ov).light(light).normal(matrices.peek(), 0, 0, 1);
+        vc.vertex(mat, 1f, 1f, Z_CANVAS).texture(0f, 0f).color(255, 255, 255, 255).overlay(ov).light(light).normal(matrices.peek(), 0, 0, 1);
+        vc.vertex(mat, 1f, 0f, Z_CANVAS).texture(0f, 1f).color(255, 255, 255, 255).overlay(ov).light(light).normal(matrices.peek(), 0, 0, 1);
+        vc.vertex(mat, 0f, 0f, Z_CANVAS).texture(1f, 1f).color(255, 255, 255, 255).overlay(ov).light(light).normal(matrices.peek(), 0, 0, 1);
 
         matrices.pop();
     }
@@ -102,51 +70,22 @@ public class PosterBlockEntityRenderer
     }
 
     public static class PosterTexture {
-        private final NativeImage              image;
-        private final NativeImageBackedTexture texture;
-        private final Identifier               textureId;
-        private final short[][]                snapshot      = new short[MAX_SIZE][MAX_SIZE];
-        private final int[][]                  colorSnapshot = new int[MAX_SIZE][MAX_SIZE];
-        private       boolean                  dirty         = true;
+        private static final int TEX_SIZE = 512;
+
+        private final CanvasTextureHolder holder;
 
         public PosterTexture() {
-            String uuid = UUID.randomUUID().toString().replace("-", "");
-            textureId = Identifier.of("paint", "poster_" + uuid);
-            texture   = new NativeImageBackedTexture(textureId.toString(), TEX_SIZE, TEX_SIZE, false);
-            image     = texture.getImage();
-            CanvasCellPainter.fillCell(image, 0, 0, TEX_SIZE, BG_COLOR);
-            texture.upload();
-            MinecraftClient.getInstance().getTextureManager().registerTexture(textureId, texture);
+            Identifier id = Identifier.of("artistry", "poster_" + UUID.randomUUID().toString().replace("-", ""));
+            holder = new CanvasTextureHolder(id, TEX_SIZE);
         }
 
-        public Identifier getTextureId() { return textureId; }
+        public Identifier getTextureId() { return holder.getTextureId(); }
 
         public void update(CanvasData data) {
-            if (data == null || !data.isSizeChosen()) return;
-            int size = data.canvasSize;
-            int cell = TEX_SIZE / size;
-            boolean changed = false;
-            for (int y = 0; y < size; y++) {
-                for (int x = 0; x < size; x++) {
-                    short idx = data.pixels[y][x];
-                    int col   = data.colors[y][x];
-                    if (!dirty && idx == snapshot[y][x] && col == colorSnapshot[y][x]) continue;
-                    snapshot[y][x]      = idx;
-                    colorSnapshot[y][x] = col;
-                    changed = true;
-                    CanvasCellPainter.paintCell(image, x * cell, y * cell, cell, idx, col, BG_COLOR);
-                }
-            }
-            if (changed) {
-                texture.upload();
-                dirty = false;
-            }
+            BlockPalette.ensureLoaded();
+            holder.updatePixels(data, TEX_SIZE);
         }
 
-        public void close() {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc != null) mc.getTextureManager().destroyTexture(textureId);
-            texture.close();
-        }
+        public void close() { holder.close(); }
     }
 }

@@ -17,6 +17,14 @@ public final class CanvasCellPainter {
 
     private CanvasCellPainter() {}
 
+    private static int swapRedBlue(int color) {
+        int a = (color >> 24) & 0xFF;
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8)  & 0xFF;
+        int b =  color        & 0xFF;
+        return (a << 24) | (b << 16) | (g << 8) | r;
+    }
+
     private static NativeImage getSpriteImage(Sprite sp) {
         NativeImage cached = IMAGE_CACHE.get(sp);
         if (cached != null) return cached;
@@ -74,9 +82,10 @@ public final class CanvasCellPainter {
     }
 
     public static void fillCell(NativeImage image, int cx, int cy, int cell, int argb) {
+        int abgr = swapRedBlue(argb);
         for (int py = 0; py < cell; py++)
             for (int px = 0; px < cell; px++)
-                image.setColorArgb(cx + px, cy + py, argb);
+                image.setColor(cx + px, cy + py, abgr);
     }
 
     private static void blitSprite(NativeImage dst, NativeImage src, int sprW, int sprH,
@@ -85,7 +94,7 @@ public final class CanvasCellPainter {
             for (int px = 0; px < cell; px++) {
                 int sx = Math.min(px * sprW / cell, sprW - 1);
                 int sy = Math.min(py * sprH / cell, sprH - 1);
-                dst.setColorArgb(cellX + px, cellY + py, src.getColorArgb(sx, sy));
+                dst.setColor(cellX + px, cellY + py, src.getColor(sx, sy));
             }
         }
     }

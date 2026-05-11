@@ -166,7 +166,7 @@ public final class BlockPalette {
             try {
                 Block block = Registries.BLOCK.get(Identifier.of(BLOCK_IDS[i]));
                 BlockState state = block.getDefaultState();
-                Sprite particle = mc.getBlockRenderManager().getModel(state).particleSprite();
+                Sprite particle = mc.getBlockRenderManager().getModel(state).getParticleSprite();
                 if (particle != null) {
                     SPRITE_CACHE[i + 1] = atlas.getSprite(particle.getContents().getId());
                 }

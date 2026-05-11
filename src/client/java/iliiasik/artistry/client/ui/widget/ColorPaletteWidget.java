@@ -3,8 +3,6 @@ package iliiasik.artistry.client.ui.widget;
 import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.client.palette.ColorPalette;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.widget.ClickableWidget;
@@ -47,22 +45,28 @@ public class ColorPaletteWidget extends ClickableWidget {
         return BORDER + PREVIEW + BORDER;
     }
 
+    private float[] getScale() {
+        return new float[]{ (float) getWidth() / TEX_W, (float) getHeight() / TEX_H };
+    }
+
+    private int[] toVirtual(double screenX, double screenY) {
+        float[] scale = getScale();
+        return new int[]{ (int) ((screenX - getX()) / scale[0]), (int) ((screenY - getY()) / scale[1]) };
+    }
+
     @Override
     protected void renderWidget(DrawContext ctx, int mouseX, int mouseY, float delta) {
         BlockPalette.ensureLoaded();
 
-        float scaleX = (float) getWidth() / TEX_W;
-        float scaleY = (float) getHeight() / TEX_H;
+        float[] scale = getScale();
+        int[] vMouse = toVirtual(mouseX, mouseY);
 
-        int vMouseX = (int) ((mouseX - getX()) / scaleX);
-        int vMouseY = (int) ((mouseY - getY()) / scaleY);
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate((float) getX(), (float) getY(), 0);
+        ctx.getMatrices().scale(scale[0], scale[1], 1f);
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate((float) getX(), (float) getY());
-        ctx.getMatrices().scale(scaleX, scaleY);
-
-        ctx.drawTexture(RenderPipelines.GUI_TEXTURED, ModTextures.PALETTE,
-                0, 0, 0f, 0f, TEX_W, TEX_H, TEX_W, TEX_H, 0xFFFFFFFF);
+        ctx.drawTexture(ModTextures.PALETTE,
+                0, 0, TEX_W, TEX_H, 0f, 0f, TEX_W, TEX_H, TEX_W, TEX_H);
 
         int sx = BORDER;
         int previewY = BORDER;
@@ -70,8 +74,7 @@ public class ColorPaletteWidget extends ClickableWidget {
         if (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS) {
             Sprite previewSprite = BlockPalette.getSprite(selectedBlockIndex);
             if (previewSprite != null) {
-                ctx.drawSpriteStretched(RenderPipelines.GUI_TEXTURED, previewSprite,
-                        sx, previewY, PREVIEW, PREVIEW, 0xFFFFFFFF);
+                ctx.drawSprite(sx, previewY, 0, PREVIEW, PREVIEW, previewSprite);
             } else {
                 ctx.fill(sx, previewY, sx + PREVIEW, previewY + PREVIEW, 0xFFFDF7E8);
             }
@@ -96,41 +99,35 @@ public class ColorPaletteWidget extends ClickableWidget {
             if (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS) {
                 Sprite sp = BlockPalette.getSprite(i + 1);
                 if (sp != null) {
-                    ctx.drawSpriteStretched(RenderPipelines.GUI_TEXTURED, sp,
-                            cx, cy, CELL, CELL, 0xFFFFFFFF);
+                    ctx.drawSprite(cx, cy, 0, CELL, CELL, sp);
                 } else {
                     ctx.fill(cx, cy, cx + CELL, cy + CELL, 0xFF888888);
                 }
                 if (i + 1 == selectedBlockIndex) {
-                    ctx.drawStrokedRectangle(cx, cy, CELL, CELL, 0xFFFFFFFF);
+                    ctx.drawBorder(cx, cy, CELL, CELL, 0xFFFFFFFF);
                 }
             } else {
                 int argb = ColorPalette.COLORS[i];
                 ctx.fill(cx, cy, cx + CELL, cy + CELL, argb);
                 if (i == selectedColorIndex) {
-                    ctx.drawStrokedRectangle(cx, cy, CELL, CELL, 0xFFFFFFFF);
+                    ctx.drawBorder(cx, cy, CELL, CELL, 0xFFFFFFFF);
                 }
             }
 
-            if (vMouseX >= cx && vMouseX < cx + CELL && vMouseY >= cy && vMouseY < cy + CELL) {
+            if (vMouse[0] >= cx && vMouse[0] < cx + CELL && vMouse[1] >= cy && vMouse[1] < cy + CELL) {
                 ctx.fill(cx, cy, cx + CELL, cy + CELL, 0x55FFFFFF);
             }
         }
 
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
-        if (click.button() != 0) return false;
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button != 0) return false;
         BlockPalette.ensureLoaded();
 
-        float scaleX = (float) getWidth() / TEX_W;
-        float scaleY = (float) getHeight() / TEX_H;
-
-        int vClickX = (int) ((click.x() - getX()) / scaleX);
-        int vClickY = (int) ((click.y() - getY()) / scaleY);
-
+        int[] vClick = toVirtual(mouseX, mouseY);
         int startY = cellsStartY();
         int maxY = TEX_H - BORDER;
         int count = (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS)
@@ -143,7 +140,7 @@ public class ColorPaletteWidget extends ClickableWidget {
             int cy = startY + row * CELL;
             if (cy + CELL > maxY) break;
 
-            if (vClickX >= cx && vClickX < cx + CELL && vClickY >= cy && vClickY < cy + CELL) {
+            if (vClick[0] >= cx && vClick[0] < cx + CELL && vClick[1] >= cy && vClick[1] < cy + CELL) {
                 if (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS) {
                     selectedBlockIndex = i + 1;
                     listener.onBlockSelected(selectedBlockIndex);

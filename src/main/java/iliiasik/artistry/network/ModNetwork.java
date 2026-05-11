@@ -25,7 +25,7 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(SetCanvasSizeC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
-                    ServerWorld world = ctx.player().getEntityWorld();
+                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
                     if (!(world.getBlockEntity(payload.pos()) instanceof PosterBlockEntity poster)) return;
                     if (poster.canvasData.isSizeChosen()) return;
                     poster.canvasData.canvasSize = payload.size();
@@ -37,7 +37,7 @@ public class ModNetwork {
                     NbtCompound[] result = getItemCanvasNbt(ctx.player(), payload.hand());
                     if (result == null) return;
                     NbtCompound tag = result[0], canvasNbt = result[1];
-                    if (canvasNbt.getInt("size", 0) > 0) return;
+                    if (canvasNbt.getInt("size") > 0) return;
                     canvasNbt.putInt("size", payload.size());
                     tag.put("canvas", canvasNbt);
                     ctx.player().getStackInHand(payload.hand())
@@ -46,7 +46,7 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(SaveCanvasC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
-                    ServerWorld world = ctx.player().getEntityWorld();
+                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
                     BlockPos pos = payload.pos();
                     if (!(world.getBlockEntity(pos) instanceof PosterBlockEntity poster)) return;
                     for (CanvasData.PixelChange c : payload.changes()) {
@@ -80,7 +80,7 @@ public class ModNetwork {
         if (stack.isEmpty()) return null;
         NbtComponent existing = stack.get(DataComponentTypes.CUSTOM_DATA);
         NbtCompound tag = existing != null ? existing.copyNbt() : new NbtCompound();
-        NbtCompound canvasNbt = tag.getCompound("canvas").orElse(new NbtCompound());
+        NbtCompound canvasNbt = tag.contains("canvas") ? tag.getCompound("canvas") : new NbtCompound();
         return new NbtCompound[]{tag, canvasNbt};
     }
 

@@ -6,9 +6,11 @@ import iliiasik.artistry.block.entity.PosterBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
@@ -20,8 +22,8 @@ public class PosterItem extends Item {
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity player, Hand hand) {
-        return ActionResult.SUCCESS;
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
+        return TypedActionResult.success(player.getStackInHand(hand));
     }
 
     @Override

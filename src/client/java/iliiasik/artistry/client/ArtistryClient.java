@@ -17,13 +17,14 @@ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 
 public class ArtistryClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         BlockEntityRendererFactories.register(ModBlockEntities.POSTER,
-                ctx -> new PosterBlockEntityRenderer());
+                ctx1 -> new PosterBlockEntityRenderer());
 
         ClientPlayNetworking.registerGlobalReceiver(SyncCanvasS2CPacket.ID,
                 (payload, ctx) -> ctx.client().execute(() -> {
@@ -57,16 +58,16 @@ public class ArtistryClient implements ClientModInitializer {
                 }));
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!world.isClient()) return ActionResult.PASS;
+            if (!world.isClient()) return TypedActionResult.pass(player.getStackInHand(hand));
             var stack = player.getStackInHand(hand);
-            if (!(stack.getItem() instanceof PosterItem)) return ActionResult.PASS;
+            if (!(stack.getItem() instanceof PosterItem)) return TypedActionResult.pass(stack);
             MinecraftClient mc = MinecraftClient.getInstance();
             if (!CanvasData.isSizeChosenForStack(stack)) {
                 mc.setScreen(new CanvasSizeScreen(stack, hand));
             } else {
                 mc.setScreen(new PaintScreen(stack, hand));
             }
-            return ActionResult.SUCCESS;
+            return TypedActionResult.success(stack);
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {

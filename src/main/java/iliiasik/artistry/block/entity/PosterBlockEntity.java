@@ -11,8 +11,6 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,15 +23,17 @@ public class PosterBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void writeData(WriteView view) {
-        super.writeData(view);
-        view.put("canvas", NbtCompound.CODEC, canvasData.toNbt());
+    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        super.writeNbt(nbt, registries);
+        nbt.put("canvas", canvasData.toNbt());
     }
 
     @Override
-    protected void readData(ReadView view) {
-        super.readData(view);
-        view.read("canvas", NbtCompound.CODEC).ifPresent(canvasData::fromNbt);
+    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        super.readNbt(nbt, registries);
+        if (nbt.contains("canvas")) {
+            canvasData.fromNbt(nbt.getCompound("canvas"));
+        }
     }
 
     @Override
@@ -50,7 +50,9 @@ public class PosterBlockEntity extends BlockEntity {
         NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (comp != null) {
             NbtCompound tag = comp.copyNbt();
-            tag.getCompound("canvas").ifPresent(canvasData::fromNbt);
+            if (tag.contains("canvas")) {
+                canvasData.fromNbt(tag.getCompound("canvas"));
+            }
         }
     }
 
@@ -61,7 +63,7 @@ public class PosterBlockEntity extends BlockEntity {
         }
     }
 
-    private void dropWithCanvas(BlockPos dropPos) {
+    public void dropWithCanvas(BlockPos dropPos) {
         if (world == null || world.isClient() || dropped) return;
         dropped = true;
         ItemStack stack = new ItemStack(iliiasik.artistry.item.ModItems.POSTER);
@@ -70,14 +72,5 @@ public class PosterBlockEntity extends BlockEntity {
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
         net.minecraft.util.ItemScatterer.spawn(world, dropPos,
                 new net.minecraft.inventory.SimpleInventory(stack));
-    }
-
-    @Override
-    public void onBlockReplaced(BlockPos replacedPos, BlockState oldState) {
-        if (world instanceof net.minecraft.server.world.ServerWorld serverWorld) {
-            iliiasik.artistry.network.ModNetwork.broadcastPosterRemoved(serverWorld, replacedPos);
-        }
-        dropWithCanvas(replacedPos);
-        super.onBlockReplaced(replacedPos, oldState);
     }
 }

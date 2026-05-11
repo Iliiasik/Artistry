@@ -4,10 +4,9 @@ import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.network.SetCanvasSizeC2SPacket;
 import iliiasik.artistry.network.SetItemCanvasSizeC2SPacket;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.item.ItemStack;
@@ -66,21 +65,21 @@ public class CanvasSizeScreen extends Screen {
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
         recalc();
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(originX, originY);
-        ctx.getMatrices().scale(scale, scale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(originX, originY, 0);
+        ctx.getMatrices().scale(scale, scale, 1f);
 
         ctx.drawTexture(
-                RenderPipelines.GUI_TEXTURED,
                 ModTextures.SIZE_SCREEN,
                 0, 0,
+                VIRTUAL_W, VIRTUAL_H,
                 0f, 0f,
                 VIRTUAL_W, VIRTUAL_H,
-                VIRTUAL_W, VIRTUAL_H,
-                0xFFFFFFFF
+                VIRTUAL_W, VIRTUAL_H
         );
 
         String title = Text.translatable("screen.artistry.choose_size").getString();
+        assert client != null;
         int textW = client.textRenderer.getWidth(title);
         ctx.drawText(client.textRenderer, title,
                 (VIRTUAL_W - textW) / 2, TEXT_Y, 0xFFFDF7E8, false);
@@ -95,19 +94,19 @@ public class CanvasSizeScreen extends Screen {
             boolean hovered = vMouseX >= bx && vMouseX < bx + BTN_SIZE
                     && vMouseY >= by && vMouseY < by + BTN_SIZE;
 
-            int brightness = hovered ? 255 : 200;
-            int color = (0xFF << 24) | (brightness << 16) | (brightness << 8) | brightness;
+            float brightness = hovered ? 1.0f : 200f / 255f;
+            RenderSystem.setShaderColor(brightness, brightness, brightness, 1.0f);
 
             ctx.drawTexture(
-                    RenderPipelines.GUI_TEXTURED,
                     ModTextures.SIZE_SWITCHER,
                     bx, by,
+                    BTN_SIZE, BTN_SIZE,
                     0f, 0f,
                     BTN_SIZE, BTN_SIZE,
-                    32, 32,
-                    32, 32,
-                    color
+                    BTN_SIZE, BTN_SIZE
             );
+
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
             String label = SIZES[i] + "x";
             int lw = client.textRenderer.getWidth(label);
@@ -115,14 +114,14 @@ public class CanvasSizeScreen extends Screen {
                     bx + (BTN_SIZE - lw) / 2, by + BTN_SIZE / 2 - 4, 0xFF666155, false);
         }
 
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
         super.render(ctx, mouseX, mouseY, delta);
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
-        int vx = (int) ((click.x() - originX) / scale);
-        int vy = (int) ((click.y() - originY) / scale);
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int vx = (int) ((mouseX - originX) / scale);
+        int vy = (int) ((mouseY - originY) / scale);
         int by = VIRTUAL_H - BTN_MARGIN - BTN_SIZE;
         for (int i = 0; i < SIZES.length; i++) {
             int bx = BTN_MARGIN + i * (BTN_SIZE + BTN_GAP);
@@ -131,7 +130,7 @@ public class CanvasSizeScreen extends Screen {
                 return true;
             }
         }
-        return super.mouseClicked(click, doubled);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private void onSizeChosen(int size) {
@@ -154,4 +153,9 @@ public class CanvasSizeScreen extends Screen {
 
     @Override
     public boolean shouldPause() { return false; }
+
+    @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        this.renderDarkening(context);
+    }
 }

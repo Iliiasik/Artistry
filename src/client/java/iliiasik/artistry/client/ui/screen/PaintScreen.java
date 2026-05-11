@@ -14,8 +14,6 @@ import iliiasik.artistry.network.SaveCanvasC2SPacket;
 import iliiasik.artistry.network.SaveItemCanvasC2SPacket;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.component.DataComponentTypes;
@@ -72,8 +70,10 @@ public class PaintScreen extends Screen {
         this.targetHand = hand;
         NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (comp != null) {
-            comp.copyNbt().getCompound("canvas").ifPresent(canvasData::fromNbt);
-        }
+            NbtCompound nbt = comp.copyNbt();
+            if (nbt.contains("canvas")) {
+                canvasData.fromNbt(nbt.getCompound("canvas"));
+            }        }
         if (chosenSize > 0) {
             canvasData.canvasSize = chosenSize;
         }
@@ -190,37 +190,37 @@ public class PaintScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
-        if (click.button() == 0 && isInsideDrawingArea(click.x(), click.y())) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && isInsideDrawingArea(mouseX, mouseY)) {
             double scale = (double) dims.drawingAreaSize / canvasData.canvasSize;
-            if (pixelPainter.beginStroke(canvasData, (int) click.x(), (int) click.y(),
+            if (pixelPainter.beginStroke(canvasData, (int) mouseX, (int) mouseY,
                     dims.drawingAreaX, dims.drawingAreaY, scale)) {
                 isDrawing = true;
                 return true;
             }
         }
-        return super.mouseClicked(click, doubled);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
-        if (isDrawing && click.button() == 0) {
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (isDrawing && button == 0) {
             double scale = (double) dims.drawingAreaSize / canvasData.canvasSize;
-            pixelPainter.continueStroke(canvasData, (int) click.x(), (int) click.y(),
+            pixelPainter.continueStroke(canvasData, (int) mouseX, (int) mouseY,
                     dims.drawingAreaX, dims.drawingAreaY, scale);
             return true;
         }
-        return super.mouseDragged(click, deltaX, deltaY);
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
     @Override
-    public boolean mouseReleased(Click click) {
-        if (isDrawing && click.button() == 0) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isDrawing && button == 0) {
             pixelPainter.endStroke();
             isDrawing = false;
             return true;
         }
-        return super.mouseReleased(click);
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
@@ -251,14 +251,12 @@ public class PaintScreen extends Screen {
         }
 
         context.drawTexture(
-                RenderPipelines.GUI_TEXTURED,
                 ModTextures.FRAME,
                 dims.canvasX, dims.canvasY,
-                0.0F, 0.0F,
                 dims.canvasSize, dims.canvasSize,
+                0.0F, 0.0F,
                 128, 128,
-                128, 128,
-                0xFFFFFFFF
+                128, 128
         );
 
         canvasRenderer.update(canvasData);
@@ -270,5 +268,10 @@ public class PaintScreen extends Screen {
     @Override
     public boolean shouldPause() {
         return false;
+    }
+
+    @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        this.renderDarkening(context);
     }
 }
