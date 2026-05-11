@@ -67,9 +67,12 @@ public class PosterBlockEntity extends BlockEntity {
         if (world == null || world.isClient() || dropped) return;
         dropped = true;
         ItemStack stack = new ItemStack(iliiasik.artistry.item.ModItems.POSTER);
-        NbtCompound tag = new NbtCompound();
-        tag.put("canvas", canvasData.toNbt());
-        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+        if (canvasData.isSizeChosen()) {
+            NbtCompound tag = new NbtCompound();
+            tag.put("canvas", canvasData.toNbt());
+            stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+            stack.set(DataComponentTypes.MAX_STACK_SIZE, 1);
+        }
         net.minecraft.util.ItemScatterer.spawn(world, dropPos,
                 new net.minecraft.inventory.SimpleInventory(stack));
     }

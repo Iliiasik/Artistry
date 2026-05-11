@@ -5,6 +5,7 @@ import iliiasik.artistry.block.entity.ModBlockEntities;
 import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.item.ModItems;
 import iliiasik.artistry.network.ModNetwork;
+import iliiasik.artistry.recipe.ModRecipes;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 
@@ -22,5 +23,6 @@ public class Artistry implements ModInitializer {
         ModItems.register();
         ModBlockEntities.register();
         ModNetwork.register();
+        ModRecipes.register();
     }
 }

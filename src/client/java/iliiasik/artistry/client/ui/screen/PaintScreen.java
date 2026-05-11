@@ -272,6 +272,5 @@ public class PaintScreen extends Screen {
 
     @Override
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderDarkening(context);
     }
 }

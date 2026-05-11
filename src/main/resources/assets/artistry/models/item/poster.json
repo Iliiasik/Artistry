@@ -1,6 +1,14 @@
 {
-  "parent": "item/generated",
+  "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "artistry:item/poster"
-  }
+    "layer0": "artistry:item/poster_empty"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "artistry:has_canvas": 1
+      },
+      "model": "artistry:item/poster_filled"
+    }
+  ]
 }

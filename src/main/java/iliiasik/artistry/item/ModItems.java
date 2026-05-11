@@ -9,7 +9,7 @@ import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 
 public class ModItems {
     public static final PosterItem POSTER = new PosterItem(
-            new Item.Settings().maxCount(1));
+            new Item.Settings().maxCount(64));
 
     public static void register() {
         Registry.register(Registries.ITEM, Artistry.id("poster"), POSTER);

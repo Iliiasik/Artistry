@@ -7,6 +7,7 @@ import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.client.ui.screen.CanvasSizeScreen;
 import iliiasik.artistry.client.ui.screen.PaintScreen;
 import iliiasik.artistry.data.CanvasData;
+import iliiasik.artistry.item.ModItems;
 import iliiasik.artistry.item.PosterItem;
 import iliiasik.artistry.network.PosterRemovedS2CPacket;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
@@ -15,14 +16,18 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.item.ModelPredicateProviderRegistry;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 
 public class ArtistryClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        ModelPredicateProviderRegistry.register(ModItems.POSTER, Identifier.of("artistry", "has_canvas"), (stack, world, entity, seed) -> CanvasData.isSizeChosenForStack(stack) ? 1.0F : 0.0F);
+
         BlockEntityRendererFactories.register(ModBlockEntities.POSTER,
                 ctx1 -> new PosterBlockEntityRenderer());
 
