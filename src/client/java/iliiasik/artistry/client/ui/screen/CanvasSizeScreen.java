@@ -141,6 +141,7 @@ public class CanvasSizeScreen extends Screen {
             }
             MinecraftClient.getInstance().setScreen(new PaintScreen(targetEntity));
         } else if (targetStack != null) {
+
             if (MinecraftClient.getInstance().getNetworkHandler() != null) {
                 ClientPlayNetworking.send(new SetItemCanvasSizeC2SPacket(targetHand, size));
             }

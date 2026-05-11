@@ -168,7 +168,8 @@ public class PaintScreen extends Screen {
     private void saveToItem() {
         List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
         if (changes.isEmpty()) return;
-        NbtCompound tag = new NbtCompound();
+        NbtComponent comp = targetStack.get(DataComponentTypes.CUSTOM_DATA);
+        NbtCompound tag = comp != null ? comp.copyNbt() : new NbtCompound();
         tag.put("canvas", canvasData.toNbt());
         targetStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
         if (MinecraftClient.getInstance().getNetworkHandler() != null) {
@@ -274,3 +275,4 @@ public class PaintScreen extends Screen {
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
     }
 }
+

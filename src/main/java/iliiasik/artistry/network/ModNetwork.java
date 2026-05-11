@@ -34,7 +34,7 @@ public class ModNetwork {
         ServerPlayNetworking.registerGlobalReceiver(SetItemCanvasSizeC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
                     ItemStack stack = ctx.player().getStackInHand(payload.hand());
-                    if (stack.isEmpty()) return;
+                    if (stack.isEmpty() || !stack.isOf(iliiasik.artistry.item.ModItems.POSTER)) return;
                     NbtCompound tag = getOrCreateCustomData(stack);
                     NbtCompound canvasNbt = getOrCreateCanvasNbt(tag);
                     if (canvasNbt.getInt("size") > 0) return;
@@ -48,6 +48,7 @@ public class ModNetwork {
                     if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
                     BlockPos pos = payload.pos();
                     if (!(world.getBlockEntity(pos) instanceof PosterBlockEntity poster)) return;
+                    if (!poster.canvasData.isSizeChosen()) return;
                     for (CanvasData.PixelChange c : payload.changes()) {
                         poster.canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
                         poster.canvasData.colors[c.y() & 0xFF][c.x() & 0xFF] = c.color();
@@ -60,9 +61,10 @@ public class ModNetwork {
         ServerPlayNetworking.registerGlobalReceiver(SaveItemCanvasC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
                     ItemStack stack = ctx.player().getStackInHand(payload.hand());
-                    if (stack.isEmpty()) return;
+                    if (stack.isEmpty() || !stack.isOf(iliiasik.artistry.item.ModItems.POSTER)) return;
                     NbtCompound tag = getOrCreateCustomData(stack);
                     NbtCompound canvasNbt = getOrCreateCanvasNbt(tag);
+                    if (canvasNbt.getInt("size") <= 0) return;
                     CanvasData data = new CanvasData();
                     data.fromNbt(canvasNbt);
                     for (CanvasData.PixelChange c : payload.changes()) {
