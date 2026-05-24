@@ -41,17 +41,17 @@ public class PaintDimensions {
         float scaleY = screenHeight / BASE_H;
         uiScale = Math.min(scaleX, scaleY);
 
-        canvasSize = s(512);
+        int rawDrawing = Math.round(480 * uiScale);
+        drawingAreaSize = (rawDrawing / 32) * 32;
+        int border = Math.round(drawingAreaSize * 16.0f / 480.0f);
+        canvasSize = drawingAreaSize + border * 2;
         canvasX = (screenWidth - canvasSize) / 2;
         canvasY = (screenHeight - canvasSize) / 2;
-
-        int border = (canvasSize - Math.round(480 * uiScale)) / 2;
-        drawingAreaSize = canvasSize - border * 2;
         drawingAreaX = canvasX + border;
         drawingAreaY = canvasY + border;
 
         toolSwitchW = s(64);
-        toolSwitchH = s(128);
+        toolSwitchH = s(64) * 3 + Math.round(s(64) * (6.0f / 64.0f)) * 2;
         toolSwitchX = canvasX + canvasSize + s(12);
         toolSwitchY = canvasY;
 

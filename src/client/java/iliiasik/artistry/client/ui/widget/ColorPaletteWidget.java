@@ -154,6 +154,21 @@ public class ColorPaletteWidget extends ClickableWidget {
         return false;
     }
 
+    public void selectBlock(int blockIndex) {
+        this.selectedBlockIndex = blockIndex;
+        this.mode = PaletteSwitcherWidget.PaletteMode.BLOCKS;
+    }
+
+    public void selectColor(int argb) {
+        for (int i = 0; i < ColorPalette.COUNT; i++) {
+            if (ColorPalette.COLORS[i] == argb) {
+                this.selectedColorIndex = i;
+                break;
+            }
+        }
+        this.mode = PaletteSwitcherWidget.PaletteMode.COLORS;
+    }
+
     @Override
     protected void appendClickableNarrations(NarrationMessageBuilder builder) {}
 }

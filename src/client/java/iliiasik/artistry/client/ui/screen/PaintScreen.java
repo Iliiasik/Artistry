@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.ui.screen;
 
+import iliiasik.artistry.client.tools.DrawingTool;
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.renderer.CanvasRenderer;
@@ -50,6 +51,9 @@ public class PaintScreen extends Screen {
     private long lastFlushTime = 0;
     private boolean pendingClose = false;
 
+    private int hoverMouseX = -1;
+    private int hoverMouseY = -1;
+
     public PaintScreen(PosterBlockEntity entity) {
         super(Text.empty());
         this.targetEntity = entity;
@@ -73,7 +77,8 @@ public class PaintScreen extends Screen {
             NbtCompound nbt = comp.copyNbt();
             if (nbt.contains("canvas")) {
                 canvasData.fromNbt(nbt.getCompound("canvas"));
-            }        }
+            }
+        }
         if (chosenSize > 0) {
             canvasData.canvasSize = chosenSize;
         }
@@ -126,10 +131,18 @@ public class PaintScreen extends Screen {
                     @Override
                     public void onBlockSelected(int blockIndex) {
                         pixelPainter.setBlock(blockIndex);
+                        if (pixelPainter.getTool() == DrawingTool.ERASER) {
+                            pixelPainter.setTool(DrawingTool.BRUSH);
+                            toolSwitchWidget.setActiveTool(DrawingTool.BRUSH);
+                        }
                     }
                     @Override
                     public void onColorSelected(int argbColor) {
                         pixelPainter.setColor(argbColor);
+                        if (pixelPainter.getTool() == DrawingTool.ERASER) {
+                            pixelPainter.setTool(DrawingTool.BRUSH);
+                            toolSwitchWidget.setActiveTool(DrawingTool.BRUSH);
+                        }
                     }
                 }
         );
@@ -194,6 +207,24 @@ public class PaintScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && isInsideDrawingArea(mouseX, mouseY)) {
             double scale = (double) dims.drawingAreaSize / canvasData.canvasSize;
+            if (pixelPainter.getTool() == DrawingTool.PIPETTE) {
+                int[] picked = pixelPainter.pickPixel(canvasData, (int) mouseX, (int) mouseY,
+                        dims.drawingAreaX, dims.drawingAreaY, scale);
+                if (picked != null) {
+                    int blockIndex = picked[0];
+                    int color = picked[1];
+                    if (color != 0) {
+                        colorPaletteWidget.selectColor(color);
+                        pixelPainter.setColor(color);
+                    } else if (blockIndex > 0) {
+                        colorPaletteWidget.selectBlock(blockIndex);
+                        pixelPainter.setBlock(blockIndex);
+                    }
+                    pixelPainter.setTool(DrawingTool.BRUSH);
+                    toolSwitchWidget.setActiveTool(DrawingTool.BRUSH);
+                }
+                return true;
+            }
             if (pixelPainter.beginStroke(canvasData, (int) mouseX, (int) mouseY,
                     dims.drawingAreaX, dims.drawingAreaY, scale)) {
                 isDrawing = true;
@@ -222,6 +253,36 @@ public class PaintScreen extends Screen {
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        hoverMouseX = (int) mouseX;
+        hoverMouseY = (int) mouseY;
+        super.mouseMoved(mouseX, mouseY);
+    }
+
+    private void renderHoverHighlight(DrawContext context) {
+        if (!canvasData.isSizeChosen()) return;
+        if (!isInsideDrawingArea(hoverMouseX, hoverMouseY)) return;
+        if (pixelPainter.getTool() == DrawingTool.PIPETTE) return;
+
+        int canvasSize = canvasData.canvasSize;
+        double scale = (double) dims.drawingAreaSize / canvasSize;
+
+        int[] bounds = pixelPainter.getBrushGridBounds(
+                hoverMouseX, hoverMouseY,
+                dims.drawingAreaX, dims.drawingAreaY,
+                scale, canvasSize
+        );
+
+        int px0 = dims.drawingAreaX + (int)(bounds[0] * scale);
+        int py0 = dims.drawingAreaY + (int)(bounds[1] * scale);
+        int px1 = dims.drawingAreaX + (int)((bounds[2] + 1) * scale);
+        int py1 = dims.drawingAreaY + (int)((bounds[3] + 1) * scale);
+
+        context.fill(px0, py0, px1, py1, 0x40000000);
+        context.fill(px0, py0, px1, py1, 0x18FFFFFF);
     }
 
     @Override
@@ -263,6 +324,8 @@ public class PaintScreen extends Screen {
         canvasRenderer.update(canvasData);
         canvasRenderer.render(context, dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize);
 
+        renderHoverHighlight(context);
+
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -275,4 +338,3 @@ public class PaintScreen extends Screen {
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
     }
 }
-
