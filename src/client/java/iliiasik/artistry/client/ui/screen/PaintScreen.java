@@ -5,6 +5,7 @@ import iliiasik.artistry.client.tools.DrawingTool;
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.renderer.CanvasRenderer;
+import iliiasik.artistry.client.ui.widget.HexInputWidget;
 import iliiasik.artistry.client.ui.widget.PaletteSwitcherWidget;
 import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.client.ui.widget.ColorPaletteWidget;
@@ -18,7 +19,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.ItemStack;
@@ -34,6 +34,12 @@ public class PaintScreen extends Screen {
     private static final long BATCH_INTERVAL_MS =
             iliiasik.artistry.config.ArtistryConfig.get().network.batchIntervalMs;
 
+    private static final int HEX_AREA_VIRTUAL_Y = 2 + 28 + 2;
+    private static final int HEX_AREA_VIRTUAL_H = 7;
+    private static final int HEX_AREA_VIRTUAL_X = 2;
+    private static final int HEX_AREA_VIRTUAL_W = 28;
+    private static final int PALETTE_TEX_W      = 32;
+
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
     private final CanvasData lastSentSnapshot = new CanvasData();
@@ -48,7 +54,7 @@ public class PaintScreen extends Screen {
     private SizeSwitcherWidget sizeSwitcherWidget;
     private ColorPaletteWidget colorPaletteWidget;
     private PaletteSwitcherWidget paletteSwitcherWidget;
-    private TextFieldWidget hexInput;
+    private HexInputWidget hexInput;
     private boolean isDrawing = false;
     private boolean updatingHexFromPalette = false;
 
@@ -153,17 +159,10 @@ public class PaintScreen extends Screen {
         pixelPainter.setBlock(colorPaletteWidget.getSelectedIndex());
         addDrawableChild(colorPaletteWidget);
 
-        hexInput = new TextFieldWidget(textRenderer, 0, 0, 1, 1, Text.empty());
-        hexInput.setMaxLength(7);
-        hexInput.setText("#FF0000");
-        hexInput.setEditableColor(0xFDF7E8);
-        hexInput.setDrawsBackground(false);
+        hexInput = new HexInputWidget(0, 0, 1, 1);
+        hexInput.setText("#FFFFFF");
         hexInput.setChangedListener(text -> {
             if (updatingHexFromPalette) return;
-            if (!text.startsWith("#")) {
-                hexInput.setText("#");
-                return;
-            }
             if (text.length() == 7) {
                 colorPaletteWidget.setColorFromHex(text);
             }
@@ -246,13 +245,17 @@ public class PaintScreen extends Screen {
                     int color = picked[1];
                     if (color != 0) {
                         colorPaletteWidget.selectColor(color);
+                        paletteSwitcherWidget.setMode(PaletteSwitcherWidget.PaletteMode.COLORS);
                         pixelPainter.setColor(color);
                         updatingHexFromPalette = true;
                         hexInput.setText(ColorPalette.argbToHex(color));
                         updatingHexFromPalette = false;
+                        hexInput.setVisible(true);
                     } else if (blockIndex > 0) {
                         colorPaletteWidget.selectBlock(blockIndex);
+                        paletteSwitcherWidget.setMode(PaletteSwitcherWidget.PaletteMode.BLOCKS);
                         pixelPainter.setBlock(blockIndex);
+                        hexInput.setVisible(false);
                     }
                     pixelPainter.setTool(DrawingTool.BRUSH);
                     toolSwitchWidget.setActiveTool(DrawingTool.BRUSH);
@@ -275,6 +278,11 @@ public class PaintScreen extends Screen {
             pixelPainter.continueStroke(canvasData, (int) mouseX, (int) mouseY,
                     dims.drawingAreaX, dims.drawingAreaY, scale);
             return true;
+        }
+        if (button == 0 && colorPaletteWidget != null) {
+            if (colorPaletteWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+                return true;
+            }
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
@@ -319,6 +327,20 @@ public class PaintScreen extends Screen {
         context.fill(px0, py0, px1, py1, 0x18FFFFFF);
     }
 
+    private void updateHexInputBounds() {
+        if (hexInput == null) return;
+        float paletteScale = (float) dims.paletteW / PALETTE_TEX_W;
+        int areaX = dims.paletteX + Math.round(HEX_AREA_VIRTUAL_X * paletteScale);
+        int areaY = dims.paletteY + Math.round(HEX_AREA_VIRTUAL_Y * paletteScale);
+        int areaW = Math.round(HEX_AREA_VIRTUAL_W * paletteScale);
+        int areaH = Math.round(HEX_AREA_VIRTUAL_H * paletteScale);
+        hexInput.setX(areaX);
+        hexInput.setY(areaY);
+        hexInput.setWidth(areaW);
+        hexInput.setHeight(areaH);
+        hexInput.setPaletteScale(paletteScale);
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (pendingClose) {
@@ -345,17 +367,8 @@ public class PaintScreen extends Screen {
             paletteSwitcherWidget.setPosition(dims.paletteSwitcherX, dims.paletteSwitcherY);
             paletteSwitcherWidget.setDimensions(dims.paletteSwitcherW, dims.paletteSwitcherH);
         }
-        if (hexInput != null) {
-            float scale = (float) dims.paletteW / 32f;
-            int hexX = dims.paletteX + Math.round(2 * scale);
-            int hexY = dims.paletteY + Math.round((2 + 28 + 2) * scale);
-            int hexW = Math.round(28 * scale);
-            int hexH = Math.round(9 * scale);
-            hexInput.setX(hexX);
-            hexInput.setY(hexY);
-            hexInput.setWidth(hexW);
-            hexInput.setHeight(hexH);
-        }
+
+        updateHexInputBounds();
 
         context.drawTexture(
                 ModTextures.FRAME,

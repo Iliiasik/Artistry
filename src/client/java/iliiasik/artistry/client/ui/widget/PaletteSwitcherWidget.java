@@ -22,6 +22,14 @@ public class PaletteSwitcherWidget extends ClickableWidget {
         this.onModeChanged = onModeChanged;
     }
 
+    public void setMode(PaletteMode mode) {
+        this.mode = mode;
+    }
+
+    public PaletteMode getMode() {
+        return mode;
+    }
+
     @Override
     protected void renderWidget(DrawContext ctx, int mouseX, int mouseY, float delta) {
         hoverFade.update(isHovered());

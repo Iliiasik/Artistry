@@ -29,10 +29,11 @@ public class ColorPaletteWidget extends ClickableWidget {
 
     private final SelectionListener listener;
     private int selectedBlockIndex = 1;
-    private int selectedColor = 0xFFFF0000;
+    private int selectedColor = 0xFFFFFFFF;
     private float selectedHue = 0f;
-    private float selectedSat = 1f;
+    private float selectedSat = 0f;
     private float selectedVal = 1f;
+    private boolean lastSelectionWasColor = false;
     private PaletteSwitcherWidget.PaletteMode mode = PaletteSwitcherWidget.PaletteMode.BLOCKS;
     private Consumer<Integer> onColorChanged;
 
@@ -75,6 +76,19 @@ public class ColorPaletteWidget extends ClickableWidget {
         return new int[]{ (int) vf[0], (int) vf[1] };
     }
 
+    private void drawPreview(DrawContext ctx) {
+        if (lastSelectionWasColor) {
+            ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, selectedColor);
+        } else {
+            Sprite previewSprite = BlockPalette.getSprite(selectedBlockIndex);
+            if (previewSprite != null) {
+                ctx.drawSprite(BORDER, BORDER, 0, PREVIEW, PREVIEW, previewSprite);
+            } else {
+                ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, 0xFFFDF7E8);
+            }
+        }
+    }
+
     private void drawSpectrumRow(DrawContext ctx, int y) {
         for (int px = 0; px < PREVIEW; px++) {
             float hue = (float) px / PREVIEW;
@@ -109,12 +123,7 @@ public class ColorPaletteWidget extends ClickableWidget {
             ctx.drawTexture(ModTextures.PALETTE_BLOCKS,
                     0, 0, TEX_W, TEX_H, 0f, 0f, TEX_W, TEX_H, TEX_W, TEX_H);
 
-            Sprite previewSprite = BlockPalette.getSprite(selectedBlockIndex);
-            if (previewSprite != null) {
-                ctx.drawSprite(BORDER, BORDER, 0, PREVIEW, PREVIEW, previewSprite);
-            } else {
-                ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, 0xFFFDF7E8);
-            }
+            drawPreview(ctx);
 
             int startY = cellsStartY();
             int maxY = TEX_H - BORDER;
@@ -130,7 +139,7 @@ public class ColorPaletteWidget extends ClickableWidget {
                 } else {
                     ctx.fill(cx, cy, cx + CELL, cy + CELL, 0xFF888888);
                 }
-                if (i + 1 == selectedBlockIndex) {
+                if (!lastSelectionWasColor && i + 1 == selectedBlockIndex) {
                     ctx.drawBorder(cx, cy, CELL, CELL, 0xFFFFFFFF);
                 }
                 if (vMouse[0] >= cx && vMouse[0] < cx + CELL && vMouse[1] >= cy && vMouse[1] < cy + CELL) {
@@ -141,7 +150,7 @@ public class ColorPaletteWidget extends ClickableWidget {
             ctx.drawTexture(ModTextures.PALETTE_HEX,
                     0, 0, TEX_W, TEX_H, 0f, 0f, TEX_W, TEX_H, TEX_W, TEX_H);
 
-            ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, selectedColor);
+            drawPreview(ctx);
 
             drawSpectrumRow(ctx, spectrumY());
 
@@ -178,6 +187,7 @@ public class ColorPaletteWidget extends ClickableWidget {
                 if (cy + CELL > maxY) break;
                 if (vClick[0] >= cx && vClick[0] < cx + CELL && vClick[1] >= cy && vClick[1] < cy + CELL) {
                     selectedBlockIndex = i + 1;
+                    lastSelectionWasColor = false;
                     listener.onBlockSelected(selectedBlockIndex);
                     return true;
                 }
@@ -218,6 +228,7 @@ public class ColorPaletteWidget extends ClickableWidget {
 
     private void applyHsv() {
         selectedColor = ColorPalette.hsvToArgb(selectedHue, selectedSat, selectedVal);
+        lastSelectionWasColor = true;
         listener.onColorSelected(selectedColor);
         if (onColorChanged != null) onColorChanged.accept(selectedColor);
     }
@@ -230,6 +241,7 @@ public class ColorPaletteWidget extends ClickableWidget {
             selectedHue = hsv[0];
             selectedSat = hsv[1];
             selectedVal = hsv[2];
+            lastSelectionWasColor = true;
             listener.onColorSelected(selectedColor);
         } catch (NumberFormatException ignored) {}
     }
@@ -240,11 +252,13 @@ public class ColorPaletteWidget extends ClickableWidget {
         selectedHue = hsv[0];
         selectedSat = hsv[1];
         selectedVal = hsv[2];
+        lastSelectionWasColor = true;
         this.mode = PaletteSwitcherWidget.PaletteMode.COLORS;
     }
 
     public void selectBlock(int blockIndex) {
         this.selectedBlockIndex = blockIndex;
+        lastSelectionWasColor = false;
         this.mode = PaletteSwitcherWidget.PaletteMode.BLOCKS;
     }
 
