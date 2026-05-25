@@ -9,7 +9,8 @@ public final class ModTextures {
      **/
 
     public static final Identifier FRAME            = Identifier.of("artistry", "textures/ui/frame.png");
-    public static final Identifier PALETTE          = Identifier.of("artistry", "textures/ui/palette.png");
+    public static final Identifier PALETTE_BLOCKS = Identifier.of("artistry", "textures/ui/palette_blocks.png");
+    public static final Identifier PALETTE_HEX = Identifier.of("artistry", "textures/ui/palette_hex.png");
     public static final Identifier BRUSH            = Identifier.of("artistry", "textures/ui/brush.png");
     public static final Identifier BRUSH_ACTIVE     = Identifier.of("artistry", "textures/ui/brush_active.png");
     public static final Identifier ERASER           = Identifier.of("artistry", "textures/ui/eraser.png");

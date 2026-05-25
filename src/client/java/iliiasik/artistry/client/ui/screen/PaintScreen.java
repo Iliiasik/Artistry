@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.ui.screen;
 
+import iliiasik.artistry.client.palette.ColorPalette;
 import iliiasik.artistry.client.tools.DrawingTool;
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
@@ -17,6 +18,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.ItemStack;
@@ -46,7 +48,9 @@ public class PaintScreen extends Screen {
     private SizeSwitcherWidget sizeSwitcherWidget;
     private ColorPaletteWidget colorPaletteWidget;
     private PaletteSwitcherWidget paletteSwitcherWidget;
+    private TextFieldWidget hexInput;
     private boolean isDrawing = false;
+    private boolean updatingHexFromPalette = false;
 
     private long lastFlushTime = 0;
     private boolean pendingClose = false;
@@ -149,10 +153,37 @@ public class PaintScreen extends Screen {
         pixelPainter.setBlock(colorPaletteWidget.getSelectedIndex());
         addDrawableChild(colorPaletteWidget);
 
+        hexInput = new TextFieldWidget(textRenderer, 0, 0, 1, 1, Text.empty());
+        hexInput.setMaxLength(7);
+        hexInput.setText("#FF0000");
+        hexInput.setEditableColor(0xFDF7E8);
+        hexInput.setDrawsBackground(false);
+        hexInput.setChangedListener(text -> {
+            if (updatingHexFromPalette) return;
+            if (!text.startsWith("#")) {
+                hexInput.setText("#");
+                return;
+            }
+            if (text.length() == 7) {
+                colorPaletteWidget.setColorFromHex(text);
+            }
+        });
+        hexInput.setVisible(false);
+        addDrawableChild(hexInput);
+
+        colorPaletteWidget.setOnColorChanged(color -> {
+            updatingHexFromPalette = true;
+            hexInput.setText(ColorPalette.argbToHex(color));
+            updatingHexFromPalette = false;
+        });
+
         paletteSwitcherWidget = new PaletteSwitcherWidget(
                 dims.paletteSwitcherX, dims.paletteSwitcherY,
                 dims.paletteSwitcherW, dims.paletteSwitcherH,
-                mode -> colorPaletteWidget.setMode(mode)
+                mode -> {
+                    colorPaletteWidget.setMode(mode);
+                    hexInput.setVisible(mode == PaletteSwitcherWidget.PaletteMode.COLORS);
+                }
         );
         addDrawableChild(paletteSwitcherWidget);
     }
@@ -216,6 +247,9 @@ public class PaintScreen extends Screen {
                     if (color != 0) {
                         colorPaletteWidget.selectColor(color);
                         pixelPainter.setColor(color);
+                        updatingHexFromPalette = true;
+                        hexInput.setText(ColorPalette.argbToHex(color));
+                        updatingHexFromPalette = false;
                     } else if (blockIndex > 0) {
                         colorPaletteWidget.selectBlock(blockIndex);
                         pixelPainter.setBlock(blockIndex);
@@ -310,6 +344,17 @@ public class PaintScreen extends Screen {
         if (paletteSwitcherWidget != null) {
             paletteSwitcherWidget.setPosition(dims.paletteSwitcherX, dims.paletteSwitcherY);
             paletteSwitcherWidget.setDimensions(dims.paletteSwitcherW, dims.paletteSwitcherH);
+        }
+        if (hexInput != null) {
+            float scale = (float) dims.paletteW / 32f;
+            int hexX = dims.paletteX + Math.round(2 * scale);
+            int hexY = dims.paletteY + Math.round((2 + 28 + 2) * scale);
+            int hexW = Math.round(28 * scale);
+            int hexH = Math.round(9 * scale);
+            hexInput.setX(hexX);
+            hexInput.setY(hexY);
+            hexInput.setWidth(hexW);
+            hexInput.setHeight(hexH);
         }
 
         context.drawTexture(
