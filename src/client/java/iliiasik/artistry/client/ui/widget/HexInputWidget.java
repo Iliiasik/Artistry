@@ -22,14 +22,9 @@ public class HexInputWidget extends ClickableWidget {
     private boolean visible = true;
     private long focusTime = 0;
     private Consumer<String> changedListener;
-    private float paletteScale = 1f;
 
     public HexInputWidget(int x, int y, int w, int h) {
         super(x, y, w, h, Text.empty());
-    }
-
-    public void setPaletteScale(float scale) {
-        this.paletteScale = scale;
     }
 
     public void setChangedListener(Consumer<String> listener) {
@@ -43,10 +38,6 @@ public class HexInputWidget extends ClickableWidget {
 
     public boolean isVisible() {
         return visible;
-    }
-
-    public String getText() {
-        return text;
     }
 
     public void setText(String newText) {
@@ -81,6 +72,13 @@ public class HexInputWidget extends ClickableWidget {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (!visible || !focused || button != 0) return false;
+        cursorPos = screenXToCharIndex((int) mouseX);
+        return true;
     }
 
     @Override
@@ -188,7 +186,6 @@ public class HexInputWidget extends ClickableWidget {
         if (cursorPos >= text.length()) return;
         if (ctrl) {
             text = text.substring(0, cursorPos);
-            selectionStart = cursorPos;
         } else {
             text = text.substring(0, cursorPos) + text.substring(cursorPos + 1);
         }
@@ -223,7 +220,7 @@ public class HexInputWidget extends ClickableWidget {
     }
 
     private float textScale() {
-        return paletteScale * (5f / 9f);
+        return (float) getHeight() / 14f;
     }
 
     private int screenXToCharIndex(int screenX) {
@@ -250,10 +247,8 @@ public class HexInputWidget extends ClickableWidget {
         var renderer = MinecraftClient.getInstance().textRenderer;
         float ts = textScale();
 
-
-        int cursorH = renderer.fontHeight + 2;
         int centerY = getY() + getHeight() / 2;
-        int textY = centerY - (int)(cursorH * ts / 2) + (int)(ts);
+        int textY = centerY - (int)(renderer.fontHeight * ts / 2);
 
         int virtualW = (int)(getWidth() / ts);
         int textOffsetX = (virtualW - renderer.getWidth(text)) / 2;
@@ -267,7 +262,7 @@ public class HexInputWidget extends ClickableWidget {
             int hi = selMax();
             int selX0 = textOffsetX + renderer.getWidth(text.substring(0, lo));
             int selX1 = textOffsetX + renderer.getWidth(text.substring(0, hi));
-            ctx.fill(selX0, -1, selX1, renderer.fontHeight + 1, SEL_COLOR);
+            ctx.fill(selX0, 0, selX1, renderer.fontHeight, SEL_COLOR);
         }
 
         ctx.drawText(renderer, text, textOffsetX, 0, TEXT_COLOR, true);
@@ -277,7 +272,7 @@ public class HexInputWidget extends ClickableWidget {
             boolean showCursor = (elapsed / CURSOR_BLINK_MS) % 2 == 0;
             if (showCursor) {
                 int curX = textOffsetX + renderer.getWidth(text.substring(0, cursorPos));
-                ctx.fill(curX, -1, curX + 1, renderer.fontHeight + 1, CURSOR_COLOR);
+                ctx.fill(curX, 0, curX + 1, renderer.fontHeight, CURSOR_COLOR);
             }
         }
 

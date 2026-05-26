@@ -33,7 +33,7 @@ public final class ColorPalette {
         float max = Math.max(r, Math.max(g, b));
         float min = Math.min(r, Math.min(g, b));
         float delta = max - min;
-        float h = 0f, s = 0f, v = max;
+        float h = 0f, s = 0f;
         if (delta > 0.0001f) {
             s = delta / max;
             if (max == r)      h = (g - b) / delta / 6f;
@@ -41,7 +41,7 @@ public final class ColorPalette {
             else               h = (4f + (r - g) / delta) / 6f;
             if (h < 0) h += 1f;
         }
-        return new float[]{h, s, v};
+        return new float[]{h, s, max};
     }
 
     public static float[] argbToHsv(int argb) {

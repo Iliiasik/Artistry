@@ -205,6 +205,10 @@ public class ColorPaletteWidget extends ClickableWidget {
         return true;
     }
 
+    private float clamp01(float v) {
+        return Math.max(0f, Math.min(1f, v));
+    }
+
     private void pickFromClick(double mouseX, double mouseY) {
         float[] vf = toVirtualF(mouseX, mouseY);
         float vx = vf[0];
@@ -212,7 +216,7 @@ public class ColorPaletteWidget extends ClickableWidget {
 
         int specY = spectrumY();
         if (vx >= BORDER && vx < BORDER + PREVIEW && vy >= specY && vy < specY + SPECTRUM_H) {
-            selectedHue = Math.max(0f, Math.min(1f, (vx - BORDER) / PREVIEW));
+            selectedHue = clamp01((vx - BORDER) / PREVIEW);
             applyHsv();
             return;
         }
@@ -220,8 +224,8 @@ public class ColorPaletteWidget extends ClickableWidget {
         int hsvY = hsvY();
         int hsvH = hsvH();
         if (vx >= BORDER && vx < BORDER + PREVIEW && vy >= hsvY && vy < hsvY + hsvH) {
-            selectedSat = Math.max(0f, Math.min(1f, (vx - BORDER) / PREVIEW));
-            selectedVal = Math.max(0f, Math.min(1f, 1f - (vy - hsvY) / hsvH));
+            selectedSat = clamp01((vx - BORDER) / PREVIEW);
+            selectedVal = clamp01(1f - (vy - hsvY) / hsvH);
             applyHsv();
         }
     }

@@ -34,11 +34,6 @@ public class PaintScreen extends Screen {
     private static final long BATCH_INTERVAL_MS =
             iliiasik.artistry.config.ArtistryConfig.get().network.batchIntervalMs;
 
-    private static final int HEX_AREA_VIRTUAL_Y = 2 + 28 + 2;
-    private static final int HEX_AREA_VIRTUAL_H = 7;
-    private static final int HEX_AREA_VIRTUAL_X = 2;
-    private static final int HEX_AREA_VIRTUAL_W = 28;
-    private static final int PALETTE_TEX_W      = 32;
 
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
@@ -141,7 +136,7 @@ public class PaintScreen extends Screen {
                     @Override
                     public void onBlockSelected(int blockIndex) {
                         pixelPainter.setBlock(blockIndex);
-                        if (pixelPainter.getTool() == DrawingTool.ERASER) {
+                        if (pixelPainter.getTool() == DrawingTool.ERASER || pixelPainter.getTool() == DrawingTool.PIPETTE) {
                             pixelPainter.setTool(DrawingTool.BRUSH);
                             toolSwitchWidget.setActiveTool(DrawingTool.BRUSH);
                         }
@@ -149,7 +144,7 @@ public class PaintScreen extends Screen {
                     @Override
                     public void onColorSelected(int argbColor) {
                         pixelPainter.setColor(argbColor);
-                        if (pixelPainter.getTool() == DrawingTool.ERASER) {
+                        if (pixelPainter.getTool() == DrawingTool.ERASER || pixelPainter.getTool() == DrawingTool.PIPETTE) {
                             pixelPainter.setTool(DrawingTool.BRUSH);
                             toolSwitchWidget.setActiveTool(DrawingTool.BRUSH);
                         }
@@ -160,7 +155,7 @@ public class PaintScreen extends Screen {
         addDrawableChild(colorPaletteWidget);
 
         hexInput = new HexInputWidget(0, 0, 1, 1);
-        hexInput.setText("#FFFFFF");
+        hexInput.setText("#FF0000");
         hexInput.setChangedListener(text -> {
             if (updatingHexFromPalette) return;
             if (text.length() == 7) {
@@ -279,6 +274,11 @@ public class PaintScreen extends Screen {
                     dims.drawingAreaX, dims.drawingAreaY, scale);
             return true;
         }
+        if (button == 0 && hexInput != null && hexInput.isVisible() && hexInput.isFocused()) {
+            if (hexInput.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+                return true;
+            }
+        }
         if (button == 0 && colorPaletteWidget != null) {
             if (colorPaletteWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
                 return true;
@@ -329,16 +329,10 @@ public class PaintScreen extends Screen {
 
     private void updateHexInputBounds() {
         if (hexInput == null) return;
-        float paletteScale = (float) dims.paletteW / PALETTE_TEX_W;
-        int areaX = dims.paletteX + Math.round(HEX_AREA_VIRTUAL_X * paletteScale);
-        int areaY = dims.paletteY + Math.round(HEX_AREA_VIRTUAL_Y * paletteScale);
-        int areaW = Math.round(HEX_AREA_VIRTUAL_W * paletteScale);
-        int areaH = Math.round(HEX_AREA_VIRTUAL_H * paletteScale);
-        hexInput.setX(areaX);
-        hexInput.setY(areaY);
-        hexInput.setWidth(areaW);
-        hexInput.setHeight(areaH);
-        hexInput.setPaletteScale(paletteScale);
+        hexInput.setX(dims.hexInputX);
+        hexInput.setY(dims.hexInputY);
+        hexInput.setWidth(dims.hexInputW);
+        hexInput.setHeight(dims.hexInputH);
     }
 
     @Override

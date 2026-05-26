@@ -36,6 +36,11 @@ public class PaintDimensions {
     public int paletteSwitcherW;
     public int paletteSwitcherH;
 
+    public int hexInputX;
+    public int hexInputY;
+    public int hexInputW;
+    public int hexInputH;
+
     public void calculate(int screenWidth, int screenHeight) {
         float scaleX = screenWidth / BASE_W;
         float scaleY = screenHeight / BASE_H;
@@ -72,6 +77,11 @@ public class PaintDimensions {
         paletteSwitcherH = Math.round(32 * perfectScale);
         paletteSwitcherX = paletteX;
         paletteSwitcherY = paletteY + paletteH + s(PANEL_GAP);
+
+        hexInputX = paletteX + Math.round(2 * perfectScale);
+        hexInputY = paletteY + Math.round((2 + 28 + 2) * perfectScale);
+        hexInputW = Math.round(28 * perfectScale);
+        hexInputH = Math.round(7 * perfectScale);
     }
 
     public int s(int virtualValue) {
