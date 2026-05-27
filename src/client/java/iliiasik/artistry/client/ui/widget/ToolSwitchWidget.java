@@ -15,14 +15,20 @@ public class ToolSwitchWidget extends ClickableWidget {
 
     private DrawingTool activeTool = DrawingTool.BRUSH;
     private final Consumer<DrawingTool> onToolChanged;
+    private boolean visible = true;
 
     private final HoverFadeHelper hoverBrush   = new HoverFadeHelper();
     private final HoverFadeHelper hoverEraser  = new HoverFadeHelper();
     private final HoverFadeHelper hoverPipette = new HoverFadeHelper();
+    private final HoverFadeHelper hoverImage   = new HoverFadeHelper();
 
     public ToolSwitchWidget(int x, int y, int w, int h, Consumer<DrawingTool> onToolChanged) {
         super(x, y, w, h, Text.empty());
         this.onToolChanged = onToolChanged;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
     private int btnSize() {
@@ -36,6 +42,7 @@ public class ToolSwitchWidget extends ClickableWidget {
     private int brushY()   { return getY(); }
     private int eraserY()  { return getY() + btnSize() + gap(); }
     private int pipetteY() { return getY() + btnSize() * 2 + gap() * 2; }
+    private int imageY()   { return getY() + btnSize() * 3 + gap() * 3; }
 
     private boolean overBrush(double mx, double my) {
         return mx >= getX() && mx < getX() + btnSize() && my >= brushY() && my < brushY() + btnSize();
@@ -46,12 +53,18 @@ public class ToolSwitchWidget extends ClickableWidget {
     private boolean overPipette(double mx, double my) {
         return mx >= getX() && mx < getX() + btnSize() && my >= pipetteY() && my < pipetteY() + btnSize();
     }
+    private boolean overImage(double mx, double my) {
+        return mx >= getX() && mx < getX() + btnSize() && my >= imageY() && my < imageY() + btnSize();
+    }
 
     @Override
     protected void renderWidget(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        if (!visible) return;
+
         hoverBrush.update(overBrush(mouseX, mouseY));
         hoverEraser.update(overEraser(mouseX, mouseY));
         hoverPipette.update(overPipette(mouseX, mouseY));
+        hoverImage.update(overImage(mouseX, mouseY));
 
         drawTool(ctx, brushY(),   hoverBrush,   activeTool == DrawingTool.BRUSH,
                 ModTextures.BRUSH,   ModTextures.BRUSH_ACTIVE);
@@ -59,6 +72,8 @@ public class ToolSwitchWidget extends ClickableWidget {
                 ModTextures.ERASER,  ModTextures.ERASER_ACTIVE);
         drawTool(ctx, pipetteY(), hoverPipette, activeTool == DrawingTool.PIPETTE,
                 ModTextures.PIPETTE, ModTextures.PIPETTE_ACTIVE);
+        drawTool(ctx, imageY(),   hoverImage,   false,
+                ModTextures.IMAGE,   ModTextures.IMAGE);
     }
 
     private void drawTool(DrawContext ctx, int y, HoverFadeHelper fade, boolean active,
@@ -71,7 +86,7 @@ public class ToolSwitchWidget extends ClickableWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return false;
+        if (button != 0 || !visible) return false;
         if (overBrush(mouseX, mouseY)) {
             activeTool = DrawingTool.BRUSH;
             onToolChanged.accept(activeTool);
@@ -85,6 +100,10 @@ public class ToolSwitchWidget extends ClickableWidget {
         if (overPipette(mouseX, mouseY)) {
             activeTool = DrawingTool.PIPETTE;
             onToolChanged.accept(activeTool);
+            return true;
+        }
+        if (overImage(mouseX, mouseY)) {
+            onToolChanged.accept(DrawingTool.IMAGE);
             return true;
         }
         return false;

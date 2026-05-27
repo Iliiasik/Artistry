@@ -56,7 +56,7 @@ public class PaintDimensions {
         drawingAreaY = canvasY + border;
 
         toolSwitchW = s(64);
-        toolSwitchH = s(64) * 3 + Math.round(s(64) * (6.0f / 64.0f)) * 2;
+        toolSwitchH = s(64) * 4 + Math.round(s(64) * (6.0f / 64.0f)) * 3;
         toolSwitchX = canvasX + canvasSize + s(12);
         toolSwitchY = canvasY;
 

@@ -20,10 +20,15 @@ public class SizeSwitcherWidget extends ClickableWidget {
     private int sizeIndex = 0;
     private final IntConsumer onSizeChanged;
     private final HoverFadeHelper hoverFade = new HoverFadeHelper();
+    private boolean visible = true;
 
     public SizeSwitcherWidget(int x, int y, int w, int h, IntConsumer onSizeChanged) {
         super(x, y, w, h, Text.empty());
         this.onSizeChanged = onSizeChanged;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
     public int getCurrentSize() {
@@ -32,6 +37,7 @@ public class SizeSwitcherWidget extends ClickableWidget {
 
     @Override
     protected void renderWidget(DrawContext ctx, int mouseX, int mouseY, float delta) {
+        if (!visible) return;
         hoverFade.update(isHovered());
         hoverFade.applyShaderColor();
         ctx.drawTexture(
@@ -53,6 +59,7 @@ public class SizeSwitcherWidget extends ClickableWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!visible) return false;
         if (button == 0 && isMouseOver(mouseX, mouseY)) {
             sizeIndex = (sizeIndex + 1) % SIZES.length;
             onSizeChanged.accept(SIZES[sizeIndex]);

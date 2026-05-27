@@ -1,12 +1,14 @@
 package iliiasik.artistry.block.entity;
 
 import iliiasik.artistry.data.CanvasData;
+import iliiasik.artistry.data.CanvasImageLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
@@ -16,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class PosterBlockEntity extends BlockEntity {
     public final CanvasData canvasData = new CanvasData();
+    public final CanvasImageLayer imageLayer = new CanvasImageLayer();
     private boolean dropped = false;
 
     public PosterBlockEntity(BlockPos pos, BlockState state) {
@@ -26,6 +29,7 @@ public class PosterBlockEntity extends BlockEntity {
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
         nbt.put("canvas", canvasData.toNbt());
+        nbt.put("images", imageLayer.toNbt());
     }
 
     @Override
@@ -33,6 +37,9 @@ public class PosterBlockEntity extends BlockEntity {
         super.readNbt(nbt, registries);
         if (nbt.contains("canvas")) {
             canvasData.fromNbt(nbt.getCompound("canvas"));
+        }
+        if (nbt.contains("images")) {
+            imageLayer.fromNbt(nbt.getList("images", NbtList.COMPOUND_TYPE));
         }
     }
 
