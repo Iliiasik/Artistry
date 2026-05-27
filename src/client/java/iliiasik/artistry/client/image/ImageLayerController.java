@@ -43,6 +43,7 @@ public class ImageLayerController {
 
         for (int i = images.size() - 1; i >= 0; i--) {
             CanvasImage img = images.get(i);
+            if (img.isLocked() && !img.uuid.equals(selectedUuid)) continue;
             int sx = drawX + (int)(img.gridX * pixelSize);
             int sy = drawY + (int)(img.gridY * pixelSize);
             int sw = (int)(img.gridW * pixelSize);
@@ -99,22 +100,40 @@ public class ImageLayerController {
         }
 
         if (resizing != ResizeHandle.NONE) {
-            int newX, newY, newW, newH;
             int ancX = resizeAnchorGridX;
             int ancY = resizeAnchorGridY;
 
-            int lo = Math.min(gx, ancX);
-            int hi = Math.max(gx, ancX);
-            newX = Math.max(0, lo);
-            newW = Math.max(CanvasImage.MIN_GRID, Math.min(canvasSize - newX, hi - lo + 1));
+            int rawX = Math.min(gx, ancX);
+            int rawX2 = Math.max(gx, ancX);
+            int rawY = Math.min(gy, ancY);
+            int rawY2 = Math.max(gy, ancY);
 
-            int loY = Math.min(gy, ancY);
-            int hiY = Math.max(gy, ancY);
-            newY = Math.max(0, loY);
-            newH = Math.max(CanvasImage.MIN_GRID, Math.min(canvasSize - newY, hiY - loY + 1));
+            rawX  = Math.max(0, rawX);
+            rawX2 = Math.min(canvasSize - 1, rawX2);
+            rawY  = Math.max(0, rawY);
+            rawY2 = Math.min(canvasSize - 1, rawY2);
 
-            img.gridX = newX;
-            img.gridY = newY;
+            int newW = rawX2 - rawX + 1;
+            int newH = rawY2 - rawY + 1;
+
+            if (newW < CanvasImage.MIN_GRID) {
+                if (rawX < ancX) rawX = rawX2 - CanvasImage.MIN_GRID + 1;
+                newW = CanvasImage.MIN_GRID;
+            }
+            if (newH < CanvasImage.MIN_GRID) {
+                if (rawY < ancY) rawY = rawY2 - CanvasImage.MIN_GRID + 1;
+                newH = CanvasImage.MIN_GRID;
+            }
+
+            rawX = Math.max(0, rawX);
+            rawY = Math.max(0, rawY);
+            if (rawX + newW > canvasSize) newW = canvasSize - rawX;
+            if (rawY + newH > canvasSize) newH = canvasSize - rawY;
+            newW = Math.max(CanvasImage.MIN_GRID, newW);
+            newH = Math.max(CanvasImage.MIN_GRID, newH);
+
+            img.gridX = rawX;
+            img.gridY = rawY;
             img.gridW = newW;
             img.gridH = newH;
             onChanged.run();
@@ -133,6 +152,21 @@ public class ImageLayerController {
                              int drawX, int drawY, int drawSize, int canvasSize) {
         double pixelSize = (double) drawSize / canvasSize;
         for (CanvasImage img : layer.getImages()) {
+            int sx = drawX + (int)(img.gridX * pixelSize);
+            int sy = drawY + (int)(img.gridY * pixelSize);
+            int sw = (int)(img.gridW * pixelSize);
+            int sh = (int)(img.gridH * pixelSize);
+            if (mouseX >= sx && mouseX < sx + sw && mouseY >= sy && mouseY < sy + sh) return true;
+        }
+        return false;
+    }
+
+    public boolean isOnLockedByOtherImage(double mouseX, double mouseY,
+                                          int drawX, int drawY, int drawSize, int canvasSize,
+                                          UUID localPlayer) {
+        double pixelSize = (double) drawSize / canvasSize;
+        for (CanvasImage img : layer.getImages()) {
+            if (!img.isLockedByOther(localPlayer)) continue;
             int sx = drawX + (int)(img.gridX * pixelSize);
             int sy = drawY + (int)(img.gridY * pixelSize);
             int sw = (int)(img.gridW * pixelSize);

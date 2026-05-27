@@ -8,15 +8,12 @@ import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.client.ui.screen.CanvasSizeScreen;
 import iliiasik.artistry.client.ui.screen.PaintScreen;
 import iliiasik.artistry.data.CanvasData;
+import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.item.ModItems;
 import iliiasik.artistry.item.PosterItem;
-import iliiasik.artistry.network.DeliverImageS2CPacket;
-import iliiasik.artistry.network.ImageUploadedS2CPacket;
-import iliiasik.artistry.network.PosterRemovedS2CPacket;
-import iliiasik.artistry.network.RequestImageC2SPacket;
-import iliiasik.artistry.network.SyncCanvasS2CPacket;
-import iliiasik.artistry.network.SyncImageLayerS2CPacket;
+import iliiasik.artistry.network.*;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -46,6 +43,11 @@ public class ArtistryClient implements ClientModInitializer {
                         for (var c : payload.changes()) {
                             poster.canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
                             poster.canvasData.colors[c.y() & 0xFF][c.x() & 0xFF] = c.color();
+                        }
+                        for (var img : poster.imageLayer.getImages()) {
+                            if (!ClientImageCache.has(img.uuid)) {
+                                ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
+                            }
                         }
                         PosterBlockEntityRenderer.invalidate(pos);
                     }
@@ -78,15 +80,15 @@ public class ArtistryClient implements ClientModInitializer {
                         for (var img : payload.images()) {
                             poster.imageLayer.addImage(img);
                         }
+                        for (var img : payload.images()) {
+                            if (!ClientImageCache.has(img.uuid)) {
+                                ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
+                            }
+                        }
                     }
                     if (mc.currentScreen instanceof PaintScreen screen) {
                         if (pos.equals(screen.getTargetPos())) {
                             screen.applyImageLayerSync(payload.images());
-                            for (var img : payload.images()) {
-                                if (!ClientImageCache.has(img.uuid)) {
-                                    ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
-                                }
-                            }
                         }
                     }
                 }));
@@ -94,6 +96,7 @@ public class ArtistryClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(DeliverImageS2CPacket.ID,
                 (payload, ctx) -> ctx.client().execute(() -> {
                     ClientImageCache.store(payload.uuid(), payload.bytes());
+                    PosterBlockEntityRenderer.onImageReceived(payload.uuid());
                     MinecraftClient mc = ctx.client();
                     if (mc.currentScreen instanceof PaintScreen screen) {
                         screen.receiveImageBytes(payload.uuid(), payload.bytes());
@@ -102,23 +105,45 @@ public class ArtistryClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(ImageUploadedS2CPacket.ID,
                 (payload, ctx) -> ctx.client().execute(() -> {
-                    iliiasik.artistry.Artistry.LOGGER.info("ImageUploadedS2CPacket received, uuid: {}", payload.uuid());
                     MinecraftClient mc = ctx.client();
                     if (mc.currentScreen instanceof PaintScreen screen) {
-                        if (payload.pos().equals(screen.getTargetPos())) {
-                            iliiasik.artistry.Artistry.LOGGER.info("Calling onImageUploaded");
+                        if (payload.pos() == null || payload.pos().equals(screen.getTargetPos())) {
                             screen.onImageUploaded(
                                     payload.uuid(),
                                     payload.gridX(), payload.gridY(),
                                     payload.gridW(), payload.gridH()
                             );
-                        } else {
-                            iliiasik.artistry.Artistry.LOGGER.info("pos mismatch: {} vs {}", payload.pos(), screen.getTargetPos());
                         }
-                    } else {
-                        iliiasik.artistry.Artistry.LOGGER.info("currentScreen is not PaintScreen: {}", mc.currentScreen);
                     }
                 }));
+
+        ClientPlayNetworking.registerGlobalReceiver(SyncImageLockS2CPacket.ID,
+                (payload, ctx) -> ctx.client().execute(() -> {
+                    MinecraftClient mc = ctx.client();
+                    if (mc.world == null) return;
+                    BlockPos pos = payload.pos();
+                    if (mc.world.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
+                        CanvasImage img = poster.imageLayer.findByUuid(payload.imageUuid());
+                        if (img != null) img.lockedByPlayer = payload.playerUuid();
+                    }
+                    if (mc.currentScreen instanceof PaintScreen screen) {
+                        if (pos.equals(screen.getTargetPos())) {
+                            screen.applyImageLockSync(payload.imageUuid(), payload.playerUuid());
+                        }
+                    }
+                }));
+
+        ClientChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
+            chunk.getBlockEntities().values().forEach(be -> {
+                if (be instanceof PosterBlockEntity poster) {
+                    for (var img : poster.imageLayer.getImages()) {
+                        if (!ClientImageCache.has(img.uuid)) {
+                            ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
+                        }
+                    }
+                }
+            });
+        });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient()) return TypedActionResult.pass(player.getStackInHand(hand));
@@ -140,6 +165,11 @@ public class ArtistryClient implements ClientModInitializer {
                 var be = world.getBlockEntity(hitResult.getBlockPos());
                 if (be instanceof PosterBlockEntity poster) {
                     MinecraftClient mc = MinecraftClient.getInstance();
+                    for (var img : poster.imageLayer.getImages()) {
+                        if (!ClientImageCache.has(img.uuid)) {
+                            ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
+                        }
+                    }
                     if (!poster.canvasData.isSizeChosen()) {
                         mc.setScreen(new CanvasSizeScreen(poster));
                     } else {

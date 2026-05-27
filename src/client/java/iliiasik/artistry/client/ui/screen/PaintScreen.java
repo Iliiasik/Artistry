@@ -1,6 +1,5 @@
 package iliiasik.artistry.client.ui.screen;
 
-import iliiasik.artistry.Artistry;
 import iliiasik.artistry.client.image.CanvasImageRenderer;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.image.ImageLayerController;
@@ -33,6 +32,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,6 +57,8 @@ public class PaintScreen extends Screen {
     private final PosterBlockEntity targetEntity;
     private final ItemStack targetStack;
     private final Hand targetHand;
+
+    private UUID localPlayerUuid;
 
     private ToolSwitchWidget toolSwitchWidget;
     private SizeSwitcherWidget sizeSwitcherWidget;
@@ -104,11 +108,15 @@ public class PaintScreen extends Screen {
             if (nbt.contains("canvas")) {
                 canvasData.fromNbt(nbt.getCompound("canvas"));
             }
+            if (nbt.contains("images")) {
+                imageLayer.fromNbt(nbt.getList("images", net.minecraft.nbt.NbtList.COMPOUND_TYPE));
+            }
         }
         if (chosenSize > 0) {
             canvasData.canvasSize = chosenSize;
         }
         this.lastSentSnapshot.copyFrom(this.canvasData);
+        requestMissingImages();
     }
 
     private void requestMissingImages() {
@@ -142,6 +150,11 @@ public class PaintScreen extends Screen {
         requestMissingImages();
     }
 
+    public void applyImageLockSync(UUID imageUuid, UUID playerUuid) {
+        CanvasImage img = imageLayer.findByUuid(imageUuid);
+        if (img != null) img.lockedByPlayer = playerUuid;
+    }
+
     public void receiveImageBytes(UUID uuid, byte[] bytes) {
         ClientImageCache.store(uuid, bytes);
     }
@@ -162,9 +175,18 @@ public class PaintScreen extends Screen {
         if (toolSwitchWidget != null) toolSwitchWidget.setVisible(false);
         if (sizeSwitcherWidget != null) sizeSwitcherWidget.setVisible(false);
         if (imageToolWidget != null) imageToolWidget.setVisible(true);
+        if (targetEntity != null) {
+            ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), uuid, true));
+        }
     }
 
     private void exitImageMode() {
+        if (imageMode && targetEntity != null) {
+            UUID sel = imageController.getSelectedUuid();
+            if (sel != null) {
+                ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), sel, false));
+            }
+        }
         imageMode = false;
         imageController.clearSelection();
         if (toolSwitchWidget != null) toolSwitchWidget.setVisible(true);
@@ -176,6 +198,9 @@ public class PaintScreen extends Screen {
     protected void init() {
         super.init();
         dims.calculate(width, height);
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.player != null) localPlayerUuid = mc.player.getUuid();
 
         toolSwitchWidget = new ToolSwitchWidget(
                 dims.toolSwitchX, dims.toolSwitchY,
@@ -224,7 +249,7 @@ public class PaintScreen extends Screen {
         addDrawableChild(colorPaletteWidget);
 
         hexInput = new HexInputWidget(0, 0, 1, 1);
-        hexInput.setText("#FFFFFF");
+        hexInput.setText("#FF0000");
         hexInput.setChangedListener(text -> {
             if (updatingHexFromPalette) return;
             if (text.length() == 7) {
@@ -252,7 +277,7 @@ public class PaintScreen extends Screen {
 
         imageToolWidget = new ImageToolWidget(
                 dims.toolSwitchX, dims.toolSwitchY,
-                dims.toolSwitchW, dims.toolSwitchH * 2 / 3,
+                dims.toolSwitchW, dims.toolSwitchH,
                 action -> {
                     UUID sel = imageController.getSelectedUuid();
                     if (sel == null || targetEntity == null) return;
@@ -262,7 +287,12 @@ public class PaintScreen extends Screen {
                         exitImageMode();
                     } else if (action == ImageToolWidget.Action.PIXELIZE) {
                         CanvasImage img = imageLayer.findByUuid(sel);
-                        if (img != null) img.pixelized = !img.pixelized;
+                        if (img != null) {
+                            img.pixelized = !img.pixelized;
+                            if (img.pixelized) {
+                                ClientImageCache.rebuildPixelizedTexture(sel, img.gridW, img.gridH);
+                            }
+                        }
                         ClientPlayNetworking.send(new TogglePixelizeC2SPacket(targetEntity.getPos(), sel));
                     }
                 }
@@ -272,7 +302,6 @@ public class PaintScreen extends Screen {
     }
 
     private void openFilePicker() {
-        Artistry.LOGGER.info("[client] openFilePicker called");
         new Thread(() -> {
             org.lwjgl.PointerBuffer filters = org.lwjgl.BufferUtils.createPointerBuffer(4);
             filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.png"));
@@ -284,32 +313,36 @@ public class PaintScreen extends Screen {
             String path = org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_openFileDialog(
                     "Select Image", "", filters, "Image Files", false);
 
-            Artistry.LOGGER.info("[client] file dialog returned: {}", path);
-            String finalPath = path;
-            MinecraftClient.getInstance().execute(() -> {
-                if (finalPath != null) {
-                    try {
-                        byte[] bytes = Files.readAllBytes(java.nio.file.Path.of(finalPath));
-                        Artistry.LOGGER.info("[client] file read, bytes: {}", bytes.length);
-                        if (targetEntity != null) {
-                            Artistry.LOGGER.info("[client] sending UploadImageC2SPacket to pos: {}", targetEntity.getPos());
-                            ClientPlayNetworking.send(new UploadImageC2SPacket(targetEntity.getPos(), bytes));
-                        } else {
-                            Artistry.LOGGER.info("[client] targetEntity is null, not sending");
-                        }
-                    } catch (IOException e) {
-                        Artistry.LOGGER.error("[client] IOException reading file", e);
+            if (path != null) {
+                try {
+                    byte[] bytes = convertToPng(new File(path));
+                    if (targetEntity != null) {
+                        ClientPlayNetworking.send(new UploadImageC2SPacket(targetEntity.getPos(), bytes));
+                    } else if (targetStack != null && targetHand != null) {
+                        ClientPlayNetworking.send(new UploadItemImageC2SPacket(targetHand, bytes));
                     }
-                } else {
-                    Artistry.LOGGER.info("[client] no file selected");
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+            }
+            if (toolSwitchWidget != null) {
                 toolSwitchWidget.setActiveTool(DrawingTool.BRUSH);
-                pixelPainter.setTool(DrawingTool.BRUSH);
-            });
+            }
+            pixelPainter.setTool(DrawingTool.BRUSH);
         }, "artistry-file-picker").start();
     }
+
+    private byte[] convertToPng(File file) throws IOException {
+        BufferedImage img = ImageIO.read(file);
+        if (img == null) throw new IOException("Cannot read image: " + file.getName());
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(img, "png", out);
+        return out.toByteArray();
+    }
+
     @Override
     public void removed() {
+        if (imageMode) exitImageMode();
         canvasRenderer.close();
         flushToServer();
         if (targetStack != null) {
@@ -335,6 +368,9 @@ public class PaintScreen extends Screen {
         if (sel == null) return;
         CanvasImage img = imageLayer.findByUuid(sel);
         if (img == null) return;
+        if (img.pixelized) {
+            ClientImageCache.rebuildPixelizedTexture(sel, img.gridW, img.gridH);
+        }
         ClientPlayNetworking.send(new MoveCanvasImageC2SPacket(
                 targetEntity.getPos(), sel, img.gridX, img.gridY, img.gridW, img.gridH));
         pendingImageSync = false;
@@ -342,13 +378,15 @@ public class PaintScreen extends Screen {
     }
 
     private void saveToItem() {
-        List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
-        if (changes.isEmpty()) return;
         NbtComponent comp = targetStack.get(DataComponentTypes.CUSTOM_DATA);
         NbtCompound tag = comp != null ? comp.copyNbt() : new NbtCompound();
-        tag.put("canvas", canvasData.toNbt());
+        List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
+        if (!changes.isEmpty()) {
+            tag.put("canvas", canvasData.toNbt());
+        }
+        tag.put("images", imageLayer.toNbt());
         targetStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
-        if (MinecraftClient.getInstance().getNetworkHandler() != null) {
+        if (!changes.isEmpty() && MinecraftClient.getInstance().getNetworkHandler() != null) {
             ClientPlayNetworking.send(new SaveItemCanvasC2SPacket(targetHand, changes));
         }
     }
@@ -385,12 +423,15 @@ public class PaintScreen extends Screen {
             if (!imageLayer.getImages().isEmpty() &&
                     imageController.isOnImage(mouseX, mouseY,
                             dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize)) {
-                boolean hit = imageController.trySelect(mouseX, mouseY,
-                        dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize);
-                if (hit) {
-                    enterImageMode(imageController.getSelectedUuid());
-                    imageDragging = true;
-                    return true;
+                CanvasImage hovered = getHoveredUnlockedImage(mouseX, mouseY);
+                if (hovered != null) {
+                    boolean hit = imageController.trySelect(mouseX, mouseY,
+                            dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize);
+                    if (hit) {
+                        enterImageMode(imageController.getSelectedUuid());
+                        imageDragging = true;
+                        return true;
+                    }
                 }
             }
 
@@ -429,14 +470,27 @@ public class PaintScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    private CanvasImage getHoveredUnlockedImage(double mouseX, double mouseY) {
+        double pixelSize = (double) dims.drawingAreaSize / canvasData.canvasSize;
+        List<CanvasImage> images = imageLayer.getImages();
+        for (int i = images.size() - 1; i >= 0; i--) {
+            CanvasImage img = images.get(i);
+            if (localPlayerUuid != null && img.isLockedByOther(localPlayerUuid)) continue;
+            int sx = dims.drawingAreaX + (int)(img.gridX * pixelSize);
+            int sy = dims.drawingAreaY + (int)(img.gridY * pixelSize);
+            int sw = (int)(img.gridW * pixelSize);
+            int sh = (int)(img.gridH * pixelSize);
+            if (mouseX >= sx && mouseX < sx + sw && mouseY >= sy && mouseY < sy + sh) return img;
+        }
+        return null;
+    }
+
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (imageDragging && button == 0) {
             imageController.onDrag(mouseX, mouseY,
                     dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize,
-                    () -> {
-                        pendingImageSync = true;
-                    });
+                    () -> pendingImageSync = true);
             return true;
         }
         if (isDrawing && button == 0) {
@@ -446,14 +500,10 @@ public class PaintScreen extends Screen {
             return true;
         }
         if (button == 0 && hexInput != null && hexInput.isVisible() && hexInput.isFocused()) {
-            if (hexInput.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
-                return true;
-            }
+            if (hexInput.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
         }
         if (button == 0 && colorPaletteWidget != null) {
-            if (colorPaletteWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
-                return true;
-            }
+            if (colorPaletteWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
@@ -481,11 +531,22 @@ public class PaintScreen extends Screen {
         super.mouseMoved(mouseX, mouseY);
     }
 
+    private boolean isHoveringLockedImage() {
+        if (localPlayerUuid == null) return false;
+        return imageController.isOnLockedByOtherImage(hoverMouseX, hoverMouseY,
+                dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize,
+                localPlayerUuid);
+    }
+
     private void renderHoverHighlight(DrawContext context) {
         if (!canvasData.isSizeChosen()) return;
         if (imageMode) return;
         if (!isInsideDrawingArea(hoverMouseX, hoverMouseY)) return;
         if (pixelPainter.getTool() == DrawingTool.PIPETTE) return;
+        if (!imageLayer.getImages().isEmpty()) {
+            CanvasImage hov = getHoveredUnlockedImage(hoverMouseX, hoverMouseY);
+            if (hov != null) return;
+        }
 
         int canvasSize = canvasData.canvasSize;
         double scale = (double) dims.drawingAreaSize / canvasSize;
@@ -541,7 +602,7 @@ public class PaintScreen extends Screen {
         }
         if (imageToolWidget != null) {
             imageToolWidget.setPosition(dims.toolSwitchX, dims.toolSwitchY);
-            imageToolWidget.setDimensions(dims.toolSwitchW, dims.toolSwitchH * 2 / 3);
+            imageToolWidget.setDimensions(dims.toolSwitchW, dims.toolSwitchH);
         }
 
         updateHexInputBounds();
@@ -561,7 +622,7 @@ public class PaintScreen extends Screen {
         if (canvasData.isSizeChosen()) {
             CanvasImageRenderer.renderAll(context, imageLayer.getImages(),
                     dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize,
-                    imageController.getSelectedUuid());
+                    imageController.getSelectedUuid(), localPlayerUuid);
         }
 
         renderHoverHighlight(context);
@@ -570,11 +631,8 @@ public class PaintScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
-        return false;
-    }
+    public boolean shouldPause() { return false; }
 
     @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-    }
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {}
 }

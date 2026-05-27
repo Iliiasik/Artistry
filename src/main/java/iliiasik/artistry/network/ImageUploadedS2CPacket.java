@@ -15,7 +15,8 @@ public record ImageUploadedS2CPacket(BlockPos pos, UUID uuid, int gridX, int gri
             PacketCodec.of(ImageUploadedS2CPacket::write, ImageUploadedS2CPacket::read);
 
     private static void write(ImageUploadedS2CPacket p, PacketByteBuf buf) {
-        buf.writeBlockPos(p.pos);
+        buf.writeBoolean(p.pos != null);
+        if (p.pos != null) buf.writeBlockPos(p.pos);
         buf.writeLong(p.uuid.getMostSignificantBits());
         buf.writeLong(p.uuid.getLeastSignificantBits());
         buf.writeInt(p.gridX);
@@ -25,7 +26,7 @@ public record ImageUploadedS2CPacket(BlockPos pos, UUID uuid, int gridX, int gri
     }
 
     private static ImageUploadedS2CPacket read(PacketByteBuf buf) {
-        BlockPos pos = buf.readBlockPos();
+        BlockPos pos = buf.readBoolean() ? buf.readBlockPos() : null;
         UUID uuid = new UUID(buf.readLong(), buf.readLong());
         return new ImageUploadedS2CPacket(pos, uuid, buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
     }

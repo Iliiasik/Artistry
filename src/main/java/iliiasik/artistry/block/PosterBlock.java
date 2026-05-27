@@ -14,6 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
@@ -97,8 +98,12 @@ public class PosterBlock extends BlockWithEntity {
             if (world.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
                 if (world instanceof ServerWorld serverWorld) {
                     ModNetwork.broadcastPosterRemoved(serverWorld, pos);
+                    if (world.getGameRules().getBoolean(GameRules.DO_TILE_DROPS)) {
+                        poster.dropWithCanvas(pos);
+                    } else {
+                        poster.destroyImages();
+                    }
                 }
-                poster.dropWithCanvas(pos);
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);

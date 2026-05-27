@@ -16,7 +16,7 @@ public class ImageToolWidget extends ClickableWidget {
     }
 
     private final ActionListener listener;
-    private final HoverFadeHelper hoverDelete = new HoverFadeHelper();
+    private final HoverFadeHelper hoverDelete  = new HoverFadeHelper();
     private final HoverFadeHelper hoverPixelize = new HoverFadeHelper();
     private boolean visible = false;
 
@@ -29,37 +29,43 @@ public class ImageToolWidget extends ClickableWidget {
         this.visible = visible;
     }
 
+    private int btnSize() { return getWidth(); }
+
+    private int gap() { return Math.round(getWidth() * (6.0f / 64.0f)); }
+
+    private int deleteY()   { return getY(); }
+    private int pixelizeY() { return getY() + btnSize() + gap(); }
+
     @Override
     protected void renderWidget(DrawContext ctx, int mouseX, int mouseY, float delta) {
         if (!visible) return;
-        int btnH = getHeight() / 2;
-        int half = getWidth();
 
-        boolean onDelete   = mouseX >= getX() && mouseX < getX() + half && mouseY >= getY() && mouseY < getY() + btnH;
-        boolean onPixelize = mouseX >= getX() && mouseX < getX() + half && mouseY >= getY() + btnH && mouseY < getY() + getHeight();
+        boolean onDelete   = mouseX >= getX() && mouseX < getX() + btnSize()
+                && mouseY >= deleteY() && mouseY < deleteY() + btnSize();
+        boolean onPixelize = mouseX >= getX() && mouseX < getX() + btnSize()
+                && mouseY >= pixelizeY() && mouseY < pixelizeY() + btnSize();
 
         hoverDelete.update(onDelete);
         hoverPixelize.update(onPixelize);
 
         hoverDelete.applyShaderColor();
-        ctx.drawTexture(ModTextures.DELETE, getX(), getY(), half, btnH, 0f, 0f, 64, 64, 64, 64);
+        ctx.drawTexture(ModTextures.DELETE, getX(), deleteY(), btnSize(), btnSize(), 0f, 0f, 64, 64, 64, 64);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         hoverPixelize.applyShaderColor();
-        ctx.drawTexture(ModTextures.PIXELIZE, getX(), getY() + btnH, half, btnH, 0f, 0f, 64, 64, 64, 64);
+        ctx.drawTexture(ModTextures.PIXELIZE, getX(), pixelizeY(), btnSize(), btnSize(), 0f, 0f, 64, 64, 64, 64);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!visible || button != 0) return false;
-        int btnH = getHeight() / 2;
-        if (mouseX >= getX() && mouseX < getX() + getWidth()) {
-            if (mouseY >= getY() && mouseY < getY() + btnH) {
+        if (mouseX >= getX() && mouseX < getX() + btnSize()) {
+            if (mouseY >= deleteY() && mouseY < deleteY() + btnSize()) {
                 listener.onAction(Action.DELETE);
                 return true;
             }
-            if (mouseY >= getY() + btnH && mouseY < getY() + getHeight()) {
+            if (mouseY >= pixelizeY() && mouseY < pixelizeY() + btnSize()) {
                 listener.onAction(Action.PIXELIZE);
                 return true;
             }

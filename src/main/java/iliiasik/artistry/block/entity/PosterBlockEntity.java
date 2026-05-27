@@ -55,11 +55,13 @@ public class PosterBlockEntity extends BlockEntity {
 
     public void loadFromItemStack(ItemStack stack) {
         NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
-        if (comp != null) {
-            NbtCompound tag = comp.copyNbt();
-            if (tag.contains("canvas")) {
-                canvasData.fromNbt(tag.getCompound("canvas"));
-            }
+        if (comp == null) return;
+        NbtCompound tag = comp.copyNbt();
+        if (tag.contains("canvas")) {
+            canvasData.fromNbt(tag.getCompound("canvas"));
+        }
+        if (tag.contains("images")) {
+            imageLayer.fromNbt(tag.getList("images", NbtList.COMPOUND_TYPE));
         }
     }
 
@@ -77,10 +79,24 @@ public class PosterBlockEntity extends BlockEntity {
         if (canvasData.isSizeChosen()) {
             NbtCompound tag = new NbtCompound();
             tag.put("canvas", canvasData.toNbt());
+            NbtList imageNbt = imageLayer.toNbt();
+            if (!imageNbt.isEmpty()) {
+                tag.put("images", imageNbt);
+            }
             stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
             stack.set(DataComponentTypes.MAX_STACK_SIZE, 1);
         }
         net.minecraft.util.ItemScatterer.spawn(world, dropPos,
                 new net.minecraft.inventory.SimpleInventory(stack));
+    }
+
+    public void destroyImages() {
+        for (iliiasik.artistry.data.CanvasImage img : imageLayer.getImages()) {
+            try {
+                iliiasik.artistry.server.ImageStorage.delete(img.uuid);
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

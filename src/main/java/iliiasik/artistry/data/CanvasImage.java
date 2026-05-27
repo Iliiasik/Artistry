@@ -15,6 +15,13 @@ public class CanvasImage {
 
     public static final int MIN_GRID = 3;
 
+    public java.util.UUID lockedByPlayer = null;
+
+    public boolean isLocked() { return lockedByPlayer != null; }
+    public boolean isLockedByOther(java.util.UUID localPlayer) {
+        return lockedByPlayer != null && !lockedByPlayer.equals(localPlayer);
+    }
+
     public CanvasImage(UUID uuid, int gridX, int gridY, int gridW, int gridH) {
         this.uuid = uuid;
         this.gridX = gridX;
