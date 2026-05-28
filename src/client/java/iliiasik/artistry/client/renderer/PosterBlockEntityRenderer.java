@@ -8,14 +8,19 @@ import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.network.RequestImageC2SPacket;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +30,7 @@ import java.util.UUID;
 public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBlockEntity> {
 
     private static final float Z_CANVAS = 15f / 16f - 0.001f;
-    private static final float Z_IMAGES = 15f / 16f - 0.0005f;
+    private static final float Z_IMAGES = 15f / 16f - 0.0011f;
     private static final Map<Long, PosterTexture> CACHE = new HashMap<>();
     private static final Set<UUID> pendingRequests = new HashSet<>();
 
@@ -45,7 +50,11 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         applyFacingRotation(matrices, facing);
         PosterRenderHelper.renderQuad(matrices, vertexConsumers, tex.getTextureId(), Z_CANVAS, light);
 
-        if (entity.canvasData.isSizeChosen()) {
+        if (entity.canvasData.isSizeChosen() && !entity.imageLayer.getImages().isEmpty()) {
+            if (vertexConsumers instanceof VertexConsumerProvider.Immediate immediate) {
+                immediate.draw(RenderLayer.getEntityCutout(tex.getTextureId()));
+            }
+
             int canvasSize = entity.canvasData.canvasSize;
             for (CanvasImage img : entity.imageLayer.getImages()) {
                 if (!ClientImageCache.has(img.uuid)) {
@@ -56,17 +65,14 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
                     continue;
                 }
 
-                Identifier imgTex;
-                if (img.pixelized) {
-                    imgTex = ClientImageCache.getOrBuildPixelizedTexture(img.uuid, img.gridW, img.gridH);
-                } else {
-                    imgTex = ClientImageCache.getTexture(img.uuid);
-                }
+                Identifier imgTex = img.pixelized
+                        ? ClientImageCache.getOrBuildPixelizedTexture(img.uuid, img.gridW, img.gridH)
+                        : ClientImageCache.getTexture(img.uuid);
                 if (imgTex == null) continue;
 
                 float x0 = (float) img.gridX / canvasSize;
-                float y0 = (float) img.gridY / canvasSize;
                 float x1 = (float)(img.gridX + img.gridW) / canvasSize;
+                float y0 = (float) img.gridY / canvasSize;
                 float y1 = (float)(img.gridY + img.gridH) / canvasSize;
 
                 renderImageQuad(matrices, vertexConsumers, imgTex, x0, y0, x1, y1, Z_IMAGES, light);
@@ -80,12 +86,20 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         pendingRequests.remove(uuid);
     }
 
+    public static void clearPendingRequests(Collection<UUID> uuids) {
+        pendingRequests.removeAll(uuids);
+    }
+
+    public static void clearAllPendingRequests() {
+        pendingRequests.clear();
+    }
+
     private void renderImageQuad(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                  Identifier tex, float x0, float y0, float x1, float y1,
                                  float z, int light) {
-        var vc = vertexConsumers.getBuffer(net.minecraft.client.render.RenderLayer.getEntityCutout(tex));
-        var mat = matrices.peek().getPositionMatrix();
-        int ov = net.minecraft.client.render.OverlayTexture.DEFAULT_UV;
+        VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(tex));
+        Matrix4f mat = matrices.peek().getPositionMatrix();
+        int ov = OverlayTexture.DEFAULT_UV;
         vc.vertex(mat, x0, 1f - y0, z).texture(0f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
         vc.vertex(mat, x1, 1f - y0, z).texture(1f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
         vc.vertex(mat, x1, 1f - y1, z).texture(1f, 1f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);

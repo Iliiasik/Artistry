@@ -13,7 +13,8 @@ import iliiasik.artistry.item.ModItems;
 import iliiasik.artistry.item.PosterItem;
 import iliiasik.artistry.network.*;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -43,11 +44,6 @@ public class ArtistryClient implements ClientModInitializer {
                         for (var c : payload.changes()) {
                             poster.canvasData.pixels[c.y() & 0xFF][c.x() & 0xFF] = c.blockIndex();
                             poster.canvasData.colors[c.y() & 0xFF][c.x() & 0xFF] = c.color();
-                        }
-                        for (var img : poster.imageLayer.getImages()) {
-                            if (!ClientImageCache.has(img.uuid)) {
-                                ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
-                            }
                         }
                         PosterBlockEntityRenderer.invalidate(pos);
                     }
@@ -80,11 +76,9 @@ public class ArtistryClient implements ClientModInitializer {
                         for (var img : payload.images()) {
                             poster.imageLayer.addImage(img);
                         }
-                        for (var img : payload.images()) {
-                            if (!ClientImageCache.has(img.uuid)) {
-                                ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
-                            }
-                        }
+                        PosterBlockEntityRenderer.clearPendingRequests(
+                                payload.images().stream().map(i -> i.uuid).toList()
+                        );
                     }
                     if (mc.currentScreen instanceof PaintScreen screen) {
                         if (pos.equals(screen.getTargetPos())) {
@@ -133,16 +127,13 @@ public class ArtistryClient implements ClientModInitializer {
                     }
                 }));
 
-        ClientChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
-            chunk.getBlockEntities().values().forEach(be -> {
-                if (be instanceof PosterBlockEntity poster) {
-                    for (var img : poster.imageLayer.getImages()) {
-                        if (!ClientImageCache.has(img.uuid)) {
-                            ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
-                        }
-                    }
-                }
-            });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            ClientImageCache.clear();
+            PosterBlockEntityRenderer.clearAllPendingRequests();
+        });
+
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            ClientImageCache.clear();
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
@@ -165,11 +156,6 @@ public class ArtistryClient implements ClientModInitializer {
                 var be = world.getBlockEntity(hitResult.getBlockPos());
                 if (be instanceof PosterBlockEntity poster) {
                     MinecraftClient mc = MinecraftClient.getInstance();
-                    for (var img : poster.imageLayer.getImages()) {
-                        if (!ClientImageCache.has(img.uuid)) {
-                            ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
-                        }
-                    }
                     if (!poster.canvasData.isSizeChosen()) {
                         mc.setScreen(new CanvasSizeScreen(poster));
                     } else {
