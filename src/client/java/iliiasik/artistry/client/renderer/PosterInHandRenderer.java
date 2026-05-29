@@ -103,14 +103,11 @@ public class PosterInHandRenderer {
             float x1 = BORDER + (float)(img.gridX + img.gridW) / cached.canvasSize * drawSize;
             float y1 = BORDER + (float)(img.gridY + img.gridH) / cached.canvasSize * drawSize;
 
-            float screenY0 = SIZE - y0;
-            float screenY1 = SIZE - y1;
-
             VertexConsumer imgVc = vertexConsumers.getBuffer(RenderLayer.getText(imgTex));
-            imgVc.vertex(mat, x0, screenY0, -0.01f).color(255,255,255,255).texture(0f, 1f).light(light);
-            imgVc.vertex(mat, x1, screenY0, -0.01f).color(255,255,255,255).texture(1f, 1f).light(light);
-            imgVc.vertex(mat, x1, screenY1, -0.01f).color(255,255,255,255).texture(1f, 0f).light(light);
-            imgVc.vertex(mat, x0, screenY1, -0.01f).color(255,255,255,255).texture(0f, 0f).light(light);
+            imgVc.vertex(mat, x0, y1, -0.01f).color(255,255,255,255).texture(0f, 1f).light(light);
+            imgVc.vertex(mat, x1, y1, -0.01f).color(255,255,255,255).texture(1f, 1f).light(light);
+            imgVc.vertex(mat, x1, y0, -0.01f).color(255,255,255,255).texture(1f, 0f).light(light);
+            imgVc.vertex(mat, x0, y0, -0.01f).color(255,255,255,255).texture(0f, 0f).light(light);
         }
     }
 }

@@ -100,10 +100,14 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         VertexConsumer vc = vertexConsumers.getBuffer(RenderLayer.getEntityCutoutNoCull(tex));
         Matrix4f mat = matrices.peek().getPositionMatrix();
         int ov = OverlayTexture.DEFAULT_UV;
-        vc.vertex(mat, x0, 1f - y0, z).texture(0f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, x1, 1f - y0, z).texture(1f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, x1, 1f - y1, z).texture(1f, 1f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, x0, 1f - y1, z).texture(0f, 1f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+
+        float mx0 = 1f - x1;
+        float mx1 = 1f - x0;
+
+        vc.vertex(mat, mx0, 1f - y0, z).texture(1f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        vc.vertex(mat, mx1, 1f - y0, z).texture(0f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        vc.vertex(mat, mx1, 1f - y1, z).texture(0f, 1f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        vc.vertex(mat, mx0, 1f - y1, z).texture(1f, 1f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
     }
 
     private static void applyFacingRotation(MatrixStack matrices, Direction facing) {
