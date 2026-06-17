@@ -10,14 +10,38 @@ import java.util.UUID;
 
 public class CanvasImageLayer {
 
+    public static final int MAX_IMAGES = 4;
+
     private final List<CanvasImage> images = new ArrayList<>();
+    private long nextSeq = 1;
 
     public List<CanvasImage> getImages() {
         return images;
     }
 
-    public void addImage(CanvasImage image) {
+    public List<UUID> addImage(CanvasImage image) {
+        image.addedSeq = nextSeq++;
         images.add(image);
+        return enforceLimit();
+    }
+
+    private List<UUID> enforceLimit() {
+        List<UUID> evicted = new ArrayList<>();
+        while (images.size() > MAX_IMAGES) {
+            CanvasImage oldest = null;
+            for (CanvasImage img : images) {
+                if (oldest == null || img.addedSeq < oldest.addedSeq) {
+                    oldest = img;
+                }
+            }
+            if (oldest != null) {
+                images.remove(oldest);
+                evicted.add(oldest.uuid);
+            } else {
+                break;
+            }
+        }
+        return evicted;
     }
 
     public boolean removeImage(UUID uuid) {
@@ -49,11 +73,15 @@ public class CanvasImageLayer {
 
     public void fromNbt(NbtList list) {
         images.clear();
+        long maxSeq = 0;
         for (NbtElement el : list) {
             if (el instanceof NbtCompound tag) {
-                images.add(CanvasImage.fromNbt(tag));
+                CanvasImage img = CanvasImage.fromNbt(tag);
+                images.add(img);
+                if (img.addedSeq > maxSeq) maxSeq = img.addedSeq;
             }
         }
+        nextSeq = maxSeq + 1;
     }
 
     public void copyFrom(CanvasImageLayer other) {
@@ -61,5 +89,6 @@ public class CanvasImageLayer {
         for (CanvasImage img : other.images) {
             images.add(img.copy());
         }
+        nextSeq = other.nextSeq;
     }
 }

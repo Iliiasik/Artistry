@@ -103,34 +103,33 @@ public class ImageLayerController {
             int ancX = resizeAnchorGridX;
             int ancY = resizeAnchorGridY;
 
-            int rawX = Math.min(gx, ancX);
-            int rawX2 = Math.max(gx, ancX);
-            int rawY = Math.min(gy, ancY);
-            int rawY2 = Math.max(gy, ancY);
-
-            rawX  = Math.max(0, rawX);
-            rawX2 = Math.min(canvasSize - 1, rawX2);
-            rawY  = Math.max(0, rawY);
-            rawY2 = Math.min(canvasSize - 1, rawY2);
+            int rawX  = Math.max(0, Math.min(gx, ancX));
+            int rawX2 = Math.min(canvasSize - 1, Math.max(gx, ancX));
+            int rawY  = Math.max(0, Math.min(gy, ancY));
+            int rawY2 = Math.min(canvasSize - 1, Math.max(gy, ancY));
 
             int newW = rawX2 - rawX + 1;
             int newH = rawY2 - rawY + 1;
 
             if (newW < CanvasImage.MIN_GRID) {
-                if (rawX < ancX) rawX = rawX2 - CanvasImage.MIN_GRID + 1;
                 newW = CanvasImage.MIN_GRID;
+                if (rawX < ancX) {
+                    rawX = rawX2 - newW + 1;
+                } else {
+                    rawX2 = rawX + newW - 1;
+                }
             }
             if (newH < CanvasImage.MIN_GRID) {
-                if (rawY < ancY) rawY = rawY2 - CanvasImage.MIN_GRID + 1;
                 newH = CanvasImage.MIN_GRID;
+                if (rawY < ancY) {
+                    rawY = rawY2 - newH + 1;
+                } else {
+                    rawY2 = rawY + newH - 1;
+                }
             }
 
-            rawX = Math.max(0, rawX);
-            rawY = Math.max(0, rawY);
-            if (rawX + newW > canvasSize) newW = canvasSize - rawX;
-            if (rawY + newH > canvasSize) newH = canvasSize - rawY;
-            newW = Math.max(CanvasImage.MIN_GRID, newW);
-            newH = Math.max(CanvasImage.MIN_GRID, newH);
+            rawX = Math.max(0, Math.min(rawX, canvasSize - newW));
+            rawY = Math.max(0, Math.min(rawY, canvasSize - newH));
 
             img.gridX = rawX;
             img.gridY = rawY;

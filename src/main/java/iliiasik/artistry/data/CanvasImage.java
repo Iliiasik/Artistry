@@ -12,6 +12,7 @@ public class CanvasImage {
     public int gridW;
     public int gridH;
     public boolean pixelized;
+    public long addedSeq;
 
     public static final int MIN_GRID = 3;
 
@@ -29,11 +30,13 @@ public class CanvasImage {
         this.gridW = Math.max(MIN_GRID, gridW);
         this.gridH = Math.max(MIN_GRID, gridH);
         this.pixelized = false;
+        this.addedSeq = 0;
     }
 
     public CanvasImage copy() {
         CanvasImage c = new CanvasImage(uuid, gridX, gridY, gridW, gridH);
         c.pixelized = pixelized;
+        c.addedSeq = addedSeq;
         return c;
     }
 
@@ -46,6 +49,7 @@ public class CanvasImage {
         tag.putInt("w", gridW);
         tag.putInt("h", gridH);
         tag.putBoolean("pixelized", pixelized);
+        tag.putLong("added_seq", addedSeq);
         return tag;
     }
 
@@ -55,6 +59,7 @@ public class CanvasImage {
                 tag.getInt("x"), tag.getInt("y"),
                 tag.getInt("w"), tag.getInt("h"));
         img.pixelized = tag.getBoolean("pixelized");
+        img.addedSeq = tag.getLong("added_seq");
         return img;
     }
 }

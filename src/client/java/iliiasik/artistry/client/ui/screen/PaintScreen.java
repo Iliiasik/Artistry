@@ -37,7 +37,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
 
@@ -163,7 +162,6 @@ public class PaintScreen extends Screen {
         CanvasImage img = new CanvasImage(uuid, gridX, gridY, gridW, gridH);
         imageLayer.addImage(img);
         imageController.clearSelection();
-        enterImageMode(uuid);
     }
 
     public void scheduledClose() {
@@ -280,11 +278,15 @@ public class PaintScreen extends Screen {
                 dims.toolSwitchW, dims.toolSwitchH,
                 action -> {
                     UUID sel = imageController.getSelectedUuid();
-                    if (sel == null || targetEntity == null) return;
+                    if (sel == null) return;
                     if (action == ImageToolWidget.Action.DELETE) {
                         imageLayer.removeImage(sel);
-                        ClientPlayNetworking.send(new DeleteCanvasImageC2SPacket(targetEntity.getPos(), sel));
                         exitImageMode();
+                        if (targetEntity != null) {
+                            ClientPlayNetworking.send(new DeleteCanvasImageC2SPacket(targetEntity.getPos(), sel));
+                        } else if (targetStack != null && targetHand != null) {
+                            ClientPlayNetworking.send(new DeleteItemImageC2SPacket(targetHand, sel));
+                        }
                     } else if (action == ImageToolWidget.Action.PIXELIZE) {
                         CanvasImage img = imageLayer.findByUuid(sel);
                         if (img != null) {
@@ -293,7 +295,11 @@ public class PaintScreen extends Screen {
                                 ClientImageCache.rebuildPixelizedTexture(sel, img.gridW, img.gridH);
                             }
                         }
-                        ClientPlayNetworking.send(new TogglePixelizeC2SPacket(targetEntity.getPos(), sel));
+                        if (targetEntity != null) {
+                            ClientPlayNetworking.send(new TogglePixelizeC2SPacket(targetEntity.getPos(), sel));
+                        } else if (targetStack != null && targetHand != null) {
+                            ClientPlayNetworking.send(new ToggleItemPixelizeC2SPacket(targetHand, sel));
+                        }
                     }
                 }
         );
@@ -363,7 +369,6 @@ public class PaintScreen extends Screen {
     }
 
     private void flushImageMove() {
-        if (targetEntity == null) return;
         UUID sel = imageController.getSelectedUuid();
         if (sel == null) return;
         CanvasImage img = imageLayer.findByUuid(sel);
@@ -371,8 +376,13 @@ public class PaintScreen extends Screen {
         if (img.pixelized) {
             ClientImageCache.rebuildPixelizedTexture(sel, img.gridW, img.gridH);
         }
-        ClientPlayNetworking.send(new MoveCanvasImageC2SPacket(
-                targetEntity.getPos(), sel, img.gridX, img.gridY, img.gridW, img.gridH));
+        if (targetEntity != null) {
+            ClientPlayNetworking.send(new MoveCanvasImageC2SPacket(
+                    targetEntity.getPos(), sel, img.gridX, img.gridY, img.gridW, img.gridH));
+        } else if (targetStack != null && targetHand != null) {
+            ClientPlayNetworking.send(new MoveItemImageC2SPacket(
+                    targetHand, sel, img.gridX, img.gridY, img.gridW, img.gridH));
+        }
         pendingImageSync = false;
         lastImageSyncTime = System.currentTimeMillis();
     }
@@ -392,12 +402,11 @@ public class PaintScreen extends Screen {
     }
 
     private void tickBatch() {
-        if (targetEntity == null) return;
         long now = System.currentTimeMillis();
-        if (now - lastFlushTime >= BATCH_INTERVAL_MS) {
+        if (targetEntity != null && now - lastFlushTime >= BATCH_INTERVAL_MS) {
             flushToServer();
         }
-        if (pendingImageSync && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
+        if (targetEntity != null && pendingImageSync && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
             flushImageMove();
         }
     }
@@ -490,7 +499,7 @@ public class PaintScreen extends Screen {
         if (imageDragging && button == 0) {
             imageController.onDrag(mouseX, mouseY,
                     dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize,
-                    () -> pendingImageSync = true);
+                    () -> { if (targetEntity != null) pendingImageSync = true; });
             return true;
         }
         if (isDrawing && button == 0) {

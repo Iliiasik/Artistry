@@ -16,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 public class ModNetwork {
@@ -31,6 +32,9 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(TogglePixelizeC2SPacket.ID, TogglePixelizeC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(LockCanvasImageC2SPacket.ID, LockCanvasImageC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(UploadItemImageC2SPacket.ID, UploadItemImageC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(DeleteItemImageC2SPacket.ID, DeleteItemImageC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(ToggleItemPixelizeC2SPacket.ID, ToggleItemPixelizeC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(MoveItemImageC2SPacket.ID, MoveItemImageC2SPacket.CODEC);
 
         PayloadTypeRegistry.playS2C().register(SyncCanvasS2CPacket.ID, SyncCanvasS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(PosterRemovedS2CPacket.ID, PosterRemovedS2CPacket.CODEC);
@@ -38,6 +42,25 @@ public class ModNetwork {
         PayloadTypeRegistry.playS2C().register(DeliverImageS2CPacket.ID, DeliverImageS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(SyncImageLayerS2CPacket.ID, SyncImageLayerS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(SyncImageLockS2CPacket.ID, SyncImageLockS2CPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(ImageEvictedS2CPacket.ID, ImageEvictedS2CPacket.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(MoveItemImageC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    ItemStack stack = ctx.player().getStackInHand(payload.hand());
+                    if (stack.isEmpty() || !stack.isOf(iliiasik.artistry.item.ModItems.POSTER)) return;
+                    NbtCompound tag = getOrCreateCustomData(stack);
+                    if (!tag.contains("images")) return;
+                    iliiasik.artistry.data.CanvasImageLayer layer = new iliiasik.artistry.data.CanvasImageLayer();
+                    layer.fromNbt(tag.getList("images", net.minecraft.nbt.NbtList.COMPOUND_TYPE));
+                    CanvasImage img = layer.findByUuid(payload.uuid());
+                    if (img == null) return;
+                    img.gridX = payload.gridX();
+                    img.gridY = payload.gridY();
+                    img.gridW = payload.gridW();
+                    img.gridH = payload.gridH();
+                    tag.put("images", layer.toNbt());
+                    applyCanvasDataToStack(ctx.player(), stack, tag);
+                }));
 
         ServerPlayNetworking.registerGlobalReceiver(UploadItemImageC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
@@ -60,14 +83,19 @@ public class ModNetwork {
                             layer.fromNbt(tag.getList("images", net.minecraft.nbt.NbtList.COMPOUND_TYPE));
                         }
                         CanvasImage img = new CanvasImage(uuid, gridX, gridY, gridW, gridH);
-                        layer.addImage(img);
+                        List<UUID> evicted = layer.addImage(img);
                         tag.put("images", layer.toNbt());
                         applyCanvasDataToStack(ctx.player(), stack, tag);
+
+                        deleteEvictedImages(evicted);
 
                         ServerPlayNetworking.send(ctx.player(),
                                 new ImageUploadedS2CPacket(null, uuid, gridX, gridY, gridW, gridH));
                         ServerPlayNetworking.send(ctx.player(),
                                 new DeliverImageS2CPacket(uuid, payload.bytes()));
+                        if (!evicted.isEmpty()) {
+                            ServerPlayNetworking.send(ctx.player(), new ImageEvictedS2CPacket(evicted));
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -159,8 +187,10 @@ public class ModNetwork {
                         int gridY = (canvasSize - gridH) / 2;
 
                         CanvasImage img = new CanvasImage(uuid, gridX, gridY, gridW, gridH);
-                        poster.imageLayer.addImage(img);
+                        List<UUID> evicted = poster.imageLayer.addImage(img);
                         poster.markDirtyAndSync();
+
+                        deleteEvictedImages(evicted);
 
                         ServerPlayNetworking.send(ctx.player(),
                                 new ImageUploadedS2CPacket(pos, uuid, gridX, gridY, gridW, gridH));
@@ -169,6 +199,10 @@ public class ModNetwork {
 
                         broadcastImageLayerToWatchers(world, pos, ctx.player(),
                                 new SyncImageLayerS2CPacket(pos, poster.imageLayer.getImages()));
+
+                        if (!evicted.isEmpty()) {
+                            broadcastImageEvictedToAll(world, pos, new ImageEvictedS2CPacket(evicted));
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -227,6 +261,44 @@ public class ModNetwork {
                     broadcastImageLayerToWatchers(world, payload.pos(), ctx.player(),
                             new SyncImageLayerS2CPacket(payload.pos(), poster.imageLayer.getImages()));
                 }));
+
+        ServerPlayNetworking.registerGlobalReceiver(DeleteItemImageC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    ItemStack stack = ctx.player().getStackInHand(payload.hand());
+                    if (stack.isEmpty() || !stack.isOf(iliiasik.artistry.item.ModItems.POSTER)) return;
+                    NbtCompound tag = getOrCreateCustomData(stack);
+                    if (!tag.contains("images")) return;
+                    iliiasik.artistry.data.CanvasImageLayer layer = new iliiasik.artistry.data.CanvasImageLayer();
+                    layer.fromNbt(tag.getList("images", net.minecraft.nbt.NbtList.COMPOUND_TYPE));
+                    layer.removeImage(payload.uuid());
+                    tag.put("images", layer.toNbt());
+                    applyCanvasDataToStack(ctx.player(), stack, tag);
+                }));
+
+        ServerPlayNetworking.registerGlobalReceiver(ToggleItemPixelizeC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    ItemStack stack = ctx.player().getStackInHand(payload.hand());
+                    if (stack.isEmpty() || !stack.isOf(iliiasik.artistry.item.ModItems.POSTER)) return;
+                    NbtCompound tag = getOrCreateCustomData(stack);
+                    if (!tag.contains("images")) return;
+                    iliiasik.artistry.data.CanvasImageLayer layer = new iliiasik.artistry.data.CanvasImageLayer();
+                    layer.fromNbt(tag.getList("images", net.minecraft.nbt.NbtList.COMPOUND_TYPE));
+                    CanvasImage img = layer.findByUuid(payload.uuid());
+                    if (img == null) return;
+                    img.pixelized = !img.pixelized;
+                    tag.put("images", layer.toNbt());
+                    applyCanvasDataToStack(ctx.player(), stack, tag);
+                }));
+    }
+
+    private static void deleteEvictedImages(List<UUID> evicted) {
+        for (UUID uuid : evicted) {
+            try {
+                ImageStorage.delete(uuid);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static NbtCompound getOrCreateCustomData(ItemStack stack) {
@@ -291,6 +363,17 @@ public class ModNetwork {
 
     private static void broadcastImageLockToAll(ServerWorld world, BlockPos pos,
                                                 SyncImageLockS2CPacket packet) {
+        int chunkX = ChunkSectionPos.getSectionCoord(pos.getX());
+        int chunkZ = ChunkSectionPos.getSectionCoord(pos.getZ());
+        for (ServerPlayerEntity player : world.getPlayers()) {
+            if (player.getChunkFilter().isWithinDistance(chunkX, chunkZ)) {
+                ServerPlayNetworking.send(player, packet);
+            }
+        }
+    }
+
+    private static void broadcastImageEvictedToAll(ServerWorld world, BlockPos pos,
+                                                   ImageEvictedS2CPacket packet) {
         int chunkX = ChunkSectionPos.getSectionCoord(pos.getX());
         int chunkZ = ChunkSectionPos.getSectionCoord(pos.getZ());
         for (ServerPlayerEntity player : world.getPlayers()) {

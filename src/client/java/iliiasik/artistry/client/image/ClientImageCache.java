@@ -19,6 +19,7 @@ public final class ClientImageCache {
     private static final Map<UUID, Identifier> textures = new HashMap<>();
     private static final Map<UUID, Identifier> pixelizedTextures = new HashMap<>();
     private static final Map<UUID, long[]> pixelizedDimensions  = new HashMap<>();
+    private static final Map<UUID, int[]> sourceDimensions = new HashMap<>();
 
     private ClientImageCache() {}
 
@@ -34,6 +35,7 @@ public final class ClientImageCache {
     private static void registerTexture(UUID uuid, byte[] bytes) {
         try {
             NativeImage img = NativeImage.read(new ByteArrayInputStream(bytes));
+            sourceDimensions.put(uuid, new int[]{img.getWidth(), img.getHeight()});
             NativeImageBackedTexture tex = new NativeImageBackedTexture(img);
             Identifier id = Identifier.of("artistry", "canvas_image/" + uuid);
             MinecraftClient.getInstance().getTextureManager().registerTexture(id, tex);
@@ -52,29 +54,13 @@ public final class ClientImageCache {
     }
 
     public static int getWidth(UUID uuid) {
-        byte[] bytes = rawBytes.get(uuid);
-        if (bytes == null) return 1;
-        try {
-            NativeImage img = NativeImage.read(new ByteArrayInputStream(bytes));
-            int w = img.getWidth();
-            img.close();
-            return w;
-        } catch (IOException e) {
-            return 1;
-        }
+        int[] dims = sourceDimensions.get(uuid);
+        return dims != null ? dims[0] : 1;
     }
 
     public static int getHeight(UUID uuid) {
-        byte[] bytes = rawBytes.get(uuid);
-        if (bytes == null) return 1;
-        try {
-            NativeImage img = NativeImage.read(new ByteArrayInputStream(bytes));
-            int h = img.getHeight();
-            img.close();
-            return h;
-        } catch (IOException e) {
-            return 1;
-        }
+        int[] dims = sourceDimensions.get(uuid);
+        return dims != null ? dims[1] : 1;
     }
 
     public static Identifier getOrBuildPixelizedTexture(UUID uuid, int gridW, int gridH) {
@@ -127,6 +113,7 @@ public final class ClientImageCache {
 
     public static void evict(UUID uuid) {
         rawBytes.remove(uuid);
+        sourceDimensions.remove(uuid);
         Identifier id = textures.remove(uuid);
         if (id != null) MinecraftClient.getInstance().getTextureManager().destroyTexture(id);
         Identifier pxId = pixelizedTextures.remove(uuid);
@@ -143,5 +130,6 @@ public final class ClientImageCache {
         textures.clear();
         pixelizedTextures.clear();
         pixelizedDimensions.clear();
+        sourceDimensions.clear();
     }
 }
