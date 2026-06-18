@@ -4,6 +4,7 @@ import iliiasik.artistry.block.PosterBlock;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.palette.BlockPalette;
+import iliiasik.artistry.client.renderer.ImageOcclusionClipper.VisibleFragment;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.network.RequestImageC2SPacket;
@@ -26,6 +27,7 @@ import org.joml.Quaternionf;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -34,6 +36,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
 
     private static final float Z_CANVAS = 15f / 16f - 0.001f;
     private static final float Z_IMAGES = 15f / 16f - 0.001f;
+
     private static final Map<Long, PosterTexture> CACHE = new HashMap<>();
     private static final Set<UUID> pendingRequests = new HashSet<>();
     private static final Map<Identifier, RenderLayer> IMAGE_RENDER_LAYERS = new HashMap<>();
@@ -82,30 +85,43 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
             }
 
             int canvasSize = entity.canvasData.canvasSize;
-            for (CanvasImage img : entity.imageLayer.getImages()) {
-                if (!ClientImageCache.has(img.uuid)) {
-                    if (!pendingRequests.contains(img.uuid)) {
-                        pendingRequests.add(img.uuid);
-                        ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
-                    }
-                    continue;
-                }
+            List<CanvasImage> drawList = entity.imageLayer.getImages();
+            requestMissingImages(drawList);
+
+            List<VisibleFragment> fragments = ImageOcclusionClipper.computeVisibleFragments(drawList);
+            for (VisibleFragment frag : fragments) {
+                CanvasImage img = frag.image();
+                if (!ClientImageCache.has(img.uuid)) continue;
 
                 Identifier imgTex = img.pixelized
                         ? ClientImageCache.getOrBuildPixelizedTexture(img.uuid, img.gridW, img.gridH)
                         : ClientImageCache.getTexture(img.uuid);
                 if (imgTex == null) continue;
 
-                float x0 = (float) img.gridX / canvasSize;
-                float x1 = (float)(img.gridX + img.gridW) / canvasSize;
-                float y0 = (float) img.gridY / canvasSize;
-                float y1 = (float)(img.gridY + img.gridH) / canvasSize;
+                float x0 = (float) frag.destRect().x0() / canvasSize;
+                float x1 = (float) frag.destRect().x1() / canvasSize;
+                float y0 = (float) frag.destRect().y0() / canvasSize;
+                float y1 = (float) frag.destRect().y1() / canvasSize;
 
-                renderImageQuad(matrices, vertexConsumers, imgTex, x0, y0, x1, y1, light);
+                renderImageQuad(matrices, vertexConsumers, imgTex,
+                        x0, y0, x1, y1,
+                        frag.u0(), frag.v0(), frag.u1(), frag.v1(),
+                        light);
             }
         }
 
         matrices.pop();
+    }
+
+    private void requestMissingImages(List<CanvasImage> images) {
+        for (CanvasImage img : images) {
+            if (!ClientImageCache.has(img.uuid)) {
+                if (!pendingRequests.contains(img.uuid)) {
+                    pendingRequests.add(img.uuid);
+                    ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
+                }
+            }
+        }
     }
 
     public static void onImageReceived(UUID uuid) {
@@ -122,18 +138,24 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
 
     private void renderImageQuad(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                  Identifier tex, float x0, float y0, float x1, float y1,
+                                 float texU0, float texV0, float texU1, float texV1,
                                  int light) {
         VertexConsumer vc = vertexConsumers.getBuffer(getImageLayer(tex));
         Matrix4f mat = matrices.peek().getPositionMatrix();
         int ov = OverlayTexture.DEFAULT_UV;
 
+        // The poster's image grid is mirrored horizontally relative to world space.
+        // Mirror geometry only; texture U follows the same edge of the source image
+        // as the (unmirrored) destination edge it's replacing, so a corner that was
+        // originally the image's left edge keeps sampling the image's left edge,
+        // regardless of how the destination quad is mirrored on screen.
         float mx0 = 1f - x1;
         float mx1 = 1f - x0;
 
-        vc.vertex(mat, mx0, 1f - y0, Z_IMAGES).texture(1f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, mx1, 1f - y0, Z_IMAGES).texture(0f, 0f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, mx1, 1f - y1, Z_IMAGES).texture(0f, 1f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, mx0, 1f - y1, Z_IMAGES).texture(1f, 1f).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        vc.vertex(mat, mx0, 1f - y0, Z_IMAGES).texture(texU1, texV0).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        vc.vertex(mat, mx1, 1f - y0, Z_IMAGES).texture(texU0, texV0).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        vc.vertex(mat, mx1, 1f - y1, Z_IMAGES).texture(texU0, texV1).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        vc.vertex(mat, mx0, 1f - y1, Z_IMAGES).texture(texU1, texV1).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
     }
 
     private static void applyFacingRotation(MatrixStack matrices, Direction facing) {

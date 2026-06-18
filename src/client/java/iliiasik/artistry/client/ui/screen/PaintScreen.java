@@ -162,6 +162,7 @@ public class PaintScreen extends Screen {
         CanvasImage img = new CanvasImage(uuid, gridX, gridY, gridW, gridH);
         imageLayer.addImage(img);
         imageController.clearSelection();
+        enterImageMode(uuid);
     }
 
     public void scheduledClose() {
@@ -420,10 +421,19 @@ public class PaintScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && isInsideDrawingArea(mouseX, mouseY)) {
             if (imageMode) {
+                UUID previousSelected = imageController.getSelectedUuid();
                 boolean hit = imageController.trySelect(mouseX, mouseY,
                         dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize);
                 if (!hit) {
                     exitImageMode();
+                } else {
+                    UUID newSelected = imageController.getSelectedUuid();
+                    if (previousSelected != null && !previousSelected.equals(newSelected)) {
+                        if (targetEntity != null) {
+                            ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), previousSelected, false));
+                            ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), newSelected, true));
+                        }
+                    }
                 }
                 imageDragging = hit;
                 return true;

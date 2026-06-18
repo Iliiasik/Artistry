@@ -1,6 +1,7 @@
 package iliiasik.artistry.client.renderer;
 
 import iliiasik.artistry.client.image.ClientImageCache;
+import iliiasik.artistry.client.renderer.ImageOcclusionClipper.VisibleFragment;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.data.CanvasImageLayer;
 import net.minecraft.client.render.RenderLayer;
@@ -16,6 +17,7 @@ import net.minecraft.util.math.RotationAxis;
 import org.joml.Matrix4f;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class PosterInHandRenderer {
@@ -26,6 +28,7 @@ public class PosterInHandRenderer {
     private static final float FINAL_SCALE = 0.0078125f;
     private static final int SIZE   = 128;
     private static final int BORDER = 4;
+    private static final float Z_IMAGES = -0.01f;
 
     private static final Map<Integer, CachedItemImages> imageCache = new HashMap<>();
 
@@ -89,7 +92,11 @@ public class PosterInHandRenderer {
 
         int drawSize = SIZE - BORDER * 2;
 
-        for (CanvasImage img : cached.layer.getImages()) {
+        List<CanvasImage> drawList = cached.layer.getImages();
+        List<VisibleFragment> fragments = ImageOcclusionClipper.computeVisibleFragments(drawList);
+
+        for (VisibleFragment frag : fragments) {
+            CanvasImage img = frag.image();
             Identifier imgTex;
             if (img.pixelized) {
                 imgTex = ClientImageCache.getOrBuildPixelizedTexture(img.uuid, img.gridW, img.gridH);
@@ -98,16 +105,16 @@ public class PosterInHandRenderer {
             }
             if (imgTex == null) continue;
 
-            float x0 = BORDER + (float) img.gridX / cached.canvasSize * drawSize;
-            float y0 = BORDER + (float) img.gridY / cached.canvasSize * drawSize;
-            float x1 = BORDER + (float)(img.gridX + img.gridW) / cached.canvasSize * drawSize;
-            float y1 = BORDER + (float)(img.gridY + img.gridH) / cached.canvasSize * drawSize;
+            float x0 = BORDER + (float) frag.destRect().x0() / cached.canvasSize * drawSize;
+            float y0 = BORDER + (float) frag.destRect().y0() / cached.canvasSize * drawSize;
+            float x1 = BORDER + (float) frag.destRect().x1() / cached.canvasSize * drawSize;
+            float y1 = BORDER + (float) frag.destRect().y1() / cached.canvasSize * drawSize;
 
             VertexConsumer imgVc = vertexConsumers.getBuffer(RenderLayer.getText(imgTex));
-            imgVc.vertex(mat, x0, y1, -0.01f).color(255,255,255,255).texture(0f, 1f).light(light);
-            imgVc.vertex(mat, x1, y1, -0.01f).color(255,255,255,255).texture(1f, 1f).light(light);
-            imgVc.vertex(mat, x1, y0, -0.01f).color(255,255,255,255).texture(1f, 0f).light(light);
-            imgVc.vertex(mat, x0, y0, -0.01f).color(255,255,255,255).texture(0f, 0f).light(light);
+            imgVc.vertex(mat, x0, y1, Z_IMAGES).color(255,255,255,255).texture(frag.u0(), frag.v1()).light(light);
+            imgVc.vertex(mat, x1, y1, Z_IMAGES).color(255,255,255,255).texture(frag.u1(), frag.v1()).light(light);
+            imgVc.vertex(mat, x1, y0, Z_IMAGES).color(255,255,255,255).texture(frag.u1(), frag.v0()).light(light);
+            imgVc.vertex(mat, x0, y0, Z_IMAGES).color(255,255,255,255).texture(frag.u0(), frag.v0()).light(light);
         }
     }
 }
