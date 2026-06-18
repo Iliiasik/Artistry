@@ -35,6 +35,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(DeleteItemImageC2SPacket.ID, DeleteItemImageC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(ToggleItemPixelizeC2SPacket.ID, ToggleItemPixelizeC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(MoveItemImageC2SPacket.ID, MoveItemImageC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(MoveItemImageToTopC2SPacket.ID, MoveItemImageToTopC2SPacket.CODEC);
 
         PayloadTypeRegistry.playS2C().register(SyncCanvasS2CPacket.ID, SyncCanvasS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(PosterRemovedS2CPacket.ID, PosterRemovedS2CPacket.CODEC);
@@ -43,6 +44,19 @@ public class ModNetwork {
         PayloadTypeRegistry.playS2C().register(SyncImageLayerS2CPacket.ID, SyncImageLayerS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(SyncImageLockS2CPacket.ID, SyncImageLockS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(ImageEvictedS2CPacket.ID, ImageEvictedS2CPacket.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(MoveItemImageToTopC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    ItemStack stack = ctx.player().getStackInHand(payload.hand());
+                    if (stack.isEmpty() || !stack.isOf(iliiasik.artistry.item.ModItems.POSTER)) return;
+                    NbtCompound tag = getOrCreateCustomData(stack);
+                    if (!tag.contains("images")) return;
+                    iliiasik.artistry.data.CanvasImageLayer layer = new iliiasik.artistry.data.CanvasImageLayer();
+                    layer.fromNbt(tag.getList("images", net.minecraft.nbt.NbtList.COMPOUND_TYPE));
+                    layer.moveToTop(payload.uuid());
+                    tag.put("images", layer.toNbt());
+                    applyCanvasDataToStack(ctx.player(), stack, tag);
+                }));
 
         ServerPlayNetworking.registerGlobalReceiver(MoveItemImageC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
@@ -111,12 +125,17 @@ public class ModNetwork {
                     if (payload.lock()) {
                         if (img.lockedByPlayer != null && !img.lockedByPlayer.equals(playerUuid)) return;
                         img.lockedByPlayer = playerUuid;
+                        poster.imageLayer.moveToTop(payload.imageUuid());
                     } else {
                         if (playerUuid.equals(img.lockedByPlayer)) img.lockedByPlayer = null;
                     }
                     poster.markDirtyAndSync();
                     broadcastImageLockToAll(world, payload.pos(),
                             new SyncImageLockS2CPacket(payload.pos(), payload.imageUuid(), img.lockedByPlayer));
+                    if (payload.lock()) {
+                        broadcastImageLayerToWatchers(world, payload.pos(), ctx.player(),
+                                new SyncImageLayerS2CPacket(payload.pos(), poster.imageLayer.getImages()));
+                    }
                 }));
 
         ServerPlayNetworking.registerGlobalReceiver(SetCanvasSizeC2SPacket.ID,

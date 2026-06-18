@@ -176,6 +176,8 @@ public class PaintScreen extends Screen {
         if (imageToolWidget != null) imageToolWidget.setVisible(true);
         if (targetEntity != null) {
             ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), uuid, true));
+        } else if (targetStack != null && targetHand != null) {
+            ClientPlayNetworking.send(new MoveItemImageToTopC2SPacket(targetHand, uuid));
         }
     }
 
@@ -432,6 +434,8 @@ public class PaintScreen extends Screen {
                         if (targetEntity != null) {
                             ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), previousSelected, false));
                             ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), newSelected, true));
+                        } else if (targetStack != null && targetHand != null) {
+                            ClientPlayNetworking.send(new MoveItemImageToTopC2SPacket(targetHand, newSelected));
                         }
                     }
                 }
