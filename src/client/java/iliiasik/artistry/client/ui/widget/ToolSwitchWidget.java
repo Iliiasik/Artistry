@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.ui.widget;
 
+import iliiasik.artistry.client.ClientServerSettings;
 import iliiasik.artistry.client.tools.DrawingTool;
 import iliiasik.artistry.client.util.ModTextures;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -64,7 +65,6 @@ public class ToolSwitchWidget extends ClickableWidget {
         hoverBrush.update(overBrush(mouseX, mouseY));
         hoverEraser.update(overEraser(mouseX, mouseY));
         hoverPipette.update(overPipette(mouseX, mouseY));
-        hoverImage.update(overImage(mouseX, mouseY));
 
         drawTool(ctx, brushY(),   hoverBrush,   activeTool == DrawingTool.BRUSH,
                 ModTextures.BRUSH,   ModTextures.BRUSH_ACTIVE);
@@ -72,8 +72,12 @@ public class ToolSwitchWidget extends ClickableWidget {
                 ModTextures.ERASER,  ModTextures.ERASER_ACTIVE);
         drawTool(ctx, pipetteY(), hoverPipette, activeTool == DrawingTool.PIPETTE,
                 ModTextures.PIPETTE, ModTextures.PIPETTE_ACTIVE);
-        drawTool(ctx, imageY(),   hoverImage,   false,
-                ModTextures.IMAGE,   ModTextures.IMAGE);
+
+        if (!ClientServerSettings.imagesDisabled()) {
+            hoverImage.update(overImage(mouseX, mouseY));
+            drawTool(ctx, imageY(), hoverImage, false,
+                    ModTextures.IMAGE, ModTextures.IMAGE);
+        }
     }
 
     private void drawTool(DrawContext ctx, int y, HoverFadeHelper fade, boolean active,
@@ -102,7 +106,7 @@ public class ToolSwitchWidget extends ClickableWidget {
             onToolChanged.accept(activeTool);
             return true;
         }
-        if (overImage(mouseX, mouseY)) {
+        if (!ClientServerSettings.imagesDisabled() && overImage(mouseX, mouseY)) {
             onToolChanged.accept(DrawingTool.IMAGE);
             return true;
         }

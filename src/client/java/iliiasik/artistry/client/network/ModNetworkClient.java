@@ -1,19 +1,22 @@
 package iliiasik.artistry.client.network;
 
 import iliiasik.artistry.block.entity.PosterBlockEntity;
+import iliiasik.artistry.client.ClientServerSettings;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.client.ui.screen.PaintScreen;
 import iliiasik.artistry.data.CanvasImage;
+import iliiasik.artistry.network.CanvasCursorS2CPacket;
+import iliiasik.artistry.network.CanvasEnterAllowedS2CPacket;
+import iliiasik.artistry.network.CanvasPresenceLeaveS2CPacket;
 import iliiasik.artistry.network.DeliverImageS2CPacket;
 import iliiasik.artistry.network.ImageEvictedS2CPacket;
 import iliiasik.artistry.network.ImageUploadedS2CPacket;
 import iliiasik.artistry.network.PosterRemovedS2CPacket;
+import iliiasik.artistry.network.ServerSettingsS2CPacket;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import iliiasik.artistry.network.SyncImageLayerS2CPacket;
 import iliiasik.artistry.network.SyncImageLockS2CPacket;
-import iliiasik.artistry.network.CanvasCursorS2CPacket;
-import iliiasik.artistry.network.CanvasPresenceLeaveS2CPacket;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.math.BlockPos;
@@ -22,27 +25,6 @@ import java.util.UUID;
 
 public class ModNetworkClient {
     public static void register() {
-
-        ClientPlayNetworking.registerGlobalReceiver(CanvasCursorS2CPacket.ID,
-                (payload, ctx) -> ctx.client().execute(() -> {
-                    MinecraftClient mc = ctx.client();
-                    if (mc.currentScreen instanceof PaintScreen screen) {
-                        if (payload.pos().equals(screen.getTargetPos())) {
-                            screen.receiveCursor(payload.uuid(), payload.gx() / 16f, payload.gy() / 16f);
-                        }
-                    }
-                }));
-
-        ClientPlayNetworking.registerGlobalReceiver(CanvasPresenceLeaveS2CPacket.ID,
-                (payload, ctx) -> ctx.client().execute(() -> {
-                    MinecraftClient mc = ctx.client();
-                    if (mc.currentScreen instanceof PaintScreen screen) {
-                        if (payload.pos().equals(screen.getTargetPos())) {
-                            screen.removePresence(payload.uuid());
-                        }
-                    }
-                }));
-
         ClientPlayNetworking.registerGlobalReceiver(SyncCanvasS2CPacket.ID,
                 (payload, ctx) -> ctx.client().execute(() -> {
                     MinecraftClient mc = ctx.client();
@@ -141,5 +123,38 @@ public class ModNetworkClient {
                         }
                     }
                 }));
+
+        ClientPlayNetworking.registerGlobalReceiver(CanvasCursorS2CPacket.ID,
+                (payload, ctx) -> ctx.client().execute(() -> {
+                    MinecraftClient mc = ctx.client();
+                    if (mc.currentScreen instanceof PaintScreen screen) {
+                        if (payload.pos().equals(screen.getTargetPos())) {
+                            screen.receiveCursor(payload.uuid(), payload.gx() / 16f, payload.gy() / 16f);
+                        }
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(CanvasPresenceLeaveS2CPacket.ID,
+                (payload, ctx) -> ctx.client().execute(() -> {
+                    MinecraftClient mc = ctx.client();
+                    if (mc.currentScreen instanceof PaintScreen screen) {
+                        if (payload.pos().equals(screen.getTargetPos())) {
+                            screen.removePresence(payload.uuid());
+                        }
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(CanvasEnterAllowedS2CPacket.ID,
+                (payload, ctx) -> ctx.client().execute(() -> {
+                    MinecraftClient mc = ctx.client();
+                    if (mc.world == null) return;
+                    if (mc.world.getBlockEntity(payload.pos()) instanceof PosterBlockEntity poster) {
+                        mc.setScreen(new PaintScreen(poster));
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(ServerSettingsS2CPacket.ID,
+                (payload, ctx) -> ctx.client().execute(() ->
+                        ClientServerSettings.setDisableImages(payload.disableImages())));
     }
 }

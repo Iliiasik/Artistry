@@ -48,6 +48,18 @@ public class PosterPresence {
         }
     }
 
+    public static boolean tryOpen(ServerPlayerEntity player, ServerWorld world, BlockPos pos, int maxEditors) {
+        Loc loc = new Loc(world, pos.toImmutable());
+        Map<UUID, ServerPlayerEntity> v = viewers.get(loc);
+        boolean alreadyViewer = v != null && v.containsKey(player.getUuid());
+        int count = v == null ? 0 : v.size();
+        if (maxEditors > 0 && !alreadyViewer && count >= maxEditors) {
+            return false;
+        }
+        open(player, world, pos);
+        return true;
+    }
+
     public static void updateCursor(ServerPlayerEntity player, ServerWorld world, BlockPos pos, short gx, short gy) {
         Loc loc = new Loc(world, pos.toImmutable());
         Map<UUID, ServerPlayerEntity> v = viewers.get(loc);

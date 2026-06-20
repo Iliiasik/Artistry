@@ -19,6 +19,7 @@ public class ArtistryConfig {
     private static ArtistryConfig instance;
 
     public final NetworkConfig network = new NetworkConfig();
+    public final PosterConfig poster = new PosterConfig();
 
     public static class NetworkConfig {
         public long batchIntervalMs = 50;
@@ -43,6 +44,18 @@ public class ArtistryConfig {
             } else if (cursorIntervalMs > MAX_CURSOR_INTERVAL_MS) {
                 System.err.println("[Artistry] cursorIntervalMs too high (" + cursorIntervalMs + "), clamping to " + MAX_CURSOR_INTERVAL_MS);
                 cursorIntervalMs = MAX_CURSOR_INTERVAL_MS;
+            }
+        }
+    }
+
+    public static class PosterConfig {
+        public int maxEditors = 3;
+        public boolean disableImages = false;
+
+        public void validate() {
+            if (maxEditors < 0) {
+                System.err.println("[Artistry] maxEditors below 0 (" + maxEditors + "), clamping to 0");
+                maxEditors = 0;
             }
         }
     }
@@ -72,6 +85,7 @@ public class ArtistryConfig {
 
     private void validate() {
         network.validate();
+        poster.validate();
     }
 
     private static void save(ArtistryConfig cfg) {

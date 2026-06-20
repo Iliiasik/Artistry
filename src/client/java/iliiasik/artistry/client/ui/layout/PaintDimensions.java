@@ -1,5 +1,7 @@
 package iliiasik.artistry.client.ui.layout;
 
+import iliiasik.artistry.client.ClientServerSettings;
+
 public class PaintDimensions {
     public static final float BASE_W = 900.0f;
     public static final float BASE_H = 600.0f;
@@ -55,8 +57,9 @@ public class PaintDimensions {
         drawingAreaX = canvasX + border;
         drawingAreaY = canvasY + border;
 
+        int toolButtons = ClientServerSettings.imagesDisabled() ? 3 : 4;
         toolSwitchW = s(64);
-        toolSwitchH = s(64) * 4 + Math.round(s(64) * (6.0f / 64.0f)) * 3;
+        toolSwitchH = s(64) * toolButtons + Math.round(s(64) * (6.0f / 64.0f)) * (toolButtons - 1);
         toolSwitchX = canvasX + canvasSize + s(12);
         toolSwitchY = canvasY;
 

@@ -1,16 +1,18 @@
 package iliiasik.artistry.network;
 
+import iliiasik.artistry.block.entity.PosterBlockEntity;
+import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.server.ImageStorage;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import iliiasik.artistry.block.entity.PosterBlockEntity;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,6 +30,7 @@ public class ModNetwork {
         PayloadTypeRegistry.playC2S().register(LockCanvasImageC2SPacket.ID, LockCanvasImageC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(CanvasViewC2SPacket.ID, CanvasViewC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(CanvasCursorC2SPacket.ID, CanvasCursorC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(CanvasEnterRequestC2SPacket.ID, CanvasEnterRequestC2SPacket.CODEC);
 
         PayloadTypeRegistry.playS2C().register(SyncCanvasS2CPacket.ID, SyncCanvasS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(PosterRemovedS2CPacket.ID, PosterRemovedS2CPacket.CODEC);
@@ -38,29 +41,8 @@ public class ModNetwork {
         PayloadTypeRegistry.playS2C().register(ImageEvictedS2CPacket.ID, ImageEvictedS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(CanvasCursorS2CPacket.ID, CanvasCursorS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(CanvasPresenceLeaveS2CPacket.ID, CanvasPresenceLeaveS2CPacket.CODEC);
-
-        ServerPlayNetworking.registerGlobalReceiver(CanvasCursorC2SPacket.ID,
-                (payload, ctx) -> ctx.server().execute(() -> {
-                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
-                    PosterPresence.updateCursor(ctx.player(), world, payload.pos(), payload.gx(), payload.gy());
-                }));
-
-        ServerPlayNetworking.registerGlobalReceiver(CanvasViewC2SPacket.ID,
-                (payload, ctx) -> ctx.server().execute(() -> {
-                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
-                    if (!(world.getBlockEntity(payload.pos()) instanceof PosterBlockEntity poster)) return;
-                    if (payload.open()) {
-                        PosterPresence.open(ctx.player(), world, payload.pos());
-                        ServerPlayNetworking.send(ctx.player(),
-                                new SyncImageLayerS2CPacket(payload.pos(), poster.imageLayer.getImages()));
-                    } else {
-                        PosterPresence.close(ctx.player(), world, payload.pos());
-                    }
-                }));
-
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                PosterPresence.disconnect(handler.player));
-
+        PayloadTypeRegistry.playS2C().register(CanvasEnterAllowedS2CPacket.ID, CanvasEnterAllowedS2CPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(ServerSettingsS2CPacket.ID, ServerSettingsS2CPacket.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(SetCanvasSizeC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
@@ -87,6 +69,7 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(UploadImageC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
+                    if (ArtistryConfig.get().poster.disableImages) return;
                     PosterAccess access = PosterAccess.resolve(ctx.player(), payload.target());
                     if (access == null) return;
                     if (!access.canvasData().isSizeChosen()) return;
@@ -165,6 +148,44 @@ public class ModNetwork {
                         e.printStackTrace();
                     }
                 }));
+
+        ServerPlayNetworking.registerGlobalReceiver(CanvasViewC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
+                    if (!(world.getBlockEntity(payload.pos()) instanceof PosterBlockEntity poster)) return;
+                    if (payload.open()) {
+                        PosterPresence.open(ctx.player(), world, payload.pos());
+                        ServerPlayNetworking.send(ctx.player(),
+                                new SyncImageLayerS2CPacket(payload.pos(), poster.imageLayer.getImages()));
+                    } else {
+                        PosterPresence.close(ctx.player(), world, payload.pos());
+                    }
+                }));
+
+        ServerPlayNetworking.registerGlobalReceiver(CanvasCursorC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
+                    PosterPresence.updateCursor(ctx.player(), world, payload.pos(), payload.gx(), payload.gy());
+                }));
+
+        ServerPlayNetworking.registerGlobalReceiver(CanvasEnterRequestC2SPacket.ID,
+                (payload, ctx) -> ctx.server().execute(() -> {
+                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
+                    if (!(world.getBlockEntity(payload.pos()) instanceof PosterBlockEntity)) return;
+                    int max = ArtistryConfig.get().poster.maxEditors;
+                    if (!PosterPresence.tryOpen(ctx.player(), world, payload.pos(), max)) {
+                        ctx.player().sendMessage(Text.translatable("message.artistry.too_many_editors"), true);
+                        return;
+                    }
+                    ServerPlayNetworking.send(ctx.player(), new CanvasEnterAllowedS2CPacket(payload.pos()));
+                }));
+
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                PosterPresence.disconnect(handler.player));
+
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                ServerPlayNetworking.send(handler.player,
+                        new ServerSettingsS2CPacket(ArtistryConfig.get().poster.disableImages)));
     }
 
     private static void deleteEvictedImages(List<UUID> evicted) {

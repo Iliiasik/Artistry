@@ -30,8 +30,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.math.BlockPos;
 
 public class ArtistryClient implements ClientModInitializer {
 
@@ -51,6 +53,7 @@ public class ArtistryClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ClientImageCache.clear();
             PosterBlockEntityRenderer.clearAllPendingRequests();
+            ClientServerSettings.reset();
             lastMainHandStack = ItemStack.EMPTY;
             lastOffHandStack = ItemStack.EMPTY;
         });
@@ -84,7 +87,7 @@ public class ArtistryClient implements ClientModInitializer {
                     if (!poster.canvasData.isSizeChosen()) {
                         mc.setScreen(new CanvasSizeScreen(poster));
                     } else {
-                        mc.setScreen(new PaintScreen(poster));
+                        ClientPlayNetworking.send(new CanvasEnterRequestC2SPacket(poster.getPos()));
                     }
                     return ActionResult.SUCCESS;
                 }
