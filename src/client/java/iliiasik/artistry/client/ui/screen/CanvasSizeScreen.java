@@ -2,8 +2,8 @@ package iliiasik.artistry.client.ui.screen;
 
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.util.ModTextures;
+import iliiasik.artistry.network.PosterTarget;
 import iliiasik.artistry.network.SetCanvasSizeC2SPacket;
-import iliiasik.artistry.network.SetItemCanvasSizeC2SPacket;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
@@ -137,13 +137,12 @@ public class CanvasSizeScreen extends Screen {
         if (targetEntity != null) {
             targetEntity.canvasData.canvasSize = size;
             if (MinecraftClient.getInstance().getNetworkHandler() != null) {
-                ClientPlayNetworking.send(new SetCanvasSizeC2SPacket(targetEntity.getPos(), size));
+                ClientPlayNetworking.send(new SetCanvasSizeC2SPacket(new PosterTarget.World(targetEntity.getPos()), size));
             }
             MinecraftClient.getInstance().setScreen(new PaintScreen(targetEntity));
         } else if (targetStack != null) {
-
             if (MinecraftClient.getInstance().getNetworkHandler() != null) {
-                ClientPlayNetworking.send(new SetItemCanvasSizeC2SPacket(targetHand, size));
+                ClientPlayNetworking.send(new SetCanvasSizeC2SPacket(new PosterTarget.Held(targetHand), size));
             }
             MinecraftClient.getInstance().setScreen(new PaintScreen(targetStack, targetHand, size));
         }

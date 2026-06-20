@@ -22,9 +22,12 @@ public class ArtistryConfig {
 
     public static class NetworkConfig {
         public long batchIntervalMs = 50;
+        public long cursorIntervalMs = 100;
 
         private static final long MIN_BATCH_INTERVAL_MS = 10;
         private static final long MAX_BATCH_INTERVAL_MS = 5000;
+        private static final long MIN_CURSOR_INTERVAL_MS = 50;
+        private static final long MAX_CURSOR_INTERVAL_MS = 1000;
 
         public void validate() {
             if (batchIntervalMs < MIN_BATCH_INTERVAL_MS) {
@@ -33,6 +36,13 @@ public class ArtistryConfig {
             } else if (batchIntervalMs > MAX_BATCH_INTERVAL_MS) {
                 System.err.println("[Artistry] batchIntervalMs too high (" + batchIntervalMs + "), clamping to " + MAX_BATCH_INTERVAL_MS);
                 batchIntervalMs = MAX_BATCH_INTERVAL_MS;
+            }
+            if (cursorIntervalMs < MIN_CURSOR_INTERVAL_MS) {
+                System.err.println("[Artistry] cursorIntervalMs too low (" + cursorIntervalMs + "), clamping to " + MIN_CURSOR_INTERVAL_MS);
+                cursorIntervalMs = MIN_CURSOR_INTERVAL_MS;
+            } else if (cursorIntervalMs > MAX_CURSOR_INTERVAL_MS) {
+                System.err.println("[Artistry] cursorIntervalMs too high (" + cursorIntervalMs + "), clamping to " + MAX_CURSOR_INTERVAL_MS);
+                cursorIntervalMs = MAX_CURSOR_INTERVAL_MS;
             }
         }
     }

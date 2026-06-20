@@ -28,6 +28,12 @@ public record SyncImageLayerS2CPacket(BlockPos pos, List<CanvasImage> images) im
             buf.writeInt(img.gridW);
             buf.writeInt(img.gridH);
             buf.writeBoolean(img.pixelized);
+            boolean locked = img.lockedByPlayer != null;
+            buf.writeBoolean(locked);
+            if (locked) {
+                buf.writeLong(img.lockedByPlayer.getMostSignificantBits());
+                buf.writeLong(img.lockedByPlayer.getLeastSignificantBits());
+            }
         }
     }
 
@@ -39,6 +45,9 @@ public record SyncImageLayerS2CPacket(BlockPos pos, List<CanvasImage> images) im
             UUID uuid = new UUID(buf.readLong(), buf.readLong());
             CanvasImage img = new CanvasImage(uuid, buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
             img.pixelized = buf.readBoolean();
+            if (buf.readBoolean()) {
+                img.lockedByPlayer = new UUID(buf.readLong(), buf.readLong());
+            }
             images.add(img);
         }
         return new SyncImageLayerS2CPacket(pos, images);

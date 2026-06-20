@@ -4,10 +4,12 @@ import iliiasik.artistry.client.image.CanvasImageRenderer;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.image.ImageLayerController;
 import iliiasik.artistry.client.palette.ColorPalette;
+import iliiasik.artistry.client.presence.CanvasPresence;
 import iliiasik.artistry.client.tools.DrawingTool;
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.renderer.CanvasRenderer;
+import iliiasik.artistry.client.renderer.PresenceBadgeRenderer;
 import iliiasik.artistry.client.ui.widget.HexInputWidget;
 import iliiasik.artistry.client.ui.widget.ImageToolWidget;
 import iliiasik.artistry.client.ui.widget.PaletteSwitcherWidget;
@@ -31,6 +33,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -44,6 +47,8 @@ public class PaintScreen extends Screen {
 
     private static final long BATCH_INTERVAL_MS =
             iliiasik.artistry.config.ArtistryConfig.get().network.batchIntervalMs;
+    private static final long CURSOR_INTERVAL_MS =
+            iliiasik.artistry.config.ArtistryConfig.get().network.cursorIntervalMs;
 
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
@@ -52,6 +57,7 @@ public class PaintScreen extends Screen {
     private final CanvasRenderer canvasRenderer = new CanvasRenderer();
     private final CanvasImageLayer imageLayer = new CanvasImageLayer();
     private final ImageLayerController imageController = new ImageLayerController(imageLayer);
+    private final CanvasPresence presence = new CanvasPresence();
 
     private final PosterBlockEntity targetEntity;
     private final ItemStack targetStack;
@@ -71,10 +77,15 @@ public class PaintScreen extends Screen {
     private boolean imageMode = false;
     private boolean imageDragging = false;
     private boolean pendingImageSync = false;
+    private boolean viewRegistered = false;
 
     private long lastFlushTime = 0;
     private long lastImageSyncTime = 0;
     private static final long IMAGE_SYNC_INTERVAL_MS = 150;
+
+    private long lastCursorSentTime = 0;
+    private int lastSentCursorGx = Integer.MIN_VALUE;
+    private int lastSentCursorGy = Integer.MIN_VALUE;
 
     private boolean pendingClose = false;
 
@@ -118,6 +129,27 @@ public class PaintScreen extends Screen {
         requestMissingImages();
     }
 
+    private PosterTarget target() {
+        if (targetEntity != null) return new PosterTarget.World(targetEntity.getPos());
+        return new PosterTarget.Held(targetHand);
+    }
+
+    private void sendViewOpen() {
+        if (targetEntity == null || viewRegistered) return;
+        if (MinecraftClient.getInstance().getNetworkHandler() != null) {
+            ClientPlayNetworking.send(new CanvasViewC2SPacket(targetEntity.getPos(), true));
+            viewRegistered = true;
+        }
+    }
+
+    private void sendViewClose() {
+        if (targetEntity == null || !viewRegistered) return;
+        if (MinecraftClient.getInstance().getNetworkHandler() != null) {
+            ClientPlayNetworking.send(new CanvasViewC2SPacket(targetEntity.getPos(), false));
+        }
+        viewRegistered = false;
+    }
+
     private void requestMissingImages() {
         for (CanvasImage img : imageLayer.getImages()) {
             if (!ClientImageCache.has(img.uuid)) {
@@ -128,6 +160,14 @@ public class PaintScreen extends Screen {
 
     public BlockPos getTargetPos() {
         return targetEntity != null ? targetEntity.getPos() : null;
+    }
+
+    public void receiveCursor(UUID uuid, float gx, float gy) {
+        presence.updateCursor(uuid, gx, gy);
+    }
+
+    public void removePresence(UUID uuid) {
+        presence.remove(uuid);
     }
 
     public void applyRemoteChanges(List<CanvasData.PixelChange> changes) {
@@ -159,10 +199,9 @@ public class PaintScreen extends Screen {
     }
 
     public void onImageUploaded(UUID uuid, int gridX, int gridY, int gridW, int gridH) {
+        if (imageLayer.findByUuid(uuid) != null) return;
         CanvasImage img = new CanvasImage(uuid, gridX, gridY, gridW, gridH);
         imageLayer.addImage(img);
-        imageController.clearSelection();
-        enterImageMode(uuid);
     }
 
     public void scheduledClose() {
@@ -174,18 +213,14 @@ public class PaintScreen extends Screen {
         if (toolSwitchWidget != null) toolSwitchWidget.setVisible(false);
         if (sizeSwitcherWidget != null) sizeSwitcherWidget.setVisible(false);
         if (imageToolWidget != null) imageToolWidget.setVisible(true);
-        if (targetEntity != null) {
-            ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), uuid, true));
-        } else if (targetStack != null && targetHand != null) {
-            ClientPlayNetworking.send(new MoveItemImageToTopC2SPacket(targetHand, uuid));
-        }
+        ClientPlayNetworking.send(new LockCanvasImageC2SPacket(target(), uuid, true));
     }
 
     private void exitImageMode() {
         if (imageMode && targetEntity != null) {
             UUID sel = imageController.getSelectedUuid();
             if (sel != null) {
-                ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), sel, false));
+                ClientPlayNetworking.send(new LockCanvasImageC2SPacket(target(), sel, false));
             }
         }
         imageMode = false;
@@ -285,11 +320,7 @@ public class PaintScreen extends Screen {
                     if (action == ImageToolWidget.Action.DELETE) {
                         imageLayer.removeImage(sel);
                         exitImageMode();
-                        if (targetEntity != null) {
-                            ClientPlayNetworking.send(new DeleteCanvasImageC2SPacket(targetEntity.getPos(), sel));
-                        } else if (targetStack != null && targetHand != null) {
-                            ClientPlayNetworking.send(new DeleteItemImageC2SPacket(targetHand, sel));
-                        }
+                        ClientPlayNetworking.send(new DeleteCanvasImageC2SPacket(target(), sel));
                     } else if (action == ImageToolWidget.Action.PIXELIZE) {
                         CanvasImage img = imageLayer.findByUuid(sel);
                         if (img != null) {
@@ -298,16 +329,14 @@ public class PaintScreen extends Screen {
                                 ClientImageCache.rebuildPixelizedTexture(sel, img.gridW, img.gridH);
                             }
                         }
-                        if (targetEntity != null) {
-                            ClientPlayNetworking.send(new TogglePixelizeC2SPacket(targetEntity.getPos(), sel));
-                        } else if (targetStack != null && targetHand != null) {
-                            ClientPlayNetworking.send(new ToggleItemPixelizeC2SPacket(targetHand, sel));
-                        }
+                        ClientPlayNetworking.send(new TogglePixelizeC2SPacket(target(), sel));
                     }
                 }
         );
         imageToolWidget.setVisible(false);
         addDrawableChild(imageToolWidget);
+
+        sendViewOpen();
     }
 
     private void openFilePicker() {
@@ -325,11 +354,7 @@ public class PaintScreen extends Screen {
             if (path != null) {
                 try {
                     byte[] bytes = convertToPng(new File(path));
-                    if (targetEntity != null) {
-                        ClientPlayNetworking.send(new UploadImageC2SPacket(targetEntity.getPos(), bytes));
-                    } else if (targetStack != null && targetHand != null) {
-                        ClientPlayNetworking.send(new UploadItemImageC2SPacket(targetHand, bytes));
-                    }
+                    ClientPlayNetworking.send(new UploadImageC2SPacket(target(), bytes));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -354,6 +379,7 @@ public class PaintScreen extends Screen {
         if (imageMode) exitImageMode();
         canvasRenderer.close();
         flushToServer();
+        sendViewClose();
         if (targetStack != null) {
             saveToItem();
         }
@@ -367,7 +393,7 @@ public class PaintScreen extends Screen {
         lastSentSnapshot.copyFrom(canvasData);
         lastFlushTime = System.currentTimeMillis();
         if (MinecraftClient.getInstance().getNetworkHandler() != null) {
-            ClientPlayNetworking.send(new SaveCanvasC2SPacket(targetEntity.getPos(), changes));
+            ClientPlayNetworking.send(new SaveCanvasC2SPacket(target(), changes));
         }
     }
 
@@ -379,13 +405,8 @@ public class PaintScreen extends Screen {
         if (img.pixelized) {
             ClientImageCache.rebuildPixelizedTexture(sel, img.gridW, img.gridH);
         }
-        if (targetEntity != null) {
-            ClientPlayNetworking.send(new MoveCanvasImageC2SPacket(
-                    targetEntity.getPos(), sel, img.gridX, img.gridY, img.gridW, img.gridH));
-        } else if (targetStack != null && targetHand != null) {
-            ClientPlayNetworking.send(new MoveItemImageC2SPacket(
-                    targetHand, sel, img.gridX, img.gridY, img.gridW, img.gridH));
-        }
+        ClientPlayNetworking.send(new MoveCanvasImageC2SPacket(
+                target(), sel, img.gridX, img.gridY, img.gridW, img.gridH));
         pendingImageSync = false;
         lastImageSyncTime = System.currentTimeMillis();
     }
@@ -400,7 +421,7 @@ public class PaintScreen extends Screen {
         tag.put("images", imageLayer.toNbt());
         targetStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
         if (!changes.isEmpty() && MinecraftClient.getInstance().getNetworkHandler() != null) {
-            ClientPlayNetworking.send(new SaveItemCanvasC2SPacket(targetHand, changes));
+            ClientPlayNetworking.send(new SaveCanvasC2SPacket(target(), changes));
         }
     }
 
@@ -411,6 +432,26 @@ public class PaintScreen extends Screen {
         }
         if (targetEntity != null && pendingImageSync && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
             flushImageMove();
+        }
+    }
+
+    private void tickCursor() {
+        if (targetEntity == null || !viewRegistered) return;
+        if (!canvasData.isSizeChosen()) return;
+        long now = System.currentTimeMillis();
+        if (now - lastCursorSentTime < CURSOR_INTERVAL_MS) return;
+        if (!isInsideDrawingArea(hoverMouseX, hoverMouseY)) return;
+        double pixelSize = (double) dims.drawingAreaSize / canvasData.canvasSize;
+        double gx = MathHelper.clamp((hoverMouseX - dims.drawingAreaX) / pixelSize, 0.0, canvasData.canvasSize);
+        double gy = MathHelper.clamp((hoverMouseY - dims.drawingAreaY) / pixelSize, 0.0, canvasData.canvasSize);
+        int sgx = (int) Math.round(gx * 16);
+        int sgy = (int) Math.round(gy * 16);
+        if (sgx == lastSentCursorGx && sgy == lastSentCursorGy) return;
+        lastSentCursorGx = sgx;
+        lastSentCursorGy = sgy;
+        lastCursorSentTime = now;
+        if (MinecraftClient.getInstance().getNetworkHandler() != null) {
+            ClientPlayNetworking.send(new CanvasCursorC2SPacket(targetEntity.getPos(), (short) sgx, (short) sgy));
         }
     }
 
@@ -431,12 +472,8 @@ public class PaintScreen extends Screen {
                 } else {
                     UUID newSelected = imageController.getSelectedUuid();
                     if (previousSelected != null && !previousSelected.equals(newSelected)) {
-                        if (targetEntity != null) {
-                            ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), previousSelected, false));
-                            ClientPlayNetworking.send(new LockCanvasImageC2SPacket(targetEntity.getPos(), newSelected, true));
-                        } else if (targetStack != null && targetHand != null) {
-                            ClientPlayNetworking.send(new MoveItemImageToTopC2SPacket(targetHand, newSelected));
-                        }
+                        ClientPlayNetworking.send(new LockCanvasImageC2SPacket(target(), previousSelected, false));
+                        ClientPlayNetworking.send(new LockCanvasImageC2SPacket(target(), newSelected, true));
                     }
                 }
                 imageDragging = hit;
@@ -605,6 +642,7 @@ public class PaintScreen extends Screen {
         }
 
         tickBatch();
+        tickCursor();
         dims.calculate(width, height);
 
         if (toolSwitchWidget != null) {
@@ -651,6 +689,13 @@ public class PaintScreen extends Screen {
         renderHoverHighlight(context);
 
         super.render(context, mouseX, mouseY, delta);
+
+        if (canvasData.isSizeChosen()) {
+            presence.interpolate(0.35f);
+            PresenceBadgeRenderer.renderAll(context, presence, imageLayer.getImages(),
+                    dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize,
+                    localPlayerUuid);
+        }
     }
 
     @Override
