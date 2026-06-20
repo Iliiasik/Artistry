@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.ui.screen;
 
+import iliiasik.artistry.client.ClientServerSettings;
 import iliiasik.artistry.client.image.CanvasImageRenderer;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.image.ImageLayerController;
@@ -44,11 +45,6 @@ import java.util.List;
 import java.util.UUID;
 
 public class PaintScreen extends Screen {
-
-    private static final long BATCH_INTERVAL_MS =
-            iliiasik.artistry.config.ArtistryConfig.get().network.batchIntervalMs;
-    private static final long CURSOR_INTERVAL_MS =
-            iliiasik.artistry.config.ArtistryConfig.get().network.cursorIntervalMs;
 
     private final PaintDimensions dims = new PaintDimensions();
     private final CanvasData canvasData = new CanvasData();
@@ -427,7 +423,7 @@ public class PaintScreen extends Screen {
 
     private void tickBatch() {
         long now = System.currentTimeMillis();
-        if (targetEntity != null && now - lastFlushTime >= BATCH_INTERVAL_MS) {
+        if (targetEntity != null && now - lastFlushTime >= ClientServerSettings.batchIntervalMs()) {
             flushToServer();
         }
         if (targetEntity != null && pendingImageSync && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
@@ -439,7 +435,7 @@ public class PaintScreen extends Screen {
         if (targetEntity == null || !viewRegistered) return;
         if (!canvasData.isSizeChosen()) return;
         long now = System.currentTimeMillis();
-        if (now - lastCursorSentTime < CURSOR_INTERVAL_MS) return;
+        if (now - lastCursorSentTime < ClientServerSettings.cursorIntervalMs()) return;
         if (!isInsideDrawingArea(hoverMouseX, hoverMouseY)) return;
         double pixelSize = (double) dims.drawingAreaSize / canvasData.canvasSize;
         double gx = MathHelper.clamp((hoverMouseX - dims.drawingAreaX) / pixelSize, 0.0, canvasData.canvasSize);

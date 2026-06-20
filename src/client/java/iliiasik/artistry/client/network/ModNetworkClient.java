@@ -155,6 +155,7 @@ public class ModNetworkClient {
 
         ClientPlayNetworking.registerGlobalReceiver(ServerSettingsS2CPacket.ID,
                 (payload, ctx) -> ctx.client().execute(() ->
-                        ClientServerSettings.setDisableImages(payload.disableImages())));
+                        ClientServerSettings.apply(payload.disableImages(),
+                                payload.batchIntervalMs(), payload.cursorIntervalMs())));
     }
 }

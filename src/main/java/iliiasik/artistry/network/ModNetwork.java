@@ -5,9 +5,12 @@ import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.server.ImageStorage;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -55,6 +58,7 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(SaveCanvasC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
+                    if (!PacketThrottle.allow(ctx.player().getUuid(), PacketThrottle.Channel.SAVE)) return;
                     PosterAccess access = PosterAccess.resolve(ctx.player(), payload.target());
                     if (access == null) return;
                     if (!access.canvasData().isSizeChosen()) return;
@@ -164,6 +168,7 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(CanvasCursorC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
+                    if (!PacketThrottle.allow(ctx.player().getUuid(), PacketThrottle.Channel.CURSOR)) return;
                     if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
                     PosterPresence.updateCursor(ctx.player(), world, payload.pos(), payload.gx(), payload.gy());
                 }));
@@ -180,12 +185,33 @@ public class ModNetwork {
                     ServerPlayNetworking.send(ctx.player(), new CanvasEnterAllowedS2CPacket(payload.pos()));
                 }));
 
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                PosterPresence.disconnect(handler.player));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            PosterPresence.disconnect(handler.player);
+            PacketThrottle.remove(handler.player.getUuid());
+        });
 
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                ServerPlayNetworking.send(handler.player,
-                        new ServerSettingsS2CPacket(ArtistryConfig.get().poster.disableImages)));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ArtistryConfig cfg = ArtistryConfig.get();
+            ServerPlayNetworking.send(handler.player, new ServerSettingsS2CPacket(
+                    cfg.poster.disableImages, cfg.network.batchIntervalMs, cfg.network.cursorIntervalMs));
+        });
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+                dispatcher.register(CommandManager.literal("artistry")
+                        .requires(src -> src.hasPermissionLevel(2))
+                        .then(CommandManager.literal("reload")
+                                .executes(cmdCtx -> {
+                                    ArtistryConfig cfg = ArtistryConfig.reload();
+                                    MinecraftServer server = cmdCtx.getSource().getServer();
+                                    ServerSettingsS2CPacket packet = new ServerSettingsS2CPacket(
+                                            cfg.poster.disableImages, cfg.network.batchIntervalMs, cfg.network.cursorIntervalMs);
+                                    for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                                        ServerPlayNetworking.send(p, packet);
+                                    }
+                                    cmdCtx.getSource().sendFeedback(
+                                            () -> Text.literal("[Artistry] Config reloaded and synced to players"), true);
+                                    return 1;
+                                }))));
     }
 
     private static void deleteEvictedImages(List<UUID> evicted) {

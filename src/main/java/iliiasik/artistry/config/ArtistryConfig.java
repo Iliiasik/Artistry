@@ -65,6 +65,11 @@ public class ArtistryConfig {
         return instance;
     }
 
+    public static ArtistryConfig reload() {
+        instance = load();
+        return instance;
+    }
+
     private static ArtistryConfig load() {
         try {
             Files.createDirectories(CONFIG_PATH.getParent());
