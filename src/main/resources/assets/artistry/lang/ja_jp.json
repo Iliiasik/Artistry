@@ -2,5 +2,6 @@
   "item.artistry.poster": "ポスター",
   "block.artistry.poster": "ポスター",
   "itemGroup.artistry": "Artistry",
-  "screen.artistry.choose_size": "サイズを選択"
+  "screen.artistry.choose_size": "サイズを選択",
+  "message.artistry.too_many_editors": "プレイヤーが多すぎるこのポスターを編集しています"
 }

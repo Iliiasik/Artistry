@@ -5,7 +5,6 @@ import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.data.CanvasImageLayer;
 import iliiasik.artistry.item.ModItems;
-import iliiasik.artistry.server.ImageStorage;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
@@ -15,11 +14,9 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,7 +37,7 @@ public abstract class PosterAccess {
         if (target instanceof PosterTarget.Held held) {
             ItemStack stack = player.getStackInHand(held.hand());
             if (stack.isEmpty() || !stack.isOf(ModItems.POSTER)) return null;
-            return new ItemAccess(player, held.hand(), stack);
+            return new ItemAccess(player, stack);
         }
         return null;
     }
@@ -56,8 +53,6 @@ public abstract class PosterAccess {
     public abstract void syncCanvas(List<CanvasData.PixelChange> changes);
 
     public abstract void syncImageLayer();
-
-    public abstract void deleteImageBytes(UUID uuid);
 
     public abstract void imageEvicted(List<UUID> uuids);
 
@@ -119,15 +114,6 @@ public abstract class PosterAccess {
         }
 
         @Override
-        public void deleteImageBytes(UUID uuid) {
-            try {
-                ImageStorage.delete(uuid);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
         public void imageEvicted(List<UUID> uuids) {
             sendNear(world, pos, null, new ImageEvictedS2CPacket(uuids));
         }
@@ -154,14 +140,12 @@ public abstract class PosterAccess {
 
     static final class ItemAccess extends PosterAccess {
 
-        private final Hand hand;
         private final ItemStack stack;
         private final CanvasData canvasData = new CanvasData();
         private final CanvasImageLayer imageLayer = new CanvasImageLayer();
 
-        ItemAccess(ServerPlayerEntity player, Hand hand, ItemStack stack) {
+        ItemAccess(ServerPlayerEntity player, ItemStack stack) {
             super(player);
-            this.hand = hand;
             this.stack = stack;
             NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
             NbtCompound tag = comp != null ? comp.copyNbt() : new NbtCompound();
@@ -209,10 +193,6 @@ public abstract class PosterAccess {
 
         @Override
         public void syncImageLayer() {
-        }
-
-        @Override
-        public void deleteImageBytes(UUID uuid) {
         }
 
         @Override

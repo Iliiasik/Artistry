@@ -144,18 +144,23 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         Matrix4f mat = matrices.peek().getPositionMatrix();
         int ov = OverlayTexture.DEFAULT_UV;
 
-        // The poster's image grid is mirrored horizontally relative to world space.
-        // Mirror geometry only; texture U follows the same edge of the source image
-        // as the (unmirrored) destination edge it's replacing, so a corner that was
-        // originally the image's left edge keeps sampling the image's left edge,
-        // regardless of how the destination quad is mirrored on screen.
         float mx0 = 1f - x1;
         float mx1 = 1f - x0;
 
-        vc.vertex(mat, mx0, 1f - y0, Z_IMAGES).texture(texU1, texV0).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, mx1, 1f - y0, Z_IMAGES).texture(texU0, texV0).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, mx1, 1f - y1, Z_IMAGES).texture(texU0, texV1).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
-        vc.vertex(mat, mx0, 1f - y1, Z_IMAGES).texture(texU1, texV1).color(255,255,255,255).overlay(ov).light(light).normal(matrices.peek(), 0,0,1);
+        emitImageVertex(vc, mat, matrices, mx0, 1f - y0, texU1, texV0, ov, light);
+        emitImageVertex(vc, mat, matrices, mx1, 1f - y0, texU0, texV0, ov, light);
+        emitImageVertex(vc, mat, matrices, mx1, 1f - y1, texU0, texV1, ov, light);
+        emitImageVertex(vc, mat, matrices, mx0, 1f - y1, texU1, texV1, ov, light);
+    }
+
+    private void emitImageVertex(VertexConsumer vc, Matrix4f mat, MatrixStack matrices,
+                                 float x, float y, float u, float v, int overlay, int light) {
+        vc.vertex(mat, x, y, Z_IMAGES)
+                .texture(u, v)
+                .color(255, 255, 255, 255)
+                .overlay(overlay)
+                .light(light)
+                .normal(matrices.peek(), 0, 0, 1);
     }
 
     private static void applyFacingRotation(MatrixStack matrices, Direction facing) {

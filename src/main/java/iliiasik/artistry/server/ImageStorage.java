@@ -24,8 +24,11 @@ public final class ImageStorage {
     }
 
     public static UUID save(byte[] bytes) throws IOException {
-        UUID uuid = UUID.randomUUID();
-        Files.write(storageDir.resolve(uuid + ".img"), bytes);
+        UUID uuid = UUID.nameUUIDFromBytes(bytes);
+        Path path = storageDir.resolve(uuid + ".img");
+        if (!Files.exists(path)) {
+            Files.write(path, bytes);
+        }
         return uuid;
     }
 
@@ -37,9 +40,5 @@ public final class ImageStorage {
 
     public static boolean exists(UUID uuid) {
         return storageDir != null && Files.exists(storageDir.resolve(uuid + ".img"));
-    }
-
-    public static void delete(UUID uuid) throws IOException {
-        Files.deleteIfExists(storageDir.resolve(uuid + ".img"));
     }
 }

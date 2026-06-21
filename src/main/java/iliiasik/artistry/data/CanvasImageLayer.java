@@ -44,8 +44,8 @@ public class CanvasImageLayer {
         return evicted;
     }
 
-    public boolean removeImage(UUID uuid) {
-        return images.removeIf(img -> img.uuid.equals(uuid));
+    public void removeImage(UUID uuid) {
+        images.removeIf(img -> img.uuid.equals(uuid));
     }
 
     public CanvasImage findByUuid(UUID uuid) {

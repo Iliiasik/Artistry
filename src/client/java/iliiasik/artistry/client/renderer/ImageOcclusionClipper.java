@@ -10,8 +10,6 @@ public final class ImageOcclusionClipper {
     private ImageOcclusionClipper() {}
 
     public record Rect(int x0, int y0, int x1, int y1) {
-        public int width() { return x1 - x0; }
-        public int height() { return y1 - y0; }
         public boolean isEmpty() { return x1 <= x0 || y1 <= y0; }
     }
 

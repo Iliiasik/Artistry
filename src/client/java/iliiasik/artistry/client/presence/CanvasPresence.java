@@ -37,10 +37,6 @@ public class CanvasPresence {
         cursors.remove(uuid);
     }
 
-    public void clear() {
-        cursors.clear();
-    }
-
     public Collection<RemoteCursor> cursors() {
         return cursors.values();
     }

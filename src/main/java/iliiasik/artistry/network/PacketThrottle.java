@@ -25,7 +25,7 @@ public class PacketThrottle {
         }
     }
 
-    public static boolean allow(UUID player, Channel channel) {
+    public static boolean throttled(UUID player, Channel channel) {
         long interval = channel == Channel.SAVE
                 ? ArtistryConfig.get().network.batchIntervalMs
                 : ArtistryConfig.get().network.cursorIntervalMs;
@@ -47,9 +47,9 @@ public class PacketThrottle {
 
         if (b.tokens >= 1.0) {
             b.tokens -= 1.0;
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     public static void remove(UUID player) {

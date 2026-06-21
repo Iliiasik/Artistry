@@ -30,10 +30,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
-import net.minecraft.util.math.BlockPos;
 
 public class ArtistryClient implements ClientModInitializer {
 
@@ -58,9 +56,7 @@ public class ArtistryClient implements ClientModInitializer {
             lastOffHandStack = ItemStack.EMPTY;
         });
 
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-            ClientImageCache.clear();
-        });
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ClientImageCache.clear());
 
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
 
@@ -122,7 +118,7 @@ public class ArtistryClient implements ClientModInitializer {
         CanvasImageLayer layer = new CanvasImageLayer();
         layer.fromNbt(tag.getList("images", NbtList.COMPOUND_TYPE));
         for (CanvasImage img : layer.getImages()) {
-            if (!ClientImageCache.has(img.uuid)) {
+            if (ClientImageCache.has(img.uuid)) {
                 ClientPlayNetworking.send(new RequestImageC2SPacket(img.uuid));
             }
         }

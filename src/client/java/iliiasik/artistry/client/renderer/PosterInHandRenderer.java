@@ -32,16 +32,7 @@ public class PosterInHandRenderer {
 
     private static final Map<Integer, CachedItemImages> imageCache = new HashMap<>();
 
-    private static class CachedItemImages {
-        final CanvasImageLayer layer;
-        final int canvasSize;
-        final int nbtHash;
-
-        CachedItemImages(CanvasImageLayer layer, int canvasSize, int nbtHash) {
-            this.layer = layer;
-            this.canvasSize = canvasSize;
-            this.nbtHash = nbtHash;
-        }
+    private record CachedItemImages(CanvasImageLayer layer, int canvasSize, int nbtHash) {
     }
 
     public static void render(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
@@ -61,7 +52,7 @@ public class PosterInHandRenderer {
         vc.vertex(mat, SIZE - BORDER, BORDER,        0).color(255,255,255,255).texture(1f, 0f).light(light);
         vc.vertex(mat, BORDER,        BORDER,        0).color(255,255,255,255).texture(0f, 0f).light(light);
 
-        renderImages(matrices, vertexConsumers, light, stack, mat);
+        renderImages(vertexConsumers, light, stack, mat);
 
         VertexConsumer frame = vertexConsumers.getBuffer(RenderLayer.getText(FRAME_TEXTURE));
         frame.vertex(mat, 0,    SIZE, 0).color(255,255,255,255).texture(0f, 1f).light(light);
@@ -70,7 +61,7 @@ public class PosterInHandRenderer {
         frame.vertex(mat, 0,    0,    0).color(255,255,255,255).texture(0f, 0f).light(light);
     }
 
-    private static void renderImages(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
+    private static void renderImages(VertexConsumerProvider vertexConsumers,
                                      int light, ItemStack stack, Matrix4f mat) {
         NbtComponent comp = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (comp == null) return;

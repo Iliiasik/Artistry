@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.image;
 
+import iliiasik.artistry.Artistry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -41,16 +42,12 @@ public final class ClientImageCache {
             MinecraftClient.getInstance().getTextureManager().registerTexture(id, tex);
             textures.put(uuid, id);
         } catch (IOException e) {
-            e.printStackTrace();
+            Artistry.LOGGER.error("Failed to register canvas image texture {}", uuid, e);
         }
     }
 
     public static Identifier getTexture(UUID uuid) {
         return textures.get(uuid);
-    }
-
-    public static byte[] getRawBytes(UUID uuid) {
-        return rawBytes.get(uuid);
     }
 
     public static int getWidth(UUID uuid) {
@@ -106,7 +103,7 @@ public final class ClientImageCache {
             pixelizedDimensions.put(uuid, new long[]{gridW, gridH});
             return id;
         } catch (IOException e) {
-            e.printStackTrace();
+            Artistry.LOGGER.error("Failed to build pixelized texture {} ({}x{})", uuid, gridW, gridH, e);
             return null;
         }
     }

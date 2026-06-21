@@ -54,11 +54,6 @@ public final class CanvasImageRenderer {
         }
     }
 
-    public static void renderAllWorld(DrawContext ctx, List<CanvasImage> images,
-                                      int drawX, int drawY, int drawSize, int canvasSize) {
-        renderAll(ctx, images, drawX, drawY, drawSize, canvasSize, null, null);
-    }
-
     private static void renderCornerHandles(DrawContext ctx, int sx, int sy, int sw, int sh) {
         int hs = 4;
         ctx.fill(sx,           sy,           sx + hs,      sy + hs,      0xFFFFFFFF);

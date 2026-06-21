@@ -29,6 +29,6 @@ public class Artistry implements ModInitializer {
         ModBlockEntities.register();
         ModNetwork.register();
         ModRecipes.register();
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> ImageStorage.init(server));
+        ServerLifecycleEvents.SERVER_STARTED.register(ImageStorage::init);
     }
 }

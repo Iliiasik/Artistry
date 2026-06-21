@@ -1,5 +1,6 @@
 package iliiasik.artistry.network;
 
+import iliiasik.artistry.Artistry;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.data.CanvasData;
@@ -58,8 +59,7 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(SaveCanvasC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
-                    if (!PacketThrottle.allow(ctx.player().getUuid(), PacketThrottle.Channel.SAVE)) return;
-                    PosterAccess access = PosterAccess.resolve(ctx.player(), payload.target());
+                    if (PacketThrottle.throttled(ctx.player().getUuid(), PacketThrottle.Channel.SAVE)) return;                    PosterAccess access = PosterAccess.resolve(ctx.player(), payload.target());
                     if (access == null) return;
                     if (!access.canvasData().isSizeChosen()) return;
                     CanvasData data = access.canvasData();
@@ -87,7 +87,6 @@ public class ModNetwork {
                         CanvasImage img = new CanvasImage(uuid, gridX, gridY, gridW, gridH);
                         List<UUID> evicted = access.imageLayer().addImage(img);
                         access.persist();
-                        deleteEvictedImages(evicted);
                         ServerPlayNetworking.send(ctx.player(),
                                 new ImageUploadedS2CPacket(access.posOrNull(), uuid, gridX, gridY, gridW, gridH));
                         ServerPlayNetworking.send(ctx.player(),
@@ -95,7 +94,7 @@ public class ModNetwork {
                         access.syncImageLayer();
                         if (!evicted.isEmpty()) access.imageEvicted(evicted);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Artistry.LOGGER.error("Failed to save uploaded image", e);
                     }
                 }));
 
@@ -119,7 +118,6 @@ public class ModNetwork {
                     if (access == null) return;
                     access.imageLayer().removeImage(payload.uuid());
                     access.persist();
-                    access.deleteImageBytes(payload.uuid());
                     access.syncImageLayer();
                 }));
 
@@ -149,7 +147,7 @@ public class ModNetwork {
                         ServerPlayNetworking.send(ctx.player(),
                                 new DeliverImageS2CPacket(payload.uuid(), bytes));
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Artistry.LOGGER.error("Failed to load image {}", payload.uuid(), e);
                     }
                 }));
 
@@ -168,8 +166,7 @@ public class ModNetwork {
 
         ServerPlayNetworking.registerGlobalReceiver(CanvasCursorC2SPacket.ID,
                 (payload, ctx) -> ctx.server().execute(() -> {
-                    if (!PacketThrottle.allow(ctx.player().getUuid(), PacketThrottle.Channel.CURSOR)) return;
-                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
+                    if (PacketThrottle.throttled(ctx.player().getUuid(), PacketThrottle.Channel.CURSOR)) return;                    if (!(ctx.player().getWorld() instanceof ServerWorld world)) return;
                     PosterPresence.updateCursor(ctx.player(), world, payload.pos(), payload.gx(), payload.gy());
                 }));
 
@@ -212,16 +209,6 @@ public class ModNetwork {
                                             () -> Text.literal("[Artistry] Config reloaded and synced to players"), true);
                                     return 1;
                                 }))));
-    }
-
-    private static void deleteEvictedImages(List<UUID> evicted) {
-        for (UUID uuid : evicted) {
-            try {
-                ImageStorage.delete(uuid);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public static void broadcastPosterRemoved(ServerWorld world, BlockPos pos) {

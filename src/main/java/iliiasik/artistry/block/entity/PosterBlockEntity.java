@@ -89,14 +89,4 @@ public class PosterBlockEntity extends BlockEntity {
         net.minecraft.util.ItemScatterer.spawn(world, dropPos,
                 new net.minecraft.inventory.SimpleInventory(stack));
     }
-
-    public void destroyImages() {
-        for (iliiasik.artistry.data.CanvasImage img : imageLayer.getImages()) {
-            try {
-                iliiasik.artistry.server.ImageStorage.delete(img.uuid);
-            } catch (java.io.IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
 }

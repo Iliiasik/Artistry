@@ -2,6 +2,7 @@ package iliiasik.artistry.recipe;
 
 import iliiasik.artistry.item.ModItems;
 import iliiasik.artistry.data.CanvasData;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.SpecialCraftingRecipe;
@@ -81,8 +82,11 @@ public class PosterCloningRecipe extends SpecialCraftingRecipe {
                     ItemStack remainder = stack.copy();
                     remainder.setCount(1);
                     list.set(i, remainder);
-                } else if (stack.getItem().hasRecipeRemainder()) {
-                    list.set(i, new ItemStack(stack.getItem().getRecipeRemainder()));
+                } else {
+                    Item remainderItem = stack.getItem().getRecipeRemainder();
+                    if (remainderItem != null) {
+                        list.set(i, new ItemStack(remainderItem));
+                    }
                 }
             }
         }

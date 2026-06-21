@@ -100,8 +100,6 @@ public class PosterBlock extends BlockWithEntity {
                     ModNetwork.broadcastPosterRemoved(serverWorld, pos);
                     if (world.getGameRules().getBoolean(GameRules.DO_TILE_DROPS)) {
                         poster.dropWithCanvas(pos);
-                    } else {
-                        poster.destroyImages();
                     }
                 }
             }

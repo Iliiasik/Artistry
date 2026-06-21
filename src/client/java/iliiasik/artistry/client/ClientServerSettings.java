@@ -12,10 +12,6 @@ public class ClientServerSettings {
         ClientServerSettings.cursorIntervalMs = cursorIntervalMs;
     }
 
-    public static void setDisableImages(boolean value) {
-        disableImages = value;
-    }
-
     public static boolean imagesDisabled() {
         return disableImages;
     }

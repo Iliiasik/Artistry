@@ -5,6 +5,7 @@ import iliiasik.artistry.data.CanvasImage;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 
 import java.util.HashSet;
@@ -13,6 +14,10 @@ import java.util.Set;
 import java.util.UUID;
 
 public class PresenceBadgeRenderer {
+
+    private static final float BADGE_SATURATION = 0.6f;
+    private static final float BADGE_VALUE = 0.9f;
+    private static final float BORDER_LIGHTEN = 0.45f;
 
     public static void renderAll(DrawContext context, CanvasPresence presence,
                                  List<CanvasImage> images,
@@ -55,7 +60,7 @@ public class PresenceBadgeRenderer {
 
         int rgb = colorFor(uuid);
         int fill = (0xCC << 24) | rgb;
-        int border = (0xE6 << 24) | lighten(rgb, 0.45f);
+        int border = (0xE6 << 24) | lighten(rgb);
         int dot = (0xE6 << 24) | rgb;
 
         int bx;
@@ -115,27 +120,31 @@ public class PresenceBadgeRenderer {
     }
 
     private static String resolveName(MinecraftClient mc, UUID uuid) {
-        PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(uuid);
+        ClientPlayNetworkHandler handler = mc.getNetworkHandler();
+        if (handler == null) return null;
+        PlayerListEntry entry = handler.getPlayerListEntry(uuid);
         if (entry == null) return null;
         return entry.getProfile().getName();
     }
 
     private static int colorFor(UUID uuid) {
         float hue = (uuid.hashCode() & 0xFFFF) / 65535.0f;
-        return hsvToRgb(hue, 0.6f, 0.9f);
+        return hueToColor(hue);
     }
 
-    private static int lighten(int rgb, float amount) {
+    private static int lighten(int rgb) {
         int r = (rgb >> 16) & 0xFF;
         int g = (rgb >> 8) & 0xFF;
         int b = rgb & 0xFF;
-        r = (int) (r + (255 - r) * amount);
-        g = (int) (g + (255 - g) * amount);
-        b = (int) (b + (255 - b) * amount);
+        r = (int) (r + (255 - r) * BORDER_LIGHTEN);
+        g = (int) (g + (255 - g) * BORDER_LIGHTEN);
+        b = (int) (b + (255 - b) * BORDER_LIGHTEN);
         return (r << 16) | (g << 8) | b;
     }
 
-    private static int hsvToRgb(float h, float s, float v) {
+    private static int hueToColor(float h) {
+        float s = BADGE_SATURATION;
+        float v = BADGE_VALUE;
         int i = (int) (h * 6) % 6;
         float f = h * 6 - (int) (h * 6);
         float p = v * (1 - s);

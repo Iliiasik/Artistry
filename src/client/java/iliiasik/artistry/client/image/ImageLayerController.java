@@ -28,8 +28,6 @@ public class ImageLayerController {
 
     public UUID getSelectedUuid() { return selectedUuid; }
 
-    public boolean hasSelection() { return selectedUuid != null; }
-
     public void clearSelection() {
         selectedUuid = null;
         dragging = false;
@@ -81,12 +79,12 @@ public class ImageLayerController {
         return false;
     }
 
-    public boolean onDrag(double mouseX, double mouseY,
-                          int drawX, int drawY, int drawSize, int canvasSize,
-                          Runnable onChanged) {
-        if (selectedUuid == null) return false;
+    public void onDrag(double mouseX, double mouseY,
+                       int drawX, int drawY, int drawSize, int canvasSize,
+                       Runnable onChanged) {
+        if (selectedUuid == null) return;
         CanvasImage img = layer.findByUuid(selectedUuid);
-        if (img == null) return false;
+        if (img == null) return;
 
         double pixelSize = (double) drawSize / canvasSize;
         int gx = screenToGrid(mouseX, drawX, pixelSize);
@@ -96,7 +94,7 @@ public class ImageLayerController {
             img.gridX = Math.max(0, Math.min(canvasSize - img.gridW, gx - dragOffsetGridX));
             img.gridY = Math.max(0, Math.min(canvasSize - img.gridH, gy - dragOffsetGridY));
             onChanged.run();
-            return true;
+            return;
         }
 
         if (resizing != ResizeHandle.NONE) {
@@ -115,16 +113,12 @@ public class ImageLayerController {
                 newW = CanvasImage.MIN_GRID;
                 if (rawX < ancX) {
                     rawX = rawX2 - newW + 1;
-                } else {
-                    rawX2 = rawX + newW - 1;
                 }
             }
             if (newH < CanvasImage.MIN_GRID) {
                 newH = CanvasImage.MIN_GRID;
                 if (rawY < ancY) {
                     rawY = rawY2 - newH + 1;
-                } else {
-                    rawY2 = rawY + newH - 1;
                 }
             }
 
@@ -136,10 +130,7 @@ public class ImageLayerController {
             img.gridW = newW;
             img.gridH = newH;
             onChanged.run();
-            return true;
         }
-
-        return false;
     }
 
     public void endDrag() {
@@ -151,21 +142,6 @@ public class ImageLayerController {
                              int drawX, int drawY, int drawSize, int canvasSize) {
         double pixelSize = (double) drawSize / canvasSize;
         for (CanvasImage img : layer.getImages()) {
-            int sx = drawX + (int)(img.gridX * pixelSize);
-            int sy = drawY + (int)(img.gridY * pixelSize);
-            int sw = (int)(img.gridW * pixelSize);
-            int sh = (int)(img.gridH * pixelSize);
-            if (mouseX >= sx && mouseX < sx + sw && mouseY >= sy && mouseY < sy + sh) return true;
-        }
-        return false;
-    }
-
-    public boolean isOnLockedByOtherImage(double mouseX, double mouseY,
-                                          int drawX, int drawY, int drawSize, int canvasSize,
-                                          UUID localPlayer) {
-        double pixelSize = (double) drawSize / canvasSize;
-        for (CanvasImage img : layer.getImages()) {
-            if (!img.isLockedByOther(localPlayer)) continue;
             int sx = drawX + (int)(img.gridX * pixelSize);
             int sy = drawY + (int)(img.gridY * pixelSize);
             int sw = (int)(img.gridW * pixelSize);
