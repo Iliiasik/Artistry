@@ -207,7 +207,7 @@ public class HexInputWidget extends AbstractWidget {
 
     private void pasteFromClipboard() {
         String clip = Minecraft.getInstance().keyboardHandler.getClipboard();
-        if (clip == null || clip.isEmpty()) return;
+        if (clip.isEmpty()) return;
         if (hasSelection()) deleteSelection();
         for (char c : clip.toCharArray()) {
             char upper = Character.toUpperCase(c);

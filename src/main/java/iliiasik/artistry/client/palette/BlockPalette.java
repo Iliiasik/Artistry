@@ -158,6 +158,7 @@ public final class BlockPalette {
     private static final TextureAtlasSprite[] SPRITE_CACHE = new TextureAtlasSprite[COUNT + 1];
     private static boolean loaded = false;
 
+    @SuppressWarnings("resource")
     public static void ensureLoaded() {
         if (loaded) return;
         Minecraft mc = Minecraft.getInstance();
@@ -167,9 +168,7 @@ public final class BlockPalette {
                 Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(BLOCK_IDS[i]));
                 BlockState state = block.defaultBlockState();
                 TextureAtlasSprite particle = mc.getBlockRenderer().getBlockModel(state).getParticleIcon();
-                if (particle != null) {
-                    SPRITE_CACHE[i + 1] = atlas.getSprite(particle.contents().name());
-                }
+                SPRITE_CACHE[i + 1] = atlas.getSprite(particle.contents().name());
             } catch (Exception ignored) {}
         }
         loaded = true;

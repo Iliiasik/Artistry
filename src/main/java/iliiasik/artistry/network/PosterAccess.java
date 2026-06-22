@@ -17,8 +17,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
+
 
 public abstract class PosterAccess {
 
@@ -28,6 +30,8 @@ public abstract class PosterAccess {
         this.player = player;
     }
 
+    @Nullable
+    @SuppressWarnings("resource")
     public static PosterAccess resolve(ServerPlayer player, PosterTarget target) {
         if (target instanceof PosterTarget.World world) {
             if (!(player.level() instanceof ServerLevel serverLevel)) return null;
@@ -46,6 +50,7 @@ public abstract class PosterAccess {
 
     public abstract CanvasImageLayer imageLayer();
 
+    @Nullable
     public abstract BlockPos posOrNull();
 
     public abstract void persist();
@@ -59,7 +64,7 @@ public abstract class PosterAccess {
     public abstract void lock(UUID imageUuid, boolean doLock);
 
     protected static void sendNear(ServerLevel level, BlockPos pos,
-                                   ServerPlayer exclude, CustomPacketPayload packet) {
+                                   @Nullable ServerPlayer exclude, CustomPacketPayload packet) {
         int chunkX = SectionPos.blockToSectionCoord(pos.getX());
         int chunkZ = SectionPos.blockToSectionCoord(pos.getZ());
         for (ServerPlayer p : level.players()) {
@@ -164,6 +169,7 @@ public abstract class PosterAccess {
         }
 
         @Override
+        @Nullable
         public BlockPos posOrNull() {
             return null;
         }

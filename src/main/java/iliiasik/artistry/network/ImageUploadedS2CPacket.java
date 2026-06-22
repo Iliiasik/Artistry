@@ -5,10 +5,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-public record ImageUploadedS2CPacket(BlockPos pos, UUID uuid, int gridX, int gridY, int gridW, int gridH) implements CustomPacketPayload {
+public record ImageUploadedS2CPacket(@Nullable BlockPos pos, UUID uuid, int gridX, int gridY, int gridW, int gridH) implements CustomPacketPayload {
 
     public static final Type<ImageUploadedS2CPacket> TYPE = new Type<>(Artistry.id("image_uploaded"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ImageUploadedS2CPacket> CODEC =

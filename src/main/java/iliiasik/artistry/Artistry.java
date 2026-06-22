@@ -9,7 +9,6 @@ import iliiasik.artistry.recipe.ModRecipes;
 import iliiasik.artistry.server.ImageStorage;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
@@ -21,7 +20,7 @@ public class Artistry {
     public static final String MOD_ID = "artistry";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    public Artistry(IEventBus modEventBus, ModContainer modContainer) {
+    public Artistry(IEventBus modEventBus) {
         ArtistryConfig.get();
 
         ModBlocks.register(modEventBus);

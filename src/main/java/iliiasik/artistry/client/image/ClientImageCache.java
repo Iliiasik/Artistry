@@ -23,6 +23,7 @@ public final class ClientImageCache {
 
     private ClientImageCache() {}
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean has(UUID uuid) {
         return rawBytes.containsKey(uuid);
     }

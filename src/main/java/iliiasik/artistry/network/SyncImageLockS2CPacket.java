@@ -6,10 +6,10 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
-public record SyncImageLockS2CPacket(BlockPos pos, UUID imageUuid, UUID playerUuid) implements CustomPacketPayload {
-
+public record SyncImageLockS2CPacket(BlockPos pos, UUID imageUuid, @Nullable UUID playerUuid) implements CustomPacketPayload {
     public static final Type<SyncImageLockS2CPacket> TYPE = new Type<>(Artistry.id("sync_image_lock"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SyncImageLockS2CPacket> CODEC =
             StreamCodec.ofMember(SyncImageLockS2CPacket::write, SyncImageLockS2CPacket::read);

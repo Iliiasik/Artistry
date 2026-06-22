@@ -52,8 +52,7 @@ public class CanvasTextureHolder {
     public ResourceLocation getTextureId() { return textureId; }
 
     public void close() {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc != null) mc.getTextureManager().release(textureId);
+        Minecraft.getInstance().getTextureManager().release(textureId);
         texture.close();
     }
 }

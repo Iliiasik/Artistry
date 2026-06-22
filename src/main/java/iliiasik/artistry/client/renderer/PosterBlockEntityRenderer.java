@@ -21,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -67,7 +68,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
 
     @Override
     public void render(PosterBlockEntity entity, float tickDelta, PoseStack matrices,
-                       MultiBufferSource vertexConsumers, int light, int overlay) {
+                       @NotNull MultiBufferSource vertexConsumers, int light, int overlay) {
         BlockPalette.ensureLoaded();
 
         PosterTexture tex = CACHE.computeIfAbsent(entity.getBlockPos().asLong(), k -> new PosterTexture());

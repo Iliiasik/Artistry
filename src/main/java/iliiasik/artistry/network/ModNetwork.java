@@ -27,7 +27,8 @@ import java.util.UUID;
 
 public class ModNetwork {
 
-    @SuppressWarnings("Convert2MethodRef")
+
+    @SuppressWarnings({"Convert2MethodRef", "resource"})
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
 
