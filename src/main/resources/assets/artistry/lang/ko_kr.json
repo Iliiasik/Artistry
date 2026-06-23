@@ -1,0 +1,7 @@
+{
+  "item.artistry.poster": "포스터",
+  "block.artistry.poster": "포스터",
+  "itemGroup.artistry": "Artistry",
+  "screen.artistry.choose_size": "사이즈 선택",
+  "message.artistry.too_many_editors": "너무 많은 플레이어가 이 포스터를 편집하고 있습니다"
+}
