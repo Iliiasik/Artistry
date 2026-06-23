@@ -36,6 +36,8 @@ import java.util.function.Supplier;
 public class ModNetwork {
 
     private static final String PROTOCOL = "1";
+    private static final int UPLOAD_CHUNK_SIZE = 30000;
+    private static final int DELIVER_CHUNK_SIZE = 900000;
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(Artistry.MOD_ID, "main"),
             () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
@@ -88,6 +90,34 @@ public class ModNetwork {
         CHANNEL.sendToServer(packet);
     }
 
+    public static void uploadImage(PosterTarget target, byte[] bytes) {
+        int total = bytes.length;
+        if (total == 0) {
+            sendToServer(new UploadImageC2SPacket(target, 0, 0, new byte[0]));
+            return;
+        }
+        for (int offset = 0; offset < total; offset += UPLOAD_CHUNK_SIZE) {
+            int len = Math.min(UPLOAD_CHUNK_SIZE, total - offset);
+            byte[] chunk = new byte[len];
+            System.arraycopy(bytes, offset, chunk, 0, len);
+            sendToServer(new UploadImageC2SPacket(target, total, offset, chunk));
+        }
+    }
+
+    public static void deliverImage(ServerPlayer player, UUID uuid, byte[] bytes) {
+        int total = bytes.length;
+        if (total == 0) {
+            sendToPlayer(player, new DeliverImageS2CPacket(uuid, 0, 0, new byte[0]));
+            return;
+        }
+        for (int offset = 0; offset < total; offset += DELIVER_CHUNK_SIZE) {
+            int len = Math.min(DELIVER_CHUNK_SIZE, total - offset);
+            byte[] chunk = new byte[len];
+            System.arraycopy(bytes, offset, chunk, 0, len);
+            sendToPlayer(player, new DeliverImageS2CPacket(uuid, total, offset, chunk));
+        }
+    }
+
     private static void server(Supplier<NetworkEvent.Context> ctxSup, java.util.function.Consumer<ServerPlayer> body) {
         NetworkEvent.Context ctx = ctxSup.get();
         ctx.enqueueWork(() -> {
@@ -131,12 +161,17 @@ public class ModNetwork {
 
     private static void onUploadImage(UploadImageC2SPacket payload, Supplier<NetworkEvent.Context> ctx) {
         server(ctx, player -> {
-            if (ArtistryConfig.get().poster.disableImages) return;
+            if (ArtistryConfig.get().poster.disableImages) {
+                ImageUploadAssembler.clear(player);
+                return;
+            }
+            byte[] full = ImageUploadAssembler.accept(player, payload);
+            if (full == null) return;
             PosterAccess access = PosterAccess.resolve(player, payload.target());
             if (access == null) return;
             if (!access.canvasData().isSizeChosen()) return;
             try {
-                UUID uuid = ImageStorage.save(payload.bytes());
+                UUID uuid = ImageStorage.save(full);
                 int canvasSize = access.canvasData().canvasSize;
                 int gridW = Math.max(CanvasImage.MIN_GRID, canvasSize / 2);
                 int gridH = Math.max(CanvasImage.MIN_GRID, canvasSize / 2);
@@ -146,7 +181,7 @@ public class ModNetwork {
                 List<UUID> evicted = access.imageLayer().addImage(img);
                 access.persist();
                 sendToPlayer(player, new ImageUploadedS2CPacket(access.posOrNull(), uuid, gridX, gridY, gridW, gridH));
-                sendToPlayer(player, new DeliverImageS2CPacket(uuid, payload.bytes()));
+                deliverImage(player, uuid, full);
                 access.syncImageLayer();
                 if (!evicted.isEmpty()) access.imageEvicted(evicted);
             } catch (IOException e) {
@@ -205,7 +240,7 @@ public class ModNetwork {
             if (!ImageStorage.exists(payload.uuid())) return;
             try {
                 byte[] bytes = ImageStorage.load(payload.uuid());
-                sendToPlayer(player, new DeliverImageS2CPacket(payload.uuid(), bytes));
+                deliverImage(player, payload.uuid(), bytes);
             } catch (IOException e) {
                 Artistry.LOGGER.error("Failed to load image {}", payload.uuid(), e);
             }
@@ -282,6 +317,7 @@ public class ModNetwork {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         PosterPresence.disconnect(player);
         PacketThrottle.remove(player.getUUID());
+        ImageUploadAssembler.clear(player);
     }
 
     public static void broadcastPosterRemoved(ServerLevel level, BlockPos pos) {

@@ -134,7 +134,7 @@ public class PaintSession {
     }
 
     public void uploadImage(byte[] bytes) {
-        ModNetwork.sendToServer(new UploadImageC2SPacket(target(), bytes));
+        ModNetwork.uploadImage(target(), bytes);
     }
 
     public void markImageMoved(UUID uuid) {

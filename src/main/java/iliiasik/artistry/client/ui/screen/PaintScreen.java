@@ -21,6 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
@@ -70,7 +71,7 @@ public class PaintScreen extends Screen {
         session.applyImageLayerSync(images);
     }
 
-    public void applyImageLockSync(UUID imageUuid, UUID playerUuid) {
+    public void applyImageLockSync(UUID imageUuid, @Nullable UUID playerUuid) {
         session.applyImageLockSync(imageUuid, playerUuid);
     }
 

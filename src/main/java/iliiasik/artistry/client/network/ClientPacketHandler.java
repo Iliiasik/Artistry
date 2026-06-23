@@ -77,11 +77,14 @@ public final class ClientPacketHandler {
     }
 
     public static void onDeliverImage(DeliverImageS2CPacket payload) {
-        ClientImageCache.store(payload.uuid(), payload.bytes());
-        PosterBlockEntityRenderer.onImageReceived(payload.uuid());
+        byte[] full = ClientImageAssembler.accept(payload);
+        if (full == null) return;
+        UUID uuid = payload.uuid();
+        ClientImageCache.store(uuid, full);
+        PosterBlockEntityRenderer.onImageReceived(uuid);
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof PaintScreen screen) {
-            screen.receiveImageBytes(payload.uuid(), payload.bytes());
+            screen.receiveImageBytes(uuid, full);
         }
     }
 
