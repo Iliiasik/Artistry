@@ -25,11 +25,9 @@ public final class ImageStorage {
     }
 
     public static UUID save(byte[] bytes) throws IOException {
-        UUID uuid = UUID.nameUUIDFromBytes(bytes);
+        UUID uuid = UUID.randomUUID();
         Path path = storageDir.resolve(uuid + ".img");
-        if (!Files.exists(path)) {
-            Files.write(path, bytes);
-        }
+        Files.write(path, bytes);
         return uuid;
     }
 
