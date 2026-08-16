@@ -51,6 +51,14 @@ public final class ColorPalette {
         return rgbToHsv(r, g, b);
     }
 
+    public static int argbToAbgr(int argb) {
+        int a = (argb >>> 24) & 0xFF;
+        int r = (argb >> 16) & 0xFF;
+        int g = (argb >> 8) & 0xFF;
+        int b = argb & 0xFF;
+        return (a << 24) | (b << 16) | (g << 8) | r;
+    }
+
     public static String argbToHex(int argb) {
         return String.format("#%02X%02X%02X",
                 (argb >> 16) & 0xFF,

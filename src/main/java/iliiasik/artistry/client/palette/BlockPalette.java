@@ -8,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.Arrays;
+
 public final class BlockPalette {
 
     public static final String[] BLOCK_IDS = {
@@ -172,6 +174,11 @@ public final class BlockPalette {
             } catch (Exception ignored) {}
         }
         loaded = true;
+    }
+
+    public static void reset() {
+        Arrays.fill(SPRITE_CACHE, null);
+        loaded = false;
     }
 
     public static TextureAtlasSprite getSprite(int index) {

@@ -5,6 +5,8 @@ import iliiasik.artistry.block.PosterBlock;
 import iliiasik.artistry.block.entity.ModBlockEntities;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.ClientImageCache;
+import iliiasik.artistry.client.palette.BlockPalette;
+import iliiasik.artistry.client.renderer.CanvasCellPainter;
 import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.client.ui.screen.CanvasSizeScreen;
 import iliiasik.artistry.client.ui.screen.PaintScreen;
@@ -21,6 +23,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -33,6 +36,7 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -46,7 +50,15 @@ public final class ArtistryClient {
     public ArtistryClient(IEventBus modEventBus) {
         modEventBus.addListener(ArtistryClient::onClientSetup);
         modEventBus.addListener(ArtistryClient::onRegisterRenderers);
+        modEventBus.addListener(ArtistryClient::onRegisterReloadListeners);
         NeoForge.EVENT_BUS.register(ArtistryClient.class);
+    }
+
+    private static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((ResourceManagerReloadListener) manager -> {
+            BlockPalette.reset();
+            CanvasCellPainter.reset();
+        });
     }
 
     private static void onClientSetup(FMLClientSetupEvent event) {
