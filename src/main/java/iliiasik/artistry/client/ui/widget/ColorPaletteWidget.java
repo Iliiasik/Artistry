@@ -86,19 +86,11 @@ public class ColorPaletteWidget extends AbstractWidget {
         return new int[]{ (int) vf[0], (int) vf[1] };
     }
 
-    private static int argbToAbgr(int argb) {
-        int a = (argb >>> 24) & 0xFF;
-        int r = (argb >> 16) & 0xFF;
-        int g = (argb >> 8) & 0xFF;
-        int b = argb & 0xFF;
-        return (a << 24) | (b << 16) | (g << 8) | r;
-    }
-
     private static void ensureSpectrumTexture() {
         if (spectrumTex != null) return;
         NativeImage img = new NativeImage(PREVIEW, SPECTRUM_H, false);
         for (int px = 0; px < PREVIEW; px++) {
-            int c = argbToAbgr(ColorPalette.hsvToArgb((float) px / PREVIEW, 1f, 1f));
+            int c = ColorPalette.argbToAbgr(ColorPalette.hsvToArgb((float) px / PREVIEW, 1f, 1f));
             for (int py = 0; py < SPECTRUM_H; py++) img.setPixelRGBA(px, py, c);
         }
         spectrumTex = new DynamicTexture(img);
@@ -120,7 +112,7 @@ public class ColorPaletteWidget extends AbstractWidget {
                     float sat = (float) px / PREVIEW;
                     for (int py = 0; py < h; py++) {
                         float val = 1f - (float) py / h;
-                        img.setPixelRGBA(px, py, argbToAbgr(ColorPalette.hsvToArgb(selectedHue, sat, val)));
+                        img.setPixelRGBA(px, py, ColorPalette.argbToAbgr(ColorPalette.hsvToArgb(selectedHue, sat, val)));
                     }
                 }
                 hsvTex.upload();

@@ -5,6 +5,8 @@ import iliiasik.artistry.block.PosterBlock;
 import iliiasik.artistry.block.entity.ModBlockEntities;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.ClientImageCache;
+import iliiasik.artistry.client.palette.BlockPalette;
+import iliiasik.artistry.client.renderer.CanvasCellPainter;
 import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.client.ui.screen.CanvasSizeScreen;
 import iliiasik.artistry.client.ui.screen.PaintScreen;
@@ -21,12 +23,14 @@ import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -52,6 +56,14 @@ public final class ArtistryClient {
         public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerBlockEntityRenderer(ModBlockEntities.POSTER.get(),
                     ctx -> new PosterBlockEntityRenderer());
+        }
+
+        @SubscribeEvent
+        public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
+            event.registerReloadListener((ResourceManagerReloadListener) manager -> {
+                BlockPalette.reset();
+                CanvasCellPainter.reset();
+            });
         }
     }
 

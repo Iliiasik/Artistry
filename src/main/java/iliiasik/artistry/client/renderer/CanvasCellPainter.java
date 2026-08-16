@@ -2,6 +2,7 @@ package iliiasik.artistry.client.renderer;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import iliiasik.artistry.client.palette.BlockPalette;
+import iliiasik.artistry.client.palette.ColorPalette;
 import iliiasik.artistry.data.CanvasData;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
@@ -14,22 +15,23 @@ public final class CanvasCellPainter {
 
     private static Field mipmapField = null;
     private static boolean fieldResolved = false;
-    private static final Map<TextureAtlasSprite, NativeImage> IMAGE_CACHE = new HashMap<>();
+    private static final Map<TextureAtlasSprite, BakedSprite> BAKED_CACHE = new HashMap<>();
+    private static int generation = 0;
 
     private CanvasCellPainter() {}
 
-    private static int swapRedBlue(int color) {
-        int a = (color >> 24) & 0xFF;
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8)  & 0xFF;
-        int b =  color        & 0xFF;
-        return (a << 24) | (b << 16) | (g << 8) | r;
+    private record BakedSprite(int width, int height, int[] pixels) {}
+
+    public static int generation() {
+        return generation;
     }
 
-    private static NativeImage getSpriteImage(TextureAtlasSprite sp) {
-        NativeImage cached = IMAGE_CACHE.get(sp);
-        if (cached != null) return cached;
+    public static void reset() {
+        BAKED_CACHE.clear();
+        generation++;
+    }
 
+    private static NativeImage resolveSpriteImage(TextureAtlasSprite sp) {
         if (!fieldResolved) {
             fieldResolved = true;
             try {
@@ -51,10 +53,33 @@ public final class CanvasCellPainter {
         if (mipmapField == null) return null;
         try {
             NativeImage[] imgs = (NativeImage[]) mipmapField.get(sp.contents());
-            NativeImage img = (imgs != null && imgs.length > 0) ? imgs[0] : null;
-            if (img != null) IMAGE_CACHE.put(sp, img);
-            return img;
+            return (imgs != null && imgs.length > 0) ? imgs[0] : null;
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static BakedSprite bake(TextureAtlasSprite sp) {
+        BakedSprite cached = BAKED_CACHE.get(sp);
+        if (cached != null) return cached;
+
+        NativeImage src = resolveSpriteImage(sp);
+        if (src == null) return null;
+
+        try {
+            int w = Math.min(sp.contents().width(), src.getWidth());
+            int h = Math.min(sp.contents().height(), src.getHeight());
+            if (w <= 0 || h <= 0) return null;
+            int[] pixels = new int[w * h];
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    pixels[y * w + x] = src.getPixelRGBA(x, y);
+                }
+            }
+            BakedSprite baked = new BakedSprite(w, h, pixels);
+            BAKED_CACHE.put(sp, baked);
+            return baked;
+        } catch (RuntimeException e) {
             return null;
         }
     }
@@ -74,28 +99,31 @@ public final class CanvasCellPainter {
             fillCell(image, cx, cy, cell, bgColor);
             return;
         }
-        NativeImage src = getSpriteImage(sp);
-        if (src == null) {
+        BakedSprite baked = bake(sp);
+        if (baked == null) {
             fillCell(image, cx, cy, cell, bgColor);
             return;
         }
-        blitSprite(image, src, sp.contents().width(), sp.contents().height(), cx, cy, cell);
+        blitSprite(image, baked, cx, cy, cell);
     }
 
     public static void fillCell(NativeImage image, int cx, int cy, int cell, int argb) {
-        int abgr = swapRedBlue(argb);
+        int abgr = ColorPalette.argbToAbgr(argb);
         for (int py = 0; py < cell; py++)
             for (int px = 0; px < cell; px++)
                 image.setPixelRGBA(cx + px, cy + py, abgr);
     }
 
-    private static void blitSprite(NativeImage dst, NativeImage src, int sprW, int sprH,
+    private static void blitSprite(NativeImage dst, BakedSprite src,
                                    int cellX, int cellY, int cell) {
+        int sprW = src.width();
+        int sprH = src.height();
+        int[] pixels = src.pixels();
         for (int py = 0; py < cell; py++) {
+            int sy = Math.min(py * sprH / cell, sprH - 1);
             for (int px = 0; px < cell; px++) {
                 int sx = Math.min(px * sprW / cell, sprW - 1);
-                int sy = Math.min(py * sprH / cell, sprH - 1);
-                dst.setPixelRGBA(cellX + px, cellY + py, src.getPixelRGBA(sx, sy));
+                dst.setPixelRGBA(cellX + px, cellY + py, pixels[sy * sprW + sx]);
             }
         }
     }

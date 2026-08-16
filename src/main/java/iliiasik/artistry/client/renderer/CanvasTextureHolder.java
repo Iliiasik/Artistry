@@ -17,6 +17,7 @@ public class CanvasTextureHolder {
     private final short[][] snapshot      = new short[MAX_SIZE][MAX_SIZE];
     private final int[][]   colorSnapshot = new int[MAX_SIZE][MAX_SIZE];
     private boolean dirty = true;
+    private int paletteGeneration = -1;
 
     public CanvasTextureHolder(ResourceLocation textureId, int texSize) {
         this.textureId = textureId;
@@ -29,6 +30,10 @@ public class CanvasTextureHolder {
 
     public void updatePixels(CanvasData data, int texSize) {
         if (data == null || !data.isSizeChosen()) return;
+        if (paletteGeneration != CanvasCellPainter.generation()) {
+            paletteGeneration = CanvasCellPainter.generation();
+            dirty = true;
+        }
         int size = data.canvasSize;
         int cell = texSize / size;
         boolean changed = false;
