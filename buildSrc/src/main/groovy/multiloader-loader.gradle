@@ -1,0 +1,54 @@
+plugins {
+    id 'multiloader-common'
+}
+
+configurations {
+    commonJava {
+        canBeResolved = true
+    }
+    commonResources {
+        canBeResolved = true
+    }
+    commonDebugJava {
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    compileOnly(project(':common')) {
+        capabilities {
+            requireCapability "$group:$mod_id"
+        }
+    }
+    commonJava project(path: ':common', configuration: 'commonJava')
+    commonResources project(path: ':common', configuration: 'commonResources')
+    commonDebugJava project(path: ':common', configuration: 'commonDebugJava')
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+    dependsOn(configurations.commonDebugJava)
+    source(configurations.commonDebugJava)
+}
+
+ext.benchmarkBuild = project.hasProperty('benchmark') ||
+        gradle.startParameter.taskNames.any { it.endsWith('buildBenchmark') }
+
+tasks.named('jar', Jar) {
+    if (!benchmarkBuild) {
+        exclude "${project.group.toString().replace('.', '/')}/debug/impl/**"
+    }
+}
+
+processResources {
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+tasks.named('sourcesJar', Jar) {
+    dependsOn(configurations.commonJava)
+    from(configurations.commonJava)
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}

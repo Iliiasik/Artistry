@@ -1,0 +1,9 @@
+{
+  "item.artistry.poster": "Poster",
+  "block.artistry.poster": "Poster",
+  "itemGroup.artistry": "Artistry",
+  "screen.artistry.choose_size": "Choose canvas size",
+  "message.artistry.too_many_editors": "Too many players are editing this poster",
+  "key.categories.artistry": "Artistry",
+  "key.artistry.profiler": "Toggle render profiler"
+}
