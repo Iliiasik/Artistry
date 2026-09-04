@@ -121,6 +121,17 @@ class NeoForgePlatformTest {
     }
 
     @Test
+    @DisplayName("The NeoForge requirement is a range of its own, not the version we built against")
+    void neoForgeRangeIsDecoupledFromTheBuildVersion() throws IOException {
+        String toml = resource("/META-INF/neoforge.mods.toml");
+
+        assertTrue(toml.contains("versionRange = \"[21.1.0,)\""),
+                "the floor must stay open so older 1.21.1 servers keep working");
+        assertFalse(toml.contains("versionRange = \"[21.1.234,)\""),
+                "the build version must not leak into the requirement");
+    }
+
+    @Test
     @DisplayName("Both mixin configurations are declared and loadable")
     void mixinConfigsAreDeclaredAndLoadable() throws IOException, ClassNotFoundException {
         String toml = resource("/META-INF/neoforge.mods.toml");

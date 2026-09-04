@@ -3,7 +3,9 @@
   "block.artistry.poster": "Affiche",
   "item.artistry.banner": "Bannière",
   "block.artistry.banner": "Bannière",
-  "itemGroup.artistry": "Artistry",
+  "itemGroup.artistry": "Artistry Live",
   "screen.artistry.choose_size": "Choisir format",
-  "message.artistry.too_many_editors": "Trop de joueurs éditent cette affiche"
+  "message.artistry.too_many_editors": "Trop de joueurs éditent cette affiche",
+  "key.categories.artistry": "Artistry Live",
+  "key.artistry.profiler": "Activer/désactiver le profileur de rendu"
 }

@@ -3,7 +3,9 @@
   "block.artistry.poster": "Poster",
   "item.artistry.banner": "Banner",
   "block.artistry.banner": "Banner",
-  "itemGroup.artistry": "Artistry",
+  "itemGroup.artistry": "Artistry Live",
   "screen.artistry.choose_size": "Größe wählen",
-  "message.artistry.too_many_editors": "Zu viele Spieler bearbeiten dieses poster"
+  "message.artistry.too_many_editors": "Zu viele Spieler bearbeiten dieses poster",
+  "key.categories.artistry": "Artistry Live",
+  "key.artistry.profiler": "Render-Profiler umschalten"
 }

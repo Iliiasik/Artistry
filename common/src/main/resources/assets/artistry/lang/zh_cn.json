@@ -3,7 +3,9 @@
   "block.artistry.poster": "海报",
   "item.artistry.banner": "横幅",
   "block.artistry.banner": "横幅",
-  "itemGroup.artistry": "Artistry",
+  "itemGroup.artistry": "Artistry Live",
   "screen.artistry.choose_size": "选择尺寸",
-  "message.artistry.too_many_editors": "太多玩家在编辑这张海报"
+  "message.artistry.too_many_editors": "太多玩家在编辑这张海报",
+  "key.categories.artistry": "Artistry Live",
+  "key.artistry.profiler": "切换渲染性能分析器"
 }
