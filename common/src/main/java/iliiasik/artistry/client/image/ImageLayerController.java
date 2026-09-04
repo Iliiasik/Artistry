@@ -97,6 +97,20 @@ public class ImageLayerController {
         onChanged.run();
     }
 
+    public boolean nudge(int stepX, int stepY, int canvasSize) {
+        if (selectedUuid == null) return false;
+        CanvasImage image = layer.findByUuid(selectedUuid);
+        if (image == null) return false;
+
+        int movedX = clampOrigin(image.gridX + stepX, image.gridW, canvasSize);
+        int movedY = clampOrigin(image.gridY + stepY, image.gridH, canvasSize);
+        if (movedX == image.gridX && movedY == image.gridY) return false;
+
+        image.gridX = movedX;
+        image.gridY = movedY;
+        return true;
+    }
+
     public void endDrag() {
         moving = false;
         resizing = ResizeHandle.NONE;

@@ -1,10 +1,25 @@
 package iliiasik.artistry.client.ui.layout;
 
 import iliiasik.artistry.client.ClientServerSettings;
+import iliiasik.artistry.client.palette.PaintSwatches;
 
 public class PaintDimensions {
+
+    public static final int HISTORY_CELLS = PaintSwatches.HISTORY_SIZE;
     public static final float BASE_W = 900.0f;
     public static final float BASE_H = 600.0f;
+
+    public static final int SIGN_TEXTURE_WIDTH = 32;
+    public static final int SIGN_TEXTURE_HEIGHT = 16;
+    public static final int BADGE_TEXTURE_WIDTH = 80;
+    public static final int BADGE_TEXTURE_HEIGHT = 16;
+    public static final int SEAL_TEXTURE_SIZE = 32;
+    public static final int SECONDARY_TEXTURE_SIZE = 24;
+    public static final int HISTORY_TEXTURE_SIZE = 16;
+    public static final int SWATCH_FRAME_BORDER = 2;
+
+    private static final int PANEL_SCALE = 2;
+    private static final int SWATCH_GAP = 2;
 
     private static final int PANEL_GAP = 6;
 
@@ -42,6 +57,35 @@ public class PaintDimensions {
     public int hexInputY;
     public int hexInputW;
     public int hexInputH;
+
+    public int signX;
+    public int signY;
+    public int signW;
+    public int signH;
+
+    public int badgeX;
+    public int badgeY;
+    public int badgeW;
+    public int badgeH;
+
+    public int sealX;
+    public int sealY;
+    public int sealW;
+    public int sealH;
+
+    public int secondaryX;
+    public int secondaryY;
+    public int secondarySize;
+
+    public int historyX;
+    public int historyY;
+    public int historySize;
+    public int historyGap;
+
+    public int swatchStripX;
+    public int swatchStripY;
+    public int swatchStripW;
+    public int swatchStripH;
 
     public void calculate(int screenWidth, int screenHeight) {
         float scaleX = screenWidth / BASE_W;
@@ -81,10 +125,43 @@ public class PaintDimensions {
         paletteSwitcherX = paletteX;
         paletteSwitcherY = paletteY + paletteH + s(PANEL_GAP);
 
+        secondarySize = Math.round(SECONDARY_TEXTURE_SIZE * perfectScale);
+        historySize = Math.round(HISTORY_TEXTURE_SIZE * perfectScale);
+        historyGap = Math.round(SWATCH_GAP * perfectScale);
+
+        secondaryX = paletteX - historyGap - secondarySize;
+        secondaryY = paletteY + paletteW / 2 - secondarySize / 2;
+        historyX = secondaryX + (secondarySize - historySize) / 2;
+        historyY = secondaryY + secondarySize + historyGap;
+
+        swatchStripX = Math.min(secondaryX, historyX);
+        swatchStripY = secondaryY;
+        swatchStripW = Math.max(secondarySize, historySize);
+        swatchStripH = historyY + HISTORY_CELLS * (historySize + historyGap) - historyGap - secondaryY;
+
         hexInputX = paletteX + Math.round(2 * perfectScale);
         hexInputY = paletteY + Math.round((2 + 28 + 2) * perfectScale);
         hexInputW = Math.round(28 * perfectScale);
         hexInputH = Math.round(7 * perfectScale);
+
+        signW = s(SIGN_TEXTURE_WIDTH * PANEL_SCALE);
+        signH = s(SIGN_TEXTURE_HEIGHT * PANEL_SCALE);
+        signX = sizeSwitchX;
+        signY = sizeSwitchY + sizeSwitchH + s(PANEL_GAP);
+
+        badgeW = s(BADGE_TEXTURE_WIDTH * PANEL_SCALE);
+        badgeH = s(BADGE_TEXTURE_HEIGHT * PANEL_SCALE);
+        sealW = s(SEAL_TEXTURE_SIZE);
+        sealH = s(SEAL_TEXTURE_SIZE);
+
+        int signatureGap = s(PANEL_GAP);
+        int signatureWidth = badgeW + signatureGap + sealW;
+        int signatureHeight = Math.max(badgeH, sealH);
+        int signatureTop = canvasY - signatureHeight - signatureGap;
+        badgeX = canvasX + (canvasSize - signatureWidth) / 2;
+        badgeY = signatureTop + (signatureHeight - badgeH) / 2;
+        sealX = badgeX + badgeW + signatureGap;
+        sealY = signatureTop + (signatureHeight - sealH) / 2;
     }
 
     public int s(int virtualValue) {

@@ -3,22 +3,26 @@ package iliiasik.artistry.client.ui.screen.paint;
 import iliiasik.artistry.client.ClientServerSettings;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.presence.CanvasPresence;
+import iliiasik.artistry.client.tools.CanvasHistory;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.data.CanvasImageLayer;
+import iliiasik.artistry.data.CanvasSignature;
 import iliiasik.artistry.network.ArtistryNetwork;
 import iliiasik.artistry.network.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +36,10 @@ public class PaintSession {
 
     private final CanvasData canvasData = new CanvasData();
     private final CanvasData lastSentSnapshot = new CanvasData();
+    private final CanvasData strokeSnapshot = new CanvasData();
+    private final CanvasHistory history = new CanvasHistory();
     private final CanvasImageLayer imageLayer = new CanvasImageLayer();
+    private final CanvasSignature signature = new CanvasSignature();
     private final CanvasPresence presence = new CanvasPresence();
 
     private boolean viewRegistered = false;
@@ -52,6 +59,7 @@ public class PaintSession {
         canvasData.copyFrom(entity.canvasData);
         lastSentSnapshot.copyFrom(entity.canvasData);
         imageLayer.copyFrom(entity.imageLayer);
+        signature.copyFrom(entity.signature);
         requestMissingImages();
     }
 
@@ -67,6 +75,9 @@ public class PaintSession {
             }
             if (nbt.contains("images")) {
                 imageLayer.fromNbt(nbt.getList("images", Tag.TAG_COMPOUND));
+            }
+            if (nbt.contains(CanvasSignature.NBT_KEY)) {
+                signature.fromNbt(nbt.getCompound(CanvasSignature.NBT_KEY));
             }
         }
         if (chosenSize > 0) {
@@ -86,6 +97,51 @@ public class PaintSession {
 
     public CanvasPresence presence() {
         return presence;
+    }
+
+    public void beginStrokeHistory() {
+        strokeSnapshot.copyFrom(canvasData);
+    }
+
+    public void endStrokeHistory(Collection<Integer> cells) {
+        history.push(strokeSnapshot, canvasData, cells);
+    }
+
+    public boolean undo() {
+        return history.undo(canvasData);
+    }
+
+    public boolean redo() {
+        return history.redo(canvasData);
+    }
+
+    public boolean isSigned() {
+        return signature.isSigned();
+    }
+
+    @Nullable
+    public String signerName() {
+        return signature.playerName();
+    }
+
+    public void applySignature(@Nullable String name) {
+        signature.applyRemote(name);
+    }
+
+    public void sign() {
+        if (signature.isSigned() || !canvasData.isSizeChosen()) return;
+        if (!connected()) return;
+        flushPending();
+        ArtistryNetwork.sendToServer(new SignPosterC2SPacket(target()));
+    }
+
+    private void flushPending() {
+        if (targetEntity != null) {
+            flushPixels();
+            flushImageMove();
+        } else {
+            saveToItem();
+        }
     }
 
     public boolean isWorld() {
@@ -201,8 +257,14 @@ public class PaintSession {
         List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
         if (!changes.isEmpty()) {
             tag.put("canvas", canvasData.toNbt());
+            lastSentSnapshot.copyFrom(canvasData);
         }
-        tag.put("images", imageLayer.toNbt());
+        ListTag images = imageLayer.toNbt();
+        if (images.isEmpty()) {
+            tag.remove("images");
+        } else {
+            tag.put("images", images);
+        }
         targetStack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         if (!changes.isEmpty() && connected()) {
             ArtistryNetwork.sendToServer(new SaveCanvasC2SPacket(target(), changes));
@@ -223,15 +285,8 @@ public class PaintSession {
     }
 
     public void applyRemoteChanges(List<CanvasData.PixelChange> changes) {
-        for (CanvasData.PixelChange c : changes) {
-            int x = c.x() & 0xFF;
-            int y = c.y() & 0xFF;
-            if (!canvasData.inBounds(x, y)) continue;
-            canvasData.pixels[y][x] = c.blockIndex();
-            canvasData.colors[y][x] = c.color();
-            lastSentSnapshot.pixels[y][x] = c.blockIndex();
-            lastSentSnapshot.colors[y][x] = c.color();
-        }
+        canvasData.applyChanges(changes);
+        lastSentSnapshot.applyChanges(changes);
         canvasData.markChanged();
     }
 

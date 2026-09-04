@@ -183,13 +183,14 @@ public final class ClientImageCache {
         if (width == sourceWidth && height == sourceHeight) return source;
 
         NativeImage reduced = new NativeImage(width, height, false);
+        CanvasCellPainter.PixelSource pixels = CanvasCellPainter.sourceOf(source);
         for (int y = 0; y < height; y++) {
             int top = y * sourceHeight / height;
             int bottom = Math.max(top + 1, (y + 1) * sourceHeight / height);
             for (int x = 0; x < width; x++) {
                 int left = x * sourceWidth / width;
                 int right = Math.max(left + 1, (x + 1) * sourceWidth / width);
-                reduced.setPixelRGBA(x, y, CanvasCellPainter.averageImage(source, left, top, right, bottom));
+                reduced.setPixelRGBA(x, y, CanvasCellPainter.average(pixels, left, top, right, bottom));
             }
         }
         source.close();

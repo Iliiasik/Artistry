@@ -19,6 +19,8 @@ import iliiasik.artistry.network.SaveCanvasC2SPacket;
 import iliiasik.artistry.network.ServerPacketHandlers;
 import iliiasik.artistry.network.ServerSettingsS2CPacket;
 import iliiasik.artistry.network.SetCanvasSizeC2SPacket;
+import iliiasik.artistry.network.SignPosterC2SPacket;
+import iliiasik.artistry.network.SyncSignatureS2CPacket;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import iliiasik.artistry.network.SyncImageLayerS2CPacket;
 import iliiasik.artistry.network.SyncImageLockS2CPacket;
@@ -77,6 +79,10 @@ public final class NeoForgeModNetwork {
             ServerPlayer player = (ServerPlayer) context.player();
             context.enqueueWork(() -> ServerPacketHandlers.onCanvasCursor(payload, player));
         });
+        registrar.playToServer(SignPosterC2SPacket.TYPE, SignPosterC2SPacket.CODEC, (payload, context) -> {
+            ServerPlayer player = (ServerPlayer) context.player();
+            context.enqueueWork(() -> ServerPacketHandlers.onSignPoster(payload, player));
+        });
         registrar.playToServer(CanvasEnterRequestC2SPacket.TYPE, CanvasEnterRequestC2SPacket.CODEC, (payload, context) -> {
             ServerPlayer player = (ServerPlayer) context.player();
             context.enqueueWork(() -> ServerPacketHandlers.onCanvasEnterRequest(payload, player));
@@ -104,5 +110,7 @@ public final class NeoForgeModNetwork {
                 (payload, context) -> context.enqueueWork(() -> ClientPacketHandler.onCanvasEnterAllowed(payload)));
         registrar.playToClient(ServerSettingsS2CPacket.TYPE, ServerSettingsS2CPacket.CODEC,
                 (payload, context) -> context.enqueueWork(() -> ClientPacketHandler.onServerSettings(payload)));
+        registrar.playToClient(SyncSignatureS2CPacket.TYPE, SyncSignatureS2CPacket.CODEC,
+                (payload, context) -> context.enqueueWork(() -> ClientPacketHandler.onSyncSignature(payload)));
     }
 }

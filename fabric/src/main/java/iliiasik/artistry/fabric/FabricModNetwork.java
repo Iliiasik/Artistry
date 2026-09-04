@@ -18,6 +18,8 @@ import iliiasik.artistry.network.SaveCanvasC2SPacket;
 import iliiasik.artistry.network.ServerPacketHandlers;
 import iliiasik.artistry.network.ServerSettingsS2CPacket;
 import iliiasik.artistry.network.SetCanvasSizeC2SPacket;
+import iliiasik.artistry.network.SignPosterC2SPacket;
+import iliiasik.artistry.network.SyncSignatureS2CPacket;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import iliiasik.artistry.network.SyncImageLayerS2CPacket;
 import iliiasik.artistry.network.SyncImageLockS2CPacket;
@@ -43,6 +45,7 @@ public final class FabricModNetwork {
         PayloadTypeRegistry.playC2S().register(CanvasViewC2SPacket.TYPE, CanvasViewC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(CanvasCursorC2SPacket.TYPE, CanvasCursorC2SPacket.CODEC);
         PayloadTypeRegistry.playC2S().register(CanvasEnterRequestC2SPacket.TYPE, CanvasEnterRequestC2SPacket.CODEC);
+        PayloadTypeRegistry.playC2S().register(SignPosterC2SPacket.TYPE, SignPosterC2SPacket.CODEC);
 
         PayloadTypeRegistry.playS2C().register(SyncCanvasS2CPacket.TYPE, SyncCanvasS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(PosterRemovedS2CPacket.TYPE, PosterRemovedS2CPacket.CODEC);
@@ -55,6 +58,7 @@ public final class FabricModNetwork {
         PayloadTypeRegistry.playS2C().register(CanvasPresenceLeaveS2CPacket.TYPE, CanvasPresenceLeaveS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(CanvasEnterAllowedS2CPacket.TYPE, CanvasEnterAllowedS2CPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(ServerSettingsS2CPacket.TYPE, ServerSettingsS2CPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(SyncSignatureS2CPacket.TYPE, SyncSignatureS2CPacket.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(SetCanvasSizeC2SPacket.TYPE, (payload, context) ->
                 context.server().execute(() -> ServerPacketHandlers.onSetCanvasSize(payload, context.player())));
@@ -78,5 +82,7 @@ public final class FabricModNetwork {
                 context.server().execute(() -> ServerPacketHandlers.onCanvasCursor(payload, context.player())));
         ServerPlayNetworking.registerGlobalReceiver(CanvasEnterRequestC2SPacket.TYPE, (payload, context) ->
                 context.server().execute(() -> ServerPacketHandlers.onCanvasEnterRequest(payload, context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(SignPosterC2SPacket.TYPE, (payload, context) ->
+                context.server().execute(() -> ServerPacketHandlers.onSignPoster(payload, context.player())));
     }
 }

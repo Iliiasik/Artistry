@@ -12,13 +12,13 @@ public final class PosterRenderHelper {
     private PosterRenderHelper() {}
 
     public static void renderQuad(PoseStack matrices, MultiBufferSource vertexConsumers,
-                                  CanvasAtlas.Slot slot, float z, int light) {
+                                  CanvasAtlas.Slot slot, float size, float z, int light) {
         VertexConsumer vc = vertexConsumers.getBuffer(RenderType.entityCutout(slot.texture()));
         Matrix4f mat = matrices.last().pose();
         int ov = OverlayTexture.NO_OVERLAY;
-        vertex(vc, mat, matrices, 0f, 1f, z, slot.u1(), slot.v0(), ov, light);
-        vertex(vc, mat, matrices, 1f, 1f, z, slot.u0(), slot.v0(), ov, light);
-        vertex(vc, mat, matrices, 1f, 0f, z, slot.u0(), slot.v1(), ov, light);
+        vertex(vc, mat, matrices, 0f, size, z, slot.u1(), slot.v0(), ov, light);
+        vertex(vc, mat, matrices, size, size, z, slot.u0(), slot.v0(), ov, light);
+        vertex(vc, mat, matrices, size, 0f, z, slot.u0(), slot.v1(), ov, light);
         vertex(vc, mat, matrices, 0f, 0f, z, slot.u1(), slot.v1(), ov, light);
     }
 

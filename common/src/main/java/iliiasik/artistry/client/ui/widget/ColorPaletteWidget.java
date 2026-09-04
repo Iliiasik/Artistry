@@ -18,8 +18,8 @@ import java.util.function.Consumer;
 public class ColorPaletteWidget extends AbstractWidget {
 
     public interface SelectionListener {
-        void onBlockSelected(int blockIndex);
-        void onColorSelected(int argbColor);
+        void onBlockSelected(int blockIndex, boolean secondary);
+        void onColorSelected(int argbColor, boolean secondary);
     }
 
     private static final int COLS       = 7;
@@ -201,9 +201,10 @@ public class ColorPaletteWidget extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return false;
+        if (button != 0 && button != 1) return false;
         BlockPalette.ensureLoaded();
 
+        boolean secondary = button == 1;
         int[] vClick = toVirtual(mouseX, mouseY);
 
         if (mode == PaletteSwitcherWidget.PaletteMode.BLOCKS) {
@@ -216,22 +217,24 @@ public class ColorPaletteWidget extends AbstractWidget {
                 int cy = startY + row * CELL;
                 if (cy + CELL > maxY) break;
                 if (vClick[0] >= cx && vClick[0] < cx + CELL && vClick[1] >= cy && vClick[1] < cy + CELL) {
-                    selectedBlockIndex = i + 1;
-                    lastSelectionWasColor = false;
-                    listener.onBlockSelected(selectedBlockIndex);
+                    if (!secondary) {
+                        selectedBlockIndex = i + 1;
+                        lastSelectionWasColor = false;
+                    }
+                    listener.onBlockSelected(i + 1, secondary);
                     return true;
                 }
             }
         } else {
-            pickFromClick(mouseX, mouseY);
+            pickFromClick(mouseX, mouseY, secondary);
         }
         return false;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (button != 0 || mode != PaletteSwitcherWidget.PaletteMode.COLORS) return false;
-        pickFromClick(mouseX, mouseY);
+        if ((button != 0 && button != 1) || mode != PaletteSwitcherWidget.PaletteMode.COLORS) return false;
+        pickFromClick(mouseX, mouseY, button == 1);
         return true;
     }
 
@@ -239,14 +242,19 @@ public class ColorPaletteWidget extends AbstractWidget {
         return Math.clamp(v, 0f, 1f);
     }
 
-    private void pickFromClick(double mouseX, double mouseY) {
+    private void pickFromClick(double mouseX, double mouseY, boolean secondary) {
         float[] vf = toVirtualF(mouseX, mouseY);
         float vx = vf[0];
         float vy = vf[1];
 
         int specY = spectrumY();
         if (vx >= BORDER && vx < BORDER + PREVIEW && vy >= specY && vy < specY + SPECTRUM_H) {
-            selectedHue = clamp01((vx - BORDER) / PREVIEW);
+            float hue = clamp01((vx - BORDER) / PREVIEW);
+            if (secondary) {
+                listener.onColorSelected(ColorPalette.hsvToArgb(hue, selectedSat, selectedVal), true);
+                return;
+            }
+            selectedHue = hue;
             applyHsv();
             return;
         }
@@ -254,8 +262,14 @@ public class ColorPaletteWidget extends AbstractWidget {
         int hsvY = hsvY();
         int hsvH = hsvH();
         if (vx >= BORDER && vx < BORDER + PREVIEW && vy >= hsvY && vy < hsvY + hsvH) {
-            selectedSat = clamp01((vx - BORDER) / PREVIEW);
-            selectedVal = clamp01(1f - (vy - hsvY) / hsvH);
+            float sat = clamp01((vx - BORDER) / PREVIEW);
+            float val = clamp01(1f - (vy - hsvY) / hsvH);
+            if (secondary) {
+                listener.onColorSelected(ColorPalette.hsvToArgb(selectedHue, sat, val), true);
+                return;
+            }
+            selectedSat = sat;
+            selectedVal = val;
             applyHsv();
         }
     }
@@ -263,7 +277,7 @@ public class ColorPaletteWidget extends AbstractWidget {
     private void applyHsv() {
         selectedColor = ColorPalette.hsvToArgb(selectedHue, selectedSat, selectedVal);
         lastSelectionWasColor = true;
-        listener.onColorSelected(selectedColor);
+        listener.onColorSelected(selectedColor, false);
         if (onColorChanged != null) onColorChanged.accept(selectedColor);
     }
 
@@ -276,7 +290,7 @@ public class ColorPaletteWidget extends AbstractWidget {
             selectedSat = hsv[1];
             selectedVal = hsv[2];
             lastSelectionWasColor = true;
-            listener.onColorSelected(selectedColor);
+            listener.onColorSelected(selectedColor, false);
         } catch (NumberFormatException ignored) {}
     }
 

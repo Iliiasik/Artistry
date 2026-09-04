@@ -69,6 +69,7 @@ public final class CanvasComposer {
 
         int sourceWidth = source.getWidth();
         int sourceHeight = source.getHeight();
+        CanvasCellPainter.PixelSource pixels = CanvasCellPainter.sourceOf(source);
         float sourceLeft = fragment.u0() * sourceWidth;
         float sourceRight = fragment.u1() * sourceWidth;
         float sourceTop = fragment.v0() * sourceHeight;
@@ -84,7 +85,7 @@ public final class CanvasComposer {
                         0, sourceWidth - 1);
                 int sampleRight = bound(sourceLeft + (sourceRight - sourceLeft) * (offsetX + 1) / width,
                         sampleLeft + 1, sourceWidth);
-                int pixel = CanvasCellPainter.averageImage(source,
+                int pixel = CanvasCellPainter.average(pixels,
                         sampleLeft, sampleTop, sampleRight, sampleBottom);
                 if (((pixel >>> 24) & 0xFF) < CUTOUT_ALPHA) continue;
                 target.setPixelRGBA(destinationLeft + offsetX, destinationTop + offsetY,

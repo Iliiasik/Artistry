@@ -90,7 +90,25 @@ class NeoForgePlatformTest {
         assertFalse(toml.contains("${"), "neoforge.mods.toml still contains unexpanded placeholders");
         assertTrue(toml.contains("modId = \"artistry\""), "the mod id is missing");
         assertTrue(toml.contains("modLoader = \"javafml\""), "the loader is missing");
-        assertTrue(toml.contains("logoFile = \"assets/artistry/icon.png\""), "the logo path is missing");
+        assertTrue(toml.contains("logoFile = \"artistry_banner.png\""), "the logo path is missing");
+        assertTrue(toml.contains("issueTrackerURL = \"https://github.com/Iliiasik/Artistry/issues\""),
+                "the issue tracker is missing");
+    }
+
+    @Test
+    @DisplayName("Catalogue finds the icon and the background at the jar root")
+    void catalogueMetadataIsDeclared() throws IOException {
+        String toml = resource("/META-INF/neoforge.mods.toml");
+
+        assertFalse(toml.contains("credits ="), "an empty credits line must not reach the manifest");
+        assertTrue(toml.contains("[modproperties.\"artistry\"]"), "the modproperties table is missing");
+        assertTrue(toml.contains("catalogueImageIcon = \"artistry_icon.png\""));
+        assertTrue(toml.contains("catalogueBackground = \"artistry_background.png\""));
+
+        for (String file : List.of("artistry_banner.png", "artistry_icon.png", "artistry_background.png")) {
+            assertNotNull(NeoForgePlatformTest.class.getResourceAsStream("/" + file),
+                    file + " must sit at the jar root");
+        }
     }
 
     @Test
@@ -140,7 +158,7 @@ class NeoForgePlatformTest {
     @Test
     @DisplayName("The shared assets of the common module end up in the loader jar")
     void commonResourcesArePresent() throws IOException {
-        assertNotNull(NeoForgePlatformTest.class.getResourceAsStream("/assets/artistry/icon.png"));
+        assertNotNull(NeoForgePlatformTest.class.getResourceAsStream("/artistry_icon.png"));
         assertFalse(resource("/artistry.mixins.json").isBlank());
     }
 }

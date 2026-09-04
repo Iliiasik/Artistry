@@ -1,6 +1,6 @@
 package iliiasik.artistry.neoforge;
 
-import iliiasik.artistry.network.ArtistryCommands;
+import iliiasik.artistry.command.ArtistryCommands;
 import iliiasik.artistry.network.ArtistryServerEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;

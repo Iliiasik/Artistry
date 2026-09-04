@@ -7,13 +7,13 @@ public final class RenderBudget {
 
     private RenderBudget() {}
 
-    public static boolean claim() {
+    public static boolean exhausted() {
         long now = System.nanoTime();
         if (now - windowStart > RenderTuning.BUDGET_WINDOW_NANOS) {
             windowStart = now;
             spentNanos = 0;
         }
-        return spentNanos < RenderTuning.BUDGET_NANOS_PER_WINDOW;
+        return spentNanos >= RenderTuning.BUDGET_NANOS_PER_WINDOW;
     }
 
     public static void charge(long nanos) {

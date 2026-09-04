@@ -1,5 +1,7 @@
 package iliiasik.artistry.client.tools;
 
+import iliiasik.artistry.client.palette.PaintSwatch;
+import iliiasik.artistry.client.palette.PaintSwatches;
 import iliiasik.artistry.data.CanvasData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,13 +18,15 @@ class PixelPainterTest {
     private static final double SCALE = 1.0;
 
     private CanvasData canvas;
+    private PaintSwatches swatches;
     private PixelPainter painter;
 
     @BeforeEach
     void setUp() {
         canvas = new CanvasData();
         canvas.canvasSize = SIZE;
-        painter = new PixelPainter();
+        swatches = new PaintSwatches();
+        painter = new PixelPainter(swatches);
     }
 
     @Test
@@ -43,8 +47,8 @@ class PixelPainterTest {
     @Test
     @DisplayName("The brush paints the selected block index")
     void brushPaintsBlock() {
-        painter.setBlock(42);
-        assertTrue(painter.beginStroke(canvas, 5, 6, 0, 0, SCALE));
+        swatches.select(PaintSwatch.ofBlock(42), false);
+        assertTrue(painter.beginStroke(canvas, 5, 6, 0, 0, SCALE, false));
 
         assertEquals((short) 42, canvas.pixels[6][5]);
         assertEquals(0, canvas.colors[6][5]);
@@ -53,8 +57,8 @@ class PixelPainterTest {
     @Test
     @DisplayName("The brush in colour mode paints a raw colour")
     void brushPaintsColor() {
-        painter.setColor(0xFF123456);
-        painter.beginStroke(canvas, 2, 3, 0, 0, SCALE);
+        swatches.select(PaintSwatch.ofColor(0xFF123456), false);
+        painter.beginStroke(canvas, 2, 3, 0, 0, SCALE, false);
 
         assertEquals(CanvasData.COLOR_PIXEL, canvas.pixels[3][2]);
         assertEquals(0xFF123456, canvas.colors[3][2]);
@@ -63,9 +67,9 @@ class PixelPainterTest {
     @Test
     @DisplayName("Selecting a block leaves colour mode")
     void blockSelectionLeavesColorMode() {
-        painter.setColor(0xFFFF0000);
-        painter.setBlock(7);
-        painter.beginStroke(canvas, 1, 1, 0, 0, SCALE);
+        swatches.select(PaintSwatch.ofColor(0xFFFF0000), false);
+        swatches.select(PaintSwatch.ofBlock(7), false);
+        painter.beginStroke(canvas, 1, 1, 0, 0, SCALE, false);
 
         assertEquals((short) 7, canvas.pixels[1][1]);
         assertEquals(0, canvas.colors[1][1]);
@@ -74,12 +78,12 @@ class PixelPainterTest {
     @Test
     @DisplayName("The eraser clears both the block and the colour")
     void eraserClearsPixel() {
-        painter.setColor(0xFFABCDEF);
-        painter.beginStroke(canvas, 4, 4, 0, 0, SCALE);
+        swatches.select(PaintSwatch.ofColor(0xFFABCDEF), false);
+        painter.beginStroke(canvas, 4, 4, 0, 0, SCALE, false);
         painter.endStroke();
 
         painter.setTool(DrawingTool.ERASER);
-        painter.beginStroke(canvas, 4, 4, 0, 0, SCALE);
+        painter.beginStroke(canvas, 4, 4, 0, 0, SCALE, false);
 
         assertEquals(0, canvas.pixels[4][4]);
         assertEquals(0, canvas.colors[4][4]);
@@ -88,10 +92,10 @@ class PixelPainterTest {
     @Test
     @DisplayName("The pipette never paints and never starts a stroke")
     void pipetteDoesNotPaint() {
-        painter.setBlock(9);
+        swatches.select(PaintSwatch.ofBlock(9), false);
         painter.setTool(DrawingTool.PIPETTE);
 
-        assertFalse(painter.beginStroke(canvas, 3, 3, 0, 0, SCALE));
+        assertFalse(painter.beginStroke(canvas, 3, 3, 0, 0, SCALE, false));
         assertEquals(0, canvas.pixels[3][3]);
 
         painter.continueStroke(canvas, 8, 8, 0, 0, SCALE);
@@ -119,10 +123,10 @@ class PixelPainterTest {
     @Test
     @DisplayName("Brush size is clamped to the supported range")
     void brushSizeIsClamped() {
-        painter.setBlock(1);
+        swatches.select(PaintSwatch.ofBlock(1), false);
 
         painter.setSize(0);
-        painter.beginStroke(canvas, 8, 8, 0, 0, SCALE);
+        painter.beginStroke(canvas, 8, 8, 0, 0, SCALE, false);
         assertEquals(0, canvas.pixels[7][7], "a size of zero must behave like a single pixel");
 
         painter.setSize(99);
@@ -133,9 +137,9 @@ class PixelPainterTest {
     @Test
     @DisplayName("A three cell brush paints a three by three square")
     void brushSizePaintsSquare() {
-        painter.setBlock(5);
+        swatches.select(PaintSwatch.ofBlock(5), false);
         painter.setSize(3);
-        painter.beginStroke(canvas, 8, 8, 0, 0, SCALE);
+        painter.beginStroke(canvas, 8, 8, 0, 0, SCALE, false);
 
         for (int y = 7; y <= 9; y++) {
             for (int x = 7; x <= 9; x++) {
@@ -149,8 +153,8 @@ class PixelPainterTest {
     @Test
     @DisplayName("A stroke interpolates between the sampled points")
     void strokeInterpolates() {
-        painter.setBlock(3);
-        painter.beginStroke(canvas, 0, 0, 0, 0, SCALE);
+        swatches.select(PaintSwatch.ofBlock(3), false);
+        painter.beginStroke(canvas, 0, 0, 0, 0, SCALE, false);
         painter.continueStroke(canvas, 5, 0, 0, 0, SCALE);
 
         for (int x = 0; x <= 5; x++) {
@@ -161,8 +165,8 @@ class PixelPainterTest {
     @Test
     @DisplayName("A diagonal stroke leaves no gaps")
     void diagonalStrokeHasNoGaps() {
-        painter.setBlock(4);
-        painter.beginStroke(canvas, 0, 0, 0, 0, SCALE);
+        swatches.select(PaintSwatch.ofBlock(4), false);
+        painter.beginStroke(canvas, 0, 0, 0, 0, SCALE, false);
         painter.continueStroke(canvas, 6, 6, 0, 0, SCALE);
 
         for (int i = 0; i <= 6; i++) {
@@ -173,8 +177,8 @@ class PixelPainterTest {
     @Test
     @DisplayName("Repeating the same cell does not restart the stroke")
     void repeatedCellIsIgnored() {
-        painter.setBlock(2);
-        painter.beginStroke(canvas, 4, 4, 0, 0, SCALE);
+        swatches.select(PaintSwatch.ofBlock(2), false);
+        painter.beginStroke(canvas, 4, 4, 0, 0, SCALE, false);
         painter.continueStroke(canvas, 4, 4, 0, 0, SCALE);
 
         assertEquals((short) 2, canvas.pixels[4][4]);
@@ -183,14 +187,14 @@ class PixelPainterTest {
     @Test
     @DisplayName("Painting outside the canvas is clamped instead of throwing")
     void paintingOutsideIsClamped() {
-        painter.setBlock(6);
+        swatches.select(PaintSwatch.ofBlock(6), false);
         painter.setSize(5);
 
-        painter.beginStroke(canvas, -50, -50, 0, 0, SCALE);
+        painter.beginStroke(canvas, -50, -50, 0, 0, SCALE, false);
         assertEquals((short) 6, canvas.pixels[0][0]);
 
         painter.endStroke();
-        painter.beginStroke(canvas, 1000, 1000, 0, 0, SCALE);
+        painter.beginStroke(canvas, 1000, 1000, 0, 0, SCALE, false);
         assertEquals((short) 6, canvas.pixels[SIZE - 1][SIZE - 1]);
     }
 
@@ -211,8 +215,8 @@ class PixelPainterTest {
     @Test
     @DisplayName("The area offset and scale are taken into account")
     void areaOffsetAndScaleAreApplied() {
-        painter.setBlock(8);
-        painter.beginStroke(canvas, 100 + 24, 200 + 36, 100, 200, 12.0);
+        swatches.select(PaintSwatch.ofBlock(8), false);
+        painter.beginStroke(canvas, 100 + 24, 200 + 36, 100, 200, 12.0, false);
 
         assertEquals((short) 8, canvas.pixels[3][2]);
     }
@@ -221,8 +225,8 @@ class PixelPainterTest {
     @DisplayName("A canvas without a chosen size falls back to the maximum grid")
     void canvasWithoutSizeUsesMaximum() {
         CanvasData unsized = new CanvasData();
-        painter.setBlock(1);
-        painter.beginStroke(unsized, CanvasData.MAX_SIZE - 1, CanvasData.MAX_SIZE - 1, 0, 0, SCALE);
+        swatches.select(PaintSwatch.ofBlock(1), false);
+        painter.beginStroke(unsized, CanvasData.MAX_SIZE - 1, CanvasData.MAX_SIZE - 1, 0, 0, SCALE, false);
 
         assertEquals((short) 1, unsized.pixels[CanvasData.MAX_SIZE - 1][CanvasData.MAX_SIZE - 1]);
     }
@@ -230,6 +234,6 @@ class PixelPainterTest {
     @Test
     @DisplayName("A stroke on a null canvas is refused")
     void strokeOnNullCanvasIsRefused() {
-        assertFalse(painter.beginStroke(null, 0, 0, 0, 0, SCALE));
+        assertFalse(painter.beginStroke(null, 0, 0, 0, 0, SCALE, false));
     }
 }

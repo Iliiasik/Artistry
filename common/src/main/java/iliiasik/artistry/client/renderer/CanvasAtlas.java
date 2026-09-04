@@ -47,7 +47,7 @@ public final class CanvasAtlas {
 
     public void sweep(long now) {
         pages.removeIf(page -> {
-            if (!page.emptyFor(now, RenderTuning.ATLAS_EMPTY_PAGE_GRACE_MILLIS)) return false;
+            if (!page.expired(now)) return false;
             page.close();
             return true;
         });
@@ -153,8 +153,8 @@ public final class CanvasAtlas {
             if (free.size() == capacity) emptySince = System.currentTimeMillis();
         }
 
-        private boolean emptyFor(long now, long millis) {
-            return emptySince != 0 && now - emptySince > millis;
+        private boolean expired(long now) {
+            return emptySince != 0 && now - emptySince > RenderTuning.ATLAS_EMPTY_PAGE_GRACE_MILLIS;
         }
 
         private void upload(int x, int y, int size) {

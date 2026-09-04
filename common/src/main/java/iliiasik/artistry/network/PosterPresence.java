@@ -98,7 +98,7 @@ public class PosterPresence {
             }
         }
         if (changed) {
-            poster.markDirtyAndSync();
+            poster.setChanged();
             ArtistryNetwork.sendNear(level, pos, null, new SyncImageLayerS2CPacket(pos, poster.imageLayer.getImages()));
         }
     }

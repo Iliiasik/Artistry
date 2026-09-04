@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public class CanvasRenderer {
 
-    private static final int TEX_SIZE = 512;
+    private static final int TEX_SIZE = RenderTuning.UI_CANVAS_TEXTURE_SIZE;
 
     private final CanvasTextureHolder holder;
     private int canvasRevision = -1;

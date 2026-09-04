@@ -18,6 +18,7 @@ import iliiasik.artistry.network.ServerSettingsS2CPacket;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import iliiasik.artistry.network.SyncImageLayerS2CPacket;
 import iliiasik.artistry.network.SyncImageLockS2CPacket;
+import iliiasik.artistry.network.SyncSignatureS2CPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 
@@ -32,13 +33,7 @@ public final class ClientPacketHandler {
         if (mc.level == null) return;
         BlockPos pos = payload.pos();
         if (mc.level.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
-            for (var c : payload.changes()) {
-                int x = c.x() & 0xFF;
-                int y = c.y() & 0xFF;
-                if (!poster.canvasData.inBounds(x, y)) continue;
-                poster.canvasData.pixels[y][x] = c.blockIndex();
-                poster.canvasData.colors[y][x] = c.color();
-            }
+            poster.canvasData.applyChanges(payload.changes());
             poster.canvasData.markChanged();
         }
         if (mc.screen instanceof PaintScreen screen) {
@@ -150,6 +145,20 @@ public final class ClientPacketHandler {
                 mc.setScreen(new CanvasSizeScreen(poster));
             } else {
                 mc.setScreen(new PaintScreen(poster));
+            }
+        }
+    }
+
+    public static void onSyncSignature(SyncSignatureS2CPacket payload) {
+        Minecraft mc = Minecraft.getInstance();
+        BlockPos pos = payload.pos();
+        if (pos != null && mc.level != null
+                && mc.level.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
+            poster.signature.applyRemote(payload.playerName());
+        }
+        if (mc.screen instanceof PaintScreen screen) {
+            if (pos == null || pos.equals(screen.getTargetPos())) {
+                screen.applySignature(payload.playerName());
             }
         }
     }

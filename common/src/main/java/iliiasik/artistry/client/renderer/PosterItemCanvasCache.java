@@ -15,7 +15,7 @@ import java.util.UUID;
 public class PosterItemCanvasCache {
 
     private static final int MAX_ENTRIES = 16;
-    private static final int TEX_SIZE = 512;
+    private static final int TEX_SIZE = RenderTuning.UI_CANVAS_TEXTURE_SIZE;
 
     private static final LinkedHashMap<Integer, CacheEntry> CACHE =
             new LinkedHashMap<>(MAX_ENTRIES, 0.75f, true) {

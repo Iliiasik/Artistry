@@ -24,6 +24,14 @@ public final class ModTextures {
     public static final ResourceLocation PALETTE_SWITCHER = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/palette_switcher.png");
     public static final ResourceLocation SIZE_SCREEN      = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/size_screen.png");
     public static final ResourceLocation IN_HAND_FRAME    = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/in_hand_frame.png");
+    public static final ResourceLocation SIGN             = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/sign.png");
+    public static final ResourceLocation SIGN_HOVER       = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/sign_hover.png");
+    public static final ResourceLocation BADGE            = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/badge.png");
+    public static final ResourceLocation WAX_SEAL         = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/wax_seal.png");
+    public static final ResourceLocation SECONDARY_COLOR       = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/secondary_color.png");
+    public static final ResourceLocation SECONDARY_COLOR_HOVER = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/secondary_color_hover.png");
+    public static final ResourceLocation PREVIOUS_COLOR        = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/previous_color.png");
+    public static final ResourceLocation PREVIOUS_COLOR_HOVER  = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/previous_color_hover.png");
 
     private ModTextures() {}
 }

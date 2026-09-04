@@ -1,15 +1,19 @@
 package iliiasik.artistry.client.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.CanvasImageRenderer;
 import iliiasik.artistry.client.image.ImageLayerController;
 import iliiasik.artistry.client.renderer.CanvasRenderer;
+import iliiasik.artistry.client.palette.PaintSwatches;
 import iliiasik.artistry.client.renderer.PresenceBadgeRenderer;
+import iliiasik.artistry.client.tools.DrawingTool;
 import iliiasik.artistry.client.tools.PixelPainter;
 import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.ui.screen.paint.PaintInput;
 import iliiasik.artistry.client.ui.screen.paint.PaintSession;
 import iliiasik.artistry.client.ui.screen.paint.PaintWidgets;
+import iliiasik.artistry.client.ui.screen.paint.SignatureRenderer;
 import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
@@ -30,7 +34,8 @@ public class PaintScreen extends Screen {
 
     private final PaintDimensions dims = new PaintDimensions();
     private final PaintSession session;
-    private final PixelPainter pixelPainter = new PixelPainter();
+    private final PaintSwatches swatches = new PaintSwatches();
+    private final PixelPainter pixelPainter = new PixelPainter(swatches);
     private final CanvasRenderer canvasRenderer = new CanvasRenderer();
     private final ImageLayerController imageController;
 
@@ -91,6 +96,12 @@ public class PaintScreen extends Screen {
         session.removePresence(uuid);
     }
 
+    public void applySignature(@Nullable String playerName) {
+        session.applySignature(playerName);
+        if (input != null) input.exitImageModeIfActive();
+        rebuildWidgets();
+    }
+
     public void scheduledClose() {
         pendingClose = true;
     }
@@ -108,9 +119,10 @@ public class PaintScreen extends Screen {
         }
         input.setLocalPlayer(localPlayerUuid);
 
-        widgets = new PaintWidgets(dims, pixelPainter, input::openFilePicker, input::handleImageAction);
+        widgets = new PaintWidgets(dims, swatches, pixelPainter,
+                input::openFilePicker, input::handleImageAction, session::sign);
         input.setWidgets(widgets);
-        widgets.build(this::addRenderableWidget);
+        widgets.build(this::addRenderableWidget, session.isSigned(), session.canvasData().isSizeChosen());
 
         session.open();
     }
@@ -123,22 +135,83 @@ public class PaintScreen extends Screen {
         super.removed();
     }
 
+    private boolean editable() {
+        return !session.isSigned();
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (input != null && input.mouseClicked(mouseX, mouseY, button)) return true;
+        if (editable() && input != null && input.mouseClicked(mouseX, mouseY, button)) return true;
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (input != null && input.mouseDragged(mouseX, mouseY, button)) return true;
+        if (editable() && input != null && input.mouseDragged(mouseX, mouseY, button)) return true;
         if (widgets != null && widgets.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
+    private boolean shortcutsAllowed() {
+        return editable() && input != null && (widgets == null || !widgets.isTextFieldFocused());
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (shortcutsAllowed() && handleShortcut(keyCode)) return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    private boolean handleShortcut(int keyCode) {
+        if (keyCode == InputConstants.KEY_Z && hasControlDown()) {
+            return hasShiftDown() ? session.redo() : session.undo();
+        }
+        if (hasControlDown()) return false;
+
+        return switch (keyCode) {
+            case InputConstants.KEY_B -> input.selectTool(DrawingTool.BRUSH);
+            case InputConstants.KEY_E -> input.selectTool(DrawingTool.ERASER);
+            case InputConstants.KEY_P -> input.selectTool(DrawingTool.PIPETTE);
+            case InputConstants.KEY_X -> swapSwatches();
+            case InputConstants.KEY_LALT, InputConstants.KEY_RALT -> input.beginTemporaryPipette();
+            case InputConstants.KEY_LBRACKET -> widgets != null && widgets.stepBrushSize(-1);
+            case InputConstants.KEY_RBRACKET -> widgets != null && widgets.stepBrushSize(1);
+            case InputConstants.KEY_DELETE -> input.deleteSelectedImage();
+            case InputConstants.KEY_LEFT -> input.nudgeSelectedImage(-1, 0);
+            case InputConstants.KEY_RIGHT -> input.nudgeSelectedImage(1, 0);
+            case InputConstants.KEY_UP -> input.nudgeSelectedImage(0, -1);
+            case InputConstants.KEY_DOWN -> input.nudgeSelectedImage(0, 1);
+            default -> false;
+        };
+    }
+
+    private boolean swapSwatches() {
+        if (widgets == null) return false;
+        widgets.swapSwatches();
+        return true;
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        if ((keyCode == InputConstants.KEY_LALT || keyCode == InputConstants.KEY_RALT)
+                && input != null && input.endTemporaryPipette()) {
+            return true;
+        }
+        return super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (shortcutsAllowed() && !input.isImageMode() && scrollY != 0
+                && widgets != null && widgets.stepBrushSize(scrollY > 0 ? 1 : -1)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (input != null && input.mouseReleased(button)) return true;
+        if (editable() && input != null && input.mouseReleased(button)) return true;
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
@@ -155,7 +228,7 @@ public class PaintScreen extends Screen {
     }
 
     private void tickCursor() {
-        if (!session.isWorld()) return;
+        if (!session.isWorld() || session.isSigned()) return;
         CanvasData canvasData = session.canvasData();
         if (!canvasData.isSizeChosen()) return;
         if (!isInsideDrawingArea(hoverMouseX, hoverMouseY)) return;
@@ -196,9 +269,15 @@ public class PaintScreen extends Screen {
                     imageController.getSelectedUuid(), localPlayerUuid);
         }
 
-        if (input != null) input.renderHoverPreview(context, hoverMouseX, hoverMouseY);
+        if (editable() && input != null) input.renderHoverPreview(context, hoverMouseX, hoverMouseY);
 
         super.render(context, mouseX, mouseY, delta);
+
+        String signerName = session.signerName();
+        if (signerName != null) {
+            SignatureRenderer.render(context, this.font, signerName, dims);
+            return;
+        }
 
         if (canvasData.isSizeChosen()) {
             session.presence().interpolate(0.35f);

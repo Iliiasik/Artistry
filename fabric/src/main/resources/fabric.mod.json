@@ -7,9 +7,12 @@
   "authors": [
     "${mod_author}"
   ],
-  "contact": {},
+  "contact": {
+    "issues": "https://github.com/Iliiasik/Artistry/issues",
+    "sources": "https://github.com/Iliiasik/Artistry"
+  },
   "license": "${license}",
-  "icon": "assets/${mod_id}/icon.png",
+  "icon": "${mod_id}_icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [

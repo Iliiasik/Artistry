@@ -4,10 +4,12 @@ import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.data.CanvasImageLayer;
+import iliiasik.artistry.data.CanvasSignature;
 import iliiasik.artistry.item.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,7 +40,7 @@ public abstract class PosterAccess {
         }
         if (target instanceof PosterTarget.Held(InteractionHand hand)) {
             ItemStack stack = player.getItemInHand(hand);
-            if (stack.isEmpty() || !stack.is(ModItems.POSTER.get())) return null;
+            if (stack.isEmpty() || !ModItems.isCanvas(stack)) return null;
             return new ItemAccess(player, stack);
         }
         return null;
@@ -48,10 +50,16 @@ public abstract class PosterAccess {
 
     public abstract CanvasImageLayer imageLayer();
 
+    public abstract CanvasSignature signature();
+
     @Nullable
     public abstract BlockPos posOrNull();
 
     public abstract void persist();
+
+    public abstract void persistAndSync();
+
+    public abstract void syncSignature();
 
     public abstract void syncCanvas(List<CanvasData.PixelChange> changes);
 
@@ -85,13 +93,29 @@ public abstract class PosterAccess {
         }
 
         @Override
+        public CanvasSignature signature() {
+            return poster.signature;
+        }
+
+        @Override
         public BlockPos posOrNull() {
             return pos;
         }
 
         @Override
         public void persist() {
+            poster.setChanged();
+        }
+
+        @Override
+        public void persistAndSync() {
             poster.markDirtyAndSync();
+        }
+
+        @Override
+        public void syncSignature() {
+            ArtistryNetwork.sendNear(level, pos, null,
+                    new SyncSignatureS2CPacket(pos, poster.signature.playerName()));
         }
 
         @Override
@@ -121,7 +145,7 @@ public abstract class PosterAccess {
             } else {
                 if (playerUuid.equals(img.lockedByPlayer)) img.lockedByPlayer = null;
             }
-            poster.markDirtyAndSync();
+            poster.setChanged();
             ArtistryNetwork.sendNear(level, pos, null, new SyncImageLockS2CPacket(pos, imageUuid, img.lockedByPlayer));
             if (doLock) {
                 ArtistryNetwork.sendNear(level, pos, player, new SyncImageLayerS2CPacket(pos, poster.imageLayer.getImages()));
@@ -134,6 +158,7 @@ public abstract class PosterAccess {
         private final ItemStack stack;
         private final CanvasData canvasData = new CanvasData();
         private final CanvasImageLayer imageLayer = new CanvasImageLayer();
+        private final CanvasSignature signature = new CanvasSignature();
 
         ItemAccess(ServerPlayer player, ItemStack stack) {
             super(player);
@@ -142,6 +167,8 @@ public abstract class PosterAccess {
             CompoundTag tag = comp != null ? comp.copyTag() : new CompoundTag();
             if (tag.contains("canvas")) canvasData.fromNbt(tag.getCompound("canvas"));
             if (tag.contains("images")) imageLayer.fromNbt(tag.getList("images", Tag.TAG_COMPOUND));
+            if (tag.contains(CanvasSignature.NBT_KEY)) signature.fromNbt(tag.getCompound(CanvasSignature.NBT_KEY));
+            imageLayer.clampToCanvas(canvasData.canvasSize);
         }
 
         @Override
@@ -155,6 +182,11 @@ public abstract class PosterAccess {
         }
 
         @Override
+        public CanvasSignature signature() {
+            return signature;
+        }
+
+        @Override
         @Nullable
         public BlockPos posOrNull() {
             return null;
@@ -165,18 +197,40 @@ public abstract class PosterAccess {
             CustomData comp = stack.get(DataComponents.CUSTOM_DATA);
             CompoundTag tag = comp != null ? comp.copyTag() : new CompoundTag();
             tag.put("canvas", canvasData.toNbt());
-            tag.put("images", imageLayer.toNbt());
-            if (stack.getCount() > 1) {
-                ItemStack remainder = stack.split(stack.getCount() - 1);
-                stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-                stack.set(DataComponents.MAX_STACK_SIZE, 1);
-                if (!player.getInventory().add(remainder)) {
-                    player.drop(remainder, false);
-                }
+            ListTag imageNbt = imageLayer.toNbt();
+            if (imageNbt.isEmpty()) {
+                tag.remove("images");
             } else {
-                stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+                tag.put("images", imageNbt);
+            }
+            if (signature.isSigned()) {
+                tag.put(CanvasSignature.NBT_KEY, signature.toNbt());
+            } else {
+                tag.remove(CanvasSignature.NBT_KEY);
+            }
+
+            ItemStack remainder = stack.getCount() > 1
+                    ? stack.split(stack.getCount() - 1)
+                    : ItemStack.EMPTY;
+
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            if (signature.isSigned()) {
                 stack.set(DataComponents.MAX_STACK_SIZE, 1);
             }
+
+            if (!remainder.isEmpty() && !player.getInventory().add(remainder)) {
+                player.drop(remainder, false);
+            }
+        }
+
+        @Override
+        public void persistAndSync() {
+            persist();
+        }
+
+        @Override
+        public void syncSignature() {
+            ArtistryNetwork.sendToPlayer(player, new SyncSignatureS2CPacket(null, signature.playerName()));
         }
 
         @Override

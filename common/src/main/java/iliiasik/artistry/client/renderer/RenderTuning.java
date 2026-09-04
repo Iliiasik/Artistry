@@ -27,12 +27,14 @@ public final class RenderTuning {
     public static final long IMAGE_IDLE_MILLIS = 60_000;
     public static final long IMAGE_SWEEP_INTERVAL_MILLIS = 5_000;
     public static final long IMAGE_TOUCH_RESOLUTION_MILLIS = 1_000;
+    public static final long IMAGE_REQUEST_RETRY_MILLIS = 5_000;
     public static final long IMAGE_SOURCE_IDLE_MILLIS = 120_000;
     public static final long IMAGE_SOURCE_PROTECT_MILLIS = 5_000;
     public static final long IMAGE_SOURCE_BUDGET_BYTES = 128L * 1024L * 1024L;
     public static final long IMAGE_DECODED_BUDGET_BYTES = 48L * 1024L * 1024L;
 
     public static final int CELL_MAX_SAMPLES_PER_AXIS = 4;
+    public static final int UI_CANVAS_TEXTURE_SIZE = 512;
 
     public static final int IMAGE_BAKE_SOURCE_MAX;
 

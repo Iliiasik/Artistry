@@ -24,7 +24,7 @@ public final class ServerPacketHandlers {
         if (access.canvasData().isSizeChosen()) return;
         if (!CanvasData.isValidSize(payload.size())) return;
         access.canvasData().canvasSize = payload.size();
-        access.persist();
+        access.persistAndSync();
     }
 
     public static void onSaveCanvas(SaveCanvasC2SPacket payload, ServerPlayer player) {
@@ -32,14 +32,8 @@ public final class ServerPacketHandlers {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
         if (!access.canvasData().isSizeChosen()) return;
-        CanvasData data = access.canvasData();
-        for (CanvasData.PixelChange c : payload.changes()) {
-            int x = c.x() & 0xFF;
-            int y = c.y() & 0xFF;
-            if (!data.inBounds(x, y)) continue;
-            data.pixels[y][x] = c.blockIndex();
-            data.colors[y][x] = c.color();
-        }
+        if (access.signature().isSigned()) return;
+        access.canvasData().applyChanges(payload.changes());
         access.persist();
         access.syncCanvas(payload.changes());
     }
@@ -49,6 +43,7 @@ public final class ServerPacketHandlers {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
         if (!access.canvasData().isSizeChosen()) return;
+        if (access.signature().isSigned()) return;
         try {
             UUID uuid = ImageStorage.save(payload.bytes());
             int canvasSize = access.canvasData().canvasSize;
@@ -72,6 +67,7 @@ public final class ServerPacketHandlers {
     public static void onMoveImage(MoveCanvasImageC2SPacket payload, ServerPlayer player) {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
+        if (access.signature().isSigned()) return;
         CanvasImage img = access.imageLayer().findByUuid(payload.uuid());
         if (img == null) return;
         img.gridX = payload.gridX();
@@ -86,6 +82,7 @@ public final class ServerPacketHandlers {
     public static void onDeleteImage(DeleteCanvasImageC2SPacket payload, ServerPlayer player) {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
+        if (access.signature().isSigned()) return;
         access.imageLayer().removeImage(payload.uuid());
         access.persist();
         access.syncImageLayer();
@@ -94,6 +91,7 @@ public final class ServerPacketHandlers {
     public static void onTogglePixelize(TogglePixelizeC2SPacket payload, ServerPlayer player) {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
+        if (access.signature().isSigned()) return;
         CanvasImage img = access.imageLayer().findByUuid(payload.uuid());
         if (img == null) return;
         img.pixelized = !img.pixelized;
@@ -104,13 +102,25 @@ public final class ServerPacketHandlers {
     public static void onLockImage(LockCanvasImageC2SPacket payload, ServerPlayer player) {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
+        if (access.signature().isSigned()) return;
         access.lock(payload.imageUuid(), payload.lock());
+    }
+
+    public static void onSignPoster(SignPosterC2SPacket payload, ServerPlayer player) {
+        PosterAccess access = PosterAccess.resolve(player, payload.target());
+        if (access == null) return;
+        if (!access.canvasData().isSizeChosen()) return;
+        if (access.signature().isSigned()) return;
+        access.signature().sign(player.getGameProfile().getName(), player.getUUID());
+        access.persist();
+        access.syncSignature();
     }
 
     public static void onRequestImage(RequestImageC2SPacket payload, ServerPlayer player) {
         if (!ImageStorage.exists(payload.uuid())) return;
         try {
             byte[] bytes = ImageStorage.load(payload.uuid());
+            if (PacketThrottle.imageThrottled(player.getUUID(), bytes.length)) return;
             ArtistryNetwork.sendToPlayer(player, new DeliverImageS2CPacket(payload.uuid(), bytes));
         } catch (IOException e) {
             Artistry.LOGGER.error("Failed to load image {}", payload.uuid(), e);

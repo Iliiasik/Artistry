@@ -1,15 +1,19 @@
 modLoader = "javafml"
 loaderVersion = "${neoforge_loader_version_range}"
 license = "${license}"
+issueTrackerURL = "https://github.com/Iliiasik/Artistry/issues"
 
 [[mods]]
 modId = "${mod_id}"
 version = "${version}"
 displayName = "${mod_name}"
-logoFile = "assets/${mod_id}/icon.png"
-credits = "${credits}"
+logoFile = "${mod_id}_banner.png"
 authors = "${mod_author}"
 description = '''${description}'''
+
+[modproperties."${mod_id}"]
+catalogueImageIcon = "${mod_id}_icon.png"
+catalogueBackground = "${mod_id}_background.png"
 
 [[mixins]]
 config = "${mod_id}.mixins.json"
@@ -17,14 +21,14 @@ config = "${mod_id}.mixins.json"
 [[mixins]]
 config = "${mod_id}.neoforge.mixins.json"
 
-[[dependencies.${mod_id}]]
+[[dependencies."${mod_id}"]]
 modId = "neoforge"
 type = "required"
 versionRange = "[${neoforge_version},)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.${mod_id}]]
+[[dependencies."${mod_id}"]]
 modId = "minecraft"
 type = "required"
 versionRange = "${minecraft_version_range}"

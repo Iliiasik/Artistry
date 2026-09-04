@@ -52,6 +52,16 @@ public class CanvasData {
         return nbt.getCompound("canvas").getInt("size") > 0;
     }
 
+    public void applyChanges(List<PixelChange> changes) {
+        for (PixelChange change : changes) {
+            int x = change.x() & 0xFF;
+            int y = change.y() & 0xFF;
+            if (!inBounds(x, y)) continue;
+            pixels[y][x] = change.blockIndex();
+            colors[y][x] = change.color();
+        }
+    }
+
     public void setColor(int x, int y, int argb) {
         pixels[y][x] = COLOR_PIXEL;
         colors[y][x] = argb;

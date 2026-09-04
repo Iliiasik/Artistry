@@ -1,5 +1,7 @@
 package iliiasik.artistry.debug.impl;
 
+import iliiasik.artistry.block.BannerBlock;
+import iliiasik.artistry.block.BannerPart;
 import iliiasik.artistry.block.ModBlocks;
 import iliiasik.artistry.block.PosterBlock;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
@@ -31,16 +33,15 @@ public final class PosterBenchmark {
 
     private PosterBenchmark() {}
 
-    public static int place(ServerPlayer player, int count, int canvasSize, int imagesPerPoster) {
+    public static int place(ServerPlayer player, int count, int canvasSize,
+                            int imagesPerPoster, BenchmarkKind kind) {
         ServerLevel level = player.serverLevel();
         Direction facing = player.getDirection();
-        Direction posterFacing = facing.getOpposite();
+        Direction canvasFacing = facing.getOpposite();
         Direction right = facing.getClockWise();
 
         BlockPos origin = player.blockPosition().relative(facing, WALL_DISTANCE);
-        BlockState support = Blocks.STONE.defaultBlockState();
-        BlockState poster = ModBlocks.POSTER.get().defaultBlockState().setValue(PosterBlock.FACING, posterFacing);
-
+        int step = kind.slotSize();
         int width = (int) Math.ceil(Math.sqrt(count));
         int placed = 0;
         Random random = new Random(count * 31L + canvasSize);
@@ -49,13 +50,14 @@ public final class PosterBenchmark {
             int column = index % width;
             int row = index / width;
 
-            BlockPos pos = origin.relative(right, column - width / 2).above(row);
-            if (pos.getY() >= level.getMaxBuildHeight() - 1) break;
+            BlockPos pos = origin.relative(right, (column - width / 2) * step).above((int) ((long) row * step));
+            if (pos.getY() + step >= level.getMaxBuildHeight() - 1) break;
 
-            level.setBlock(pos.relative(facing), support, 3);
-            level.setBlock(pos, poster, 3);
+            BlockPos filled = kind.bannerAt(index)
+                    ? placeBanner(level, pos, facing, canvasFacing)
+                    : placePoster(level, pos, facing, canvasFacing);
 
-            if (level.getBlockEntity(pos) instanceof PosterBlockEntity entity) {
+            if (level.getBlockEntity(filled) instanceof PosterBlockEntity entity) {
                 fillCanvas(entity.canvasData, canvasSize, random);
                 fillImages(entity.imageLayer, canvasSize, imagesPerPoster, random);
                 entity.markDirtyAndSync();
@@ -66,13 +68,38 @@ public final class PosterBenchmark {
         return placed;
     }
 
+    private static BlockPos placePoster(ServerLevel level, BlockPos pos,
+                                        Direction facing, Direction canvasFacing) {
+        level.setBlock(pos.relative(facing), Blocks.STONE.defaultBlockState(), 3);
+        level.setBlock(pos, ModBlocks.POSTER.get().defaultBlockState()
+                .setValue(PosterBlock.FACING, canvasFacing), 3);
+        return pos;
+    }
+
+    private static BlockPos placeBanner(ServerLevel level, BlockPos pos,
+                                        Direction facing, Direction canvasFacing) {
+        BlockState base = ModBlocks.BANNER.get().defaultBlockState()
+                .setValue(BannerBlock.FACING, canvasFacing);
+
+        for (BannerPart part : BannerPart.values()) {
+            BlockPos partPos = BannerBlock.partPos(pos, canvasFacing, part);
+            level.setBlock(partPos.relative(facing), Blocks.STONE.defaultBlockState(), 3);
+        }
+        for (BannerPart part : BannerPart.values()) {
+            BlockPos partPos = BannerBlock.partPos(pos, canvasFacing, part);
+            level.setBlock(partPos, base.setValue(BannerBlock.PART, part), 3);
+        }
+        return pos;
+    }
+
     public static int clear(ServerLevel level, BlockPos center, int radius) {
         int removed = 0;
         BlockPos min = center.offset(-radius, -radius, -radius);
         BlockPos max = center.offset(radius, radius, radius);
 
         for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
-            if (!level.getBlockState(pos).is(ModBlocks.POSTER.get())) continue;
+            BlockState state = level.getBlockState(pos);
+            if (!state.is(ModBlocks.POSTER.get()) && !state.is(ModBlocks.BANNER.get())) continue;
             BlockPos immutable = pos.immutable();
             ArtistryNetwork.broadcastPosterRemoved(level, immutable);
             level.removeBlockEntity(immutable);
@@ -101,7 +128,7 @@ public final class PosterBenchmark {
         int size = Math.max(CanvasImage.MIN_GRID, canvasSize / 2);
         for (int i = 0; i < imagesPerPoster; i++) {
             try {
-                UUID uuid = ImageStorage.save(noisePng(IMAGE_PIXELS, IMAGE_PIXELS, random));
+                UUID uuid = ImageStorage.save(noisePng(random));
                 int offset = i * Math.max(1, canvasSize / 8);
                 int x = Math.clamp(offset, 0, canvasSize - size);
                 int y = Math.clamp(offset, 0, canvasSize - size);
@@ -114,12 +141,12 @@ public final class PosterBenchmark {
         }
     }
 
-    private static byte[] noisePng(int width, int height, Random random) throws IOException {
-        byte[] raw = new byte[height * (1 + width * 4)];
+    private static byte[] noisePng(Random random) throws IOException {
+        byte[] raw = new byte[PosterBenchmark.IMAGE_PIXELS * (1 + PosterBenchmark.IMAGE_PIXELS * 4)];
         int cursor = 0;
-        for (int y = 0; y < height; y++) {
+        for (int y = 0; y < PosterBenchmark.IMAGE_PIXELS; y++) {
             raw[cursor++] = 0;
-            for (int x = 0; x < width; x++) {
+            for (int x = 0; x < PosterBenchmark.IMAGE_PIXELS; x++) {
                 raw[cursor++] = (byte) random.nextInt(256);
                 raw[cursor++] = (byte) random.nextInt(256);
                 raw[cursor++] = (byte) random.nextInt(256);
@@ -131,8 +158,8 @@ public final class PosterBenchmark {
         out.write(new byte[]{(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'});
 
         ByteBuffer header = ByteBuffer.allocate(13);
-        header.putInt(width);
-        header.putInt(height);
+        header.putInt(PosterBenchmark.IMAGE_PIXELS);
+        header.putInt(PosterBenchmark.IMAGE_PIXELS);
         header.put((byte) 8);
         header.put((byte) 6);
         header.put((byte) 0);

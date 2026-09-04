@@ -127,7 +127,19 @@ class FabricPlatformTest {
     @Test
     @DisplayName("The shared assets of the common module end up in the loader jar")
     void commonResourcesArePresent() throws IOException {
-        assertNotNull(FabricPlatformTest.class.getResourceAsStream("/assets/artistry/icon.png"));
+        assertNotNull(FabricPlatformTest.class.getResourceAsStream("/artistry_icon.png"));
         assertFalse(resource("/artistry.mixins.json").isBlank());
+    }
+
+    @Test
+    @DisplayName("The manifest points at the icon and the issue tracker")
+    void modMetadataCarriesIconAndContact() throws IOException {
+        JsonObject json = JsonParser.parseString(resource("/fabric.mod.json")).getAsJsonObject();
+
+        assertEquals("artistry_icon.png", json.get("icon").getAsString());
+
+        JsonObject contact = json.getAsJsonObject("contact");
+        assertEquals("https://github.com/Iliiasik/Artistry/issues", contact.get("issues").getAsString());
+        assertEquals("https://github.com/Iliiasik/Artistry", contact.get("sources").getAsString());
     }
 }

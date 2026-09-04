@@ -113,6 +113,55 @@ class PaintDimensionsTest {
     }
 
     @Test
+    @DisplayName("The sign button sits under the size switch and shares its width")
+    void signButtonFollowsThePanel() {
+        dimensions.calculate(1600, 900);
+        assertEquals(dimensions.sizeSwitchX, dimensions.signX);
+        assertEquals(dimensions.sizeSwitchW, dimensions.signW);
+        assertTrue(dimensions.signY >= dimensions.sizeSwitchY + dimensions.sizeSwitchH,
+                "the sign button overlaps the size switch");
+    }
+
+    @Test
+    @DisplayName("The swatch strip sits left of the palette without overlapping it")
+    void swatchStripSitsLeftOfPalette() {
+        dimensions.calculate(1600, 900);
+        assertTrue(dimensions.secondaryX + dimensions.secondarySize <= dimensions.paletteX,
+                "the secondary swatch overlaps the palette");
+        assertTrue(dimensions.historyX + dimensions.historySize <= dimensions.paletteX,
+                "the history overlaps the palette");
+        assertTrue(dimensions.historyY >= dimensions.secondaryY + dimensions.secondarySize,
+                "the history overlaps the secondary swatch");
+        assertTrue(dimensions.swatchStripX <= dimensions.secondaryX
+                        && dimensions.swatchStripX <= dimensions.historyX,
+                "the strip bounds miss a cell on the left");
+        assertTrue(dimensions.swatchStripY + dimensions.swatchStripH
+                        >= dimensions.historyY + PaintDimensions.HISTORY_CELLS * dimensions.historySize,
+                "the strip bounds are shorter than the cells");
+    }
+
+    @Test
+    @DisplayName("The signature sits above the frame, badge and seal centred together")
+    void signatureSitsAboveTheFrame() {
+        dimensions.calculate(1600, 900);
+        assertTrue(dimensions.badgeY + dimensions.badgeH <= dimensions.canvasY,
+                "the badge overlaps the frame");
+        assertTrue(dimensions.sealY + dimensions.sealH <= dimensions.canvasY,
+                "the seal overlaps the frame");
+        assertTrue(dimensions.sealX >= dimensions.badgeX + dimensions.badgeW,
+                "the seal overlaps the badge");
+        assertEquals(dimensions.badgeY + dimensions.badgeH / 2,
+                dimensions.sealY + dimensions.sealH / 2,
+                "the badge and the seal are not on one line");
+
+        int groupLeft = dimensions.badgeX;
+        int groupRight = dimensions.sealX + dimensions.sealW;
+        int canvasCentre = dimensions.canvasX + dimensions.canvasSize / 2;
+        assertTrue(Math.abs((groupLeft + groupRight) / 2 - canvasCentre) <= 1,
+                "the signature group is not centred on the frame");
+    }
+
+    @Test
     @DisplayName("Disabling images removes one tool button from the panel")
     void disablingImagesShrinksToolPanel() {
         dimensions.calculate(1920, 1080);

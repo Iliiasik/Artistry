@@ -15,6 +15,12 @@ public final class ModBlocks {
                     .instabreak()
                     .pushReaction(PushReaction.DESTROY)));
 
+    public static final Supplier<BannerBlock> BANNER = Services.REGISTRY.register(Registries.BLOCK, "banner",
+            () -> new BannerBlock(BlockBehaviour.Properties.of()
+                    .noCollission()
+                    .instabreak()
+                    .pushReaction(PushReaction.DESTROY)));
+
     private ModBlocks() {}
 
     public static void init() {}

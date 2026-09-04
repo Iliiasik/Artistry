@@ -24,13 +24,23 @@ public class ArtistryConfig {
     public static class NetworkConfig {
         public long batchIntervalMs = 50;
         public long cursorIntervalMs = 100;
+        public long imageBytesPerSecond = 512 * 1024;
 
         private static final long MIN_BATCH_INTERVAL_MS = 10;
         private static final long MAX_BATCH_INTERVAL_MS = 5000;
         private static final long MIN_CURSOR_INTERVAL_MS = 50;
         private static final long MAX_CURSOR_INTERVAL_MS = 1000;
+        private static final long MIN_IMAGE_BYTES_PER_SECOND = 32 * 1024;
+        private static final long MAX_IMAGE_BYTES_PER_SECOND = 64L * 1024 * 1024;
 
         public void validate() {
+            if (imageBytesPerSecond < MIN_IMAGE_BYTES_PER_SECOND) {
+                System.err.println("[Artistry] imageBytesPerSecond too low (" + imageBytesPerSecond + "), clamping to " + MIN_IMAGE_BYTES_PER_SECOND);
+                imageBytesPerSecond = MIN_IMAGE_BYTES_PER_SECOND;
+            } else if (imageBytesPerSecond > MAX_IMAGE_BYTES_PER_SECOND) {
+                System.err.println("[Artistry] imageBytesPerSecond too high (" + imageBytesPerSecond + "), clamping to " + MAX_IMAGE_BYTES_PER_SECOND);
+                imageBytesPerSecond = MAX_IMAGE_BYTES_PER_SECOND;
+            }
             if (batchIntervalMs < MIN_BATCH_INTERVAL_MS) {
                 System.err.println("[Artistry] batchIntervalMs too low (" + batchIntervalMs + "), clamping to " + MIN_BATCH_INTERVAL_MS);
                 batchIntervalMs = MIN_BATCH_INTERVAL_MS;

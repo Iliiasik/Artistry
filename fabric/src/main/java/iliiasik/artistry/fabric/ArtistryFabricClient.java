@@ -23,6 +23,7 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,7 +51,7 @@ public final class ArtistryFabricClient implements ClientModInitializer {
                     }
 
                     @Override
-                    public void onResourceManagerReload(ResourceManager manager) {
+                    public void onResourceManagerReload(@NotNull ResourceManager manager) {
                         ArtistryClientEvents.onResourceReload();
                     }
                 });

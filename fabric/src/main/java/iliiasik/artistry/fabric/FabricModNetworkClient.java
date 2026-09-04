@@ -9,6 +9,7 @@ import iliiasik.artistry.network.ImageEvictedS2CPacket;
 import iliiasik.artistry.network.ImageUploadedS2CPacket;
 import iliiasik.artistry.network.PosterRemovedS2CPacket;
 import iliiasik.artistry.network.ServerSettingsS2CPacket;
+import iliiasik.artistry.network.SyncSignatureS2CPacket;
 import iliiasik.artistry.network.SyncCanvasS2CPacket;
 import iliiasik.artistry.network.SyncImageLayerS2CPacket;
 import iliiasik.artistry.network.SyncImageLockS2CPacket;
@@ -42,5 +43,7 @@ public final class FabricModNetworkClient {
                 context.client().execute(() -> ClientPacketHandler.onCanvasEnterAllowed(payload)));
         ClientPlayNetworking.registerGlobalReceiver(ServerSettingsS2CPacket.TYPE, (payload, context) ->
                 context.client().execute(() -> ClientPacketHandler.onServerSettings(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(SyncSignatureS2CPacket.TYPE, (payload, context) ->
+                context.client().execute(() -> ClientPacketHandler.onSyncSignature(payload)));
     }
 }

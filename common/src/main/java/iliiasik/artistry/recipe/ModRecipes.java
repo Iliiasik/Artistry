@@ -13,6 +13,10 @@ public final class ModRecipes {
             Services.REGISTRY.register(Registries.RECIPE_SERIALIZER, "poster_cloning",
                     () -> new SimpleCraftingRecipeSerializer<>(PosterCloningRecipe::new));
 
+    public static final Supplier<RecipeSerializer<BannerCraftingRecipe>> BANNER_CRAFTING =
+            Services.REGISTRY.register(Registries.RECIPE_SERIALIZER, "banner_crafting",
+                    () -> new SimpleCraftingRecipeSerializer<>(BannerCraftingRecipe::new));
+
     private ModRecipes() {}
 
     public static void init() {}

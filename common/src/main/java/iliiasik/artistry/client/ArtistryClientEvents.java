@@ -1,7 +1,7 @@
 package iliiasik.artistry.client;
 
 import iliiasik.artistry.Artistry;
-import iliiasik.artistry.block.PosterBlock;
+import iliiasik.artistry.block.PosterBlocks;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.palette.BlockPalette;
@@ -14,6 +14,7 @@ import iliiasik.artistry.client.ui.screen.PaintScreen;
 import iliiasik.artistry.data.CanvasData;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.data.CanvasImageLayer;
+import iliiasik.artistry.data.CanvasSignature;
 import iliiasik.artistry.item.ModItems;
 import iliiasik.artistry.item.PosterItem;
 import iliiasik.artistry.network.ArtistryNetwork;
@@ -29,7 +30,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
 
 public final class ArtistryClientEvents {
 
@@ -41,6 +41,12 @@ public final class ArtistryClientEvents {
     public static void registerItemProperties() {
         ItemProperties.register(ModItems.POSTER.get(), Artistry.id("has_canvas"),
                 (stack, level, entity, seed) -> CanvasData.isSizeChosenForStack(stack) ? 1.0F : 0.0F);
+        ItemProperties.register(ModItems.POSTER.get(), Artistry.id("signed"),
+                (stack, level, entity, seed) -> CanvasSignature.isSignedStack(stack) ? 1.0F : 0.0F);
+        ItemProperties.register(ModItems.BANNER.get(), Artistry.id("has_canvas"),
+                (stack, level, entity, seed) -> CanvasData.isSizeChosenForStack(stack) ? 1.0F : 0.0F);
+        ItemProperties.register(ModItems.BANNER.get(), Artistry.id("signed"),
+                (stack, level, entity, seed) -> CanvasSignature.isSignedStack(stack) ? 1.0F : 0.0F);
     }
 
     public static void onResourceReload() {
@@ -93,9 +99,9 @@ public final class ArtistryClientEvents {
     }
 
     public static boolean requestPosterAccess(Level level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof PosterBlock)) return false;
-        if (!(level.getBlockEntity(pos) instanceof PosterBlockEntity poster)) return false;
+        BlockPos origin = PosterBlocks.originOf(level, pos);
+        if (origin == null) return false;
+        if (!(level.getBlockEntity(origin) instanceof PosterBlockEntity poster)) return false;
         ArtistryNetwork.sendToServer(new CanvasEnterRequestC2SPacket(poster.getBlockPos()));
         return true;
     }

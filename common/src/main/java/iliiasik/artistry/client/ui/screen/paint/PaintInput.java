@@ -30,6 +30,8 @@ public class PaintInput {
     private UUID localPlayerUuid;
 
     private boolean isDrawing = false;
+    private int drawingButton = -1;
+    private DrawingTool toolBeforePipette = null;
     private boolean imageDragging = false;
     private boolean imageMode = false;
 
@@ -56,15 +58,65 @@ public class PaintInput {
         if (imageMode) exitImageMode();
     }
 
+    public boolean isImageMode() {
+        return imageMode;
+    }
+
+    public boolean selectTool(DrawingTool tool) {
+        if (imageMode) return false;
+        toolBeforePipette = null;
+        applyTool(tool);
+        return true;
+    }
+
+    public boolean beginTemporaryPipette() {
+        if (imageMode || isDrawing || toolBeforePipette != null) return false;
+        if (pixelPainter.getTool() == DrawingTool.PIPETTE) return false;
+        toolBeforePipette = pixelPainter.getTool();
+        applyTool(DrawingTool.PIPETTE);
+        return true;
+    }
+
+    public boolean endTemporaryPipette() {
+        if (toolBeforePipette == null) return false;
+        DrawingTool restored = toolBeforePipette;
+        toolBeforePipette = null;
+        applyTool(restored);
+        return true;
+    }
+
+    public boolean deleteSelectedImage() {
+        if (!imageMode || imageController.getSelectedUuid() == null) return false;
+        handleImageAction(ImageToolWidget.Action.DELETE);
+        return true;
+    }
+
+    public boolean nudgeSelectedImage(int stepX, int stepY) {
+        if (!imageMode) return false;
+        UUID selected = imageController.getSelectedUuid();
+        if (selected == null) return false;
+        if (!imageController.nudge(stepX, stepY, session.canvasData().canvasSize)) return false;
+        session.markImageMoved(selected);
+        return true;
+    }
+
+    private void applyTool(DrawingTool tool) {
+        pixelPainter.setTool(tool);
+        if (widgets != null) widgets.setActiveTool(tool);
+    }
+
     private boolean isOutsideDrawingArea(double mouseX, double mouseY) {
         return mouseX < dims.drawingAreaX || mouseX >= dims.drawingAreaX + dims.drawingAreaSize
                 || mouseY < dims.drawingAreaY || mouseY >= dims.drawingAreaY + dims.drawingAreaSize;
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0 || isOutsideDrawingArea(mouseX, mouseY)) return false;
+        if ((button != 0 && button != 1) || isOutsideDrawingArea(mouseX, mouseY)) return false;
 
         int canvasSize = session.canvasData().canvasSize;
+        boolean secondary = button == 1;
+
+        if (imageMode && secondary) return true;
 
         if (imageMode) {
             UUID previousSelected = imageController.getSelectedUuid();
@@ -83,7 +135,7 @@ public class PaintInput {
             return true;
         }
 
-        if (!session.imageLayer().getImages().isEmpty() &&
+        if (!secondary && !session.imageLayer().getImages().isEmpty() &&
                 imageController.isOnImage(mouseX, mouseY,
                         dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasSize)) {
             CanvasImage hovered = getHoveredUnlockedImage(mouseX, mouseY);
@@ -106,19 +158,20 @@ public class PaintInput {
                 int blockIndex = picked[0];
                 int color = picked[1];
                 if (color != 0) {
-                    widgets.applyPickedColor(color);
+                    widgets.applyPickedColor(color, secondary);
                 } else if (blockIndex > 0) {
-                    widgets.applyPickedBlock(blockIndex);
+                    widgets.applyPickedBlock(blockIndex, secondary);
                 }
-                pixelPainter.setTool(DrawingTool.BRUSH);
-                widgets.setActiveTool(DrawingTool.BRUSH);
+                if (!endTemporaryPipette()) applyTool(DrawingTool.BRUSH);
             }
             return true;
         }
 
+        session.beginStrokeHistory();
         if (pixelPainter.beginStroke(session.canvasData(), (int) mouseX, (int) mouseY,
-                dims.drawingAreaX, dims.drawingAreaY, scale)) {
+                dims.drawingAreaX, dims.drawingAreaY, scale, secondary)) {
             isDrawing = true;
+            drawingButton = button;
             return true;
         }
         return false;
@@ -131,7 +184,7 @@ public class PaintInput {
                     () -> session.markImageMoved(imageController.getSelectedUuid()));
             return true;
         }
-        if (isDrawing && button == 0) {
+        if (isDrawing && button == drawingButton) {
             double scale = (double) dims.drawingAreaSize / session.canvasData().canvasSize;
             pixelPainter.continueStroke(session.canvasData(), (int) mouseX, (int) mouseY,
                     dims.drawingAreaX, dims.drawingAreaY, scale);
@@ -147,9 +200,11 @@ public class PaintInput {
             session.flushImageMove();
             return true;
         }
-        if (isDrawing && button == 0) {
+        if (isDrawing && button == drawingButton) {
             pixelPainter.endStroke();
+            session.endStrokeHistory(pixelPainter.strokeCells());
             isDrawing = false;
+            drawingButton = -1;
             return true;
         }
         return false;

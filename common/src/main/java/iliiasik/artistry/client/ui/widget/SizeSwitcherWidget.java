@@ -35,6 +35,14 @@ public class SizeSwitcherWidget extends AbstractWidget {
         return SIZES[sizeIndex];
     }
 
+    public boolean stepSize(int delta) {
+        int next = Math.clamp(sizeIndex + delta, 0, SIZES.length - 1);
+        if (next == sizeIndex) return false;
+        sizeIndex = next;
+        onSizeChanged.accept(SIZES[sizeIndex]);
+        return true;
+    }
+
     @Override
     protected void renderWidget(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         if (!visible) return;
@@ -60,12 +68,11 @@ public class SizeSwitcherWidget extends AbstractWidget {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!visible) return false;
-        if (button == 0 && isMouseOver(mouseX, mouseY)) {
-            sizeIndex = (sizeIndex + 1) % SIZES.length;
-            onSizeChanged.accept(SIZES[sizeIndex]);
-            return true;
-        }
-        return false;
+        if ((button != 0 && button != 1) || !isMouseOver(mouseX, mouseY)) return false;
+        int step = button == 0 ? 1 : SIZES.length - 1;
+        sizeIndex = (sizeIndex + step) % SIZES.length;
+        onSizeChanged.accept(SIZES[sizeIndex]);
+        return true;
     }
 
     @Override

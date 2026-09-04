@@ -121,6 +121,14 @@ public final class CanvasCellPainter {
         }
     }
 
+    public interface PixelSource {
+        int at(int x, int y);
+    }
+
+    public static PixelSource sourceOf(NativeImage image) {
+        return image::getPixelRGBA;
+    }
+
     private static void blitSprite(NativeImage target, BakedSprite sprite,
                                    int left, int top, int right, int bottom) {
         int width = right - left;
@@ -128,6 +136,7 @@ public final class CanvasCellPainter {
         int spriteWidth = sprite.width();
         int spriteHeight = sprite.height();
         int[] pixels = sprite.pixels();
+        PixelSource source = (x, y) -> pixels[y * spriteWidth + x];
 
         if (width >= spriteWidth && height >= spriteHeight) {
             for (int offsetY = 0; offsetY < height; offsetY++) {
@@ -147,7 +156,7 @@ public final class CanvasCellPainter {
                 int sourceLeft = offsetX * spriteWidth / width;
                 int sourceRight = Math.max(sourceLeft + 1, (offsetX + 1) * spriteWidth / width);
                 target.setPixelRGBA(left + offsetX, top + offsetY,
-                        averageArray(pixels, spriteWidth, sourceLeft, sourceTop, sourceRight, sourceBottom));
+                        average(source, sourceLeft, sourceTop, sourceRight, sourceBottom));
             }
         }
     }
@@ -157,7 +166,7 @@ public final class CanvasCellPainter {
         return Math.max(1, (to - from + maxSamples - 1) / maxSamples);
     }
 
-    private static int averageArray(int[] pixels, int stride, int left, int top, int right, int bottom) {
+    public static int average(PixelSource source, int left, int top, int right, int bottom) {
         int stepX = sampleStep(left, right);
         int stepY = sampleStep(top, bottom);
         long alphaSum = 0;
@@ -165,10 +174,10 @@ public final class CanvasCellPainter {
         long greenSum = 0;
         long redSum = 0;
         int samples = 0;
+
         for (int y = top; y < bottom; y += stepY) {
-            int row = y * stride;
             for (int x = left; x < right; x += stepX) {
-                int pixel = pixels[row + x];
+                int pixel = source.at(x, y);
                 int alpha = (pixel >>> 24) & 0xFF;
                 alphaSum += alpha;
                 blueSum += ((pixel >>> 16) & 0xFF) * alpha;
@@ -177,32 +186,7 @@ public final class CanvasCellPainter {
                 samples++;
             }
         }
-        return packAverage(alphaSum, blueSum, greenSum, redSum, samples);
-    }
 
-    public static int averageImage(NativeImage source, int left, int top, int right, int bottom) {
-        int stepX = sampleStep(left, right);
-        int stepY = sampleStep(top, bottom);
-        long alphaSum = 0;
-        long blueSum = 0;
-        long greenSum = 0;
-        long redSum = 0;
-        int samples = 0;
-        for (int y = top; y < bottom; y += stepY) {
-            for (int x = left; x < right; x += stepX) {
-                int pixel = source.getPixelRGBA(x, y);
-                int alpha = (pixel >>> 24) & 0xFF;
-                alphaSum += alpha;
-                blueSum += ((pixel >>> 16) & 0xFF) * alpha;
-                greenSum += ((pixel >>> 8) & 0xFF) * alpha;
-                redSum += (pixel & 0xFF) * alpha;
-                samples++;
-            }
-        }
-        return packAverage(alphaSum, blueSum, greenSum, redSum, samples);
-    }
-
-    private static int packAverage(long alphaSum, long blueSum, long greenSum, long redSum, int samples) {
         if (samples == 0 || alphaSum == 0) return 0;
         return (int) (((alphaSum / samples) << 24)
                 | ((blueSum / alphaSum) << 16)

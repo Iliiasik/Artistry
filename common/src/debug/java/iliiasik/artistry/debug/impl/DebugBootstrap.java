@@ -2,6 +2,7 @@ package iliiasik.artistry.debug.impl;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import iliiasik.artistry.data.CanvasData;
@@ -14,8 +15,9 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
+@SuppressWarnings("unused")
 public final class DebugBootstrap implements DebugHooks {
 
     private static final int DEFAULT_CANVAS_SIZE = 32;
@@ -64,8 +66,7 @@ public final class DebugBootstrap implements DebugHooks {
     }
 
     @Override
-    @Nullable
-    public KeyMapping keyMapping() {
+    public @NotNull KeyMapping keyMapping() {
         return ProfilerKey.TOGGLE;
     }
 
@@ -74,28 +75,37 @@ public final class DebugBootstrap implements DebugHooks {
         root.then(Commands.literal("benchmark")
                 .then(Commands.literal("clear")
                         .executes(DebugBootstrap::clearBenchmark))
-                .then(Commands.argument("count", IntegerArgumentType.integer(1, 4096))
-                        .executes(context -> placeBenchmark(context, DEFAULT_CANVAS_SIZE, DEFAULT_IMAGES))
-                        .then(Commands.argument("canvasSize", IntegerArgumentType.integer(1, CanvasData.MAX_SIZE))
-                                .executes(context -> placeBenchmark(context,
-                                        IntegerArgumentType.getInteger(context, "canvasSize"), DEFAULT_IMAGES))
-                                .then(Commands.argument("images", IntegerArgumentType.integer(0, CanvasImageLayer.MAX_IMAGES))
-                                        .executes(context -> placeBenchmark(context,
-                                                IntegerArgumentType.getInteger(context, "canvasSize"),
-                                                IntegerArgumentType.getInteger(context, "images")))))));
+                .then(countArgument(BenchmarkKind.POSTERS))
+                .then(Commands.literal("posters").then(countArgument(BenchmarkKind.POSTERS)))
+                .then(Commands.literal("banners").then(countArgument(BenchmarkKind.BANNERS)))
+                .then(Commands.literal("mixed").then(countArgument(BenchmarkKind.MIXED))));
     }
 
-    private static int placeBenchmark(CommandContext<CommandSourceStack> context, int canvasSize, int images)
+    private static RequiredArgumentBuilder<CommandSourceStack, Integer> countArgument(BenchmarkKind kind) {
+        return Commands.argument("count", IntegerArgumentType.integer(1, 4096))
+                .executes(context -> placeBenchmark(context, DEFAULT_CANVAS_SIZE, DEFAULT_IMAGES, kind))
+                .then(Commands.argument("canvasSize", IntegerArgumentType.integer(1, CanvasData.MAX_SIZE))
+                        .executes(context -> placeBenchmark(context,
+                                IntegerArgumentType.getInteger(context, "canvasSize"), DEFAULT_IMAGES, kind))
+                        .then(Commands.argument("images", IntegerArgumentType.integer(0, CanvasImageLayer.MAX_IMAGES))
+                                .executes(context -> placeBenchmark(context,
+                                        IntegerArgumentType.getInteger(context, "canvasSize"),
+                                        IntegerArgumentType.getInteger(context, "images"), kind))));
+    }
+
+    private static int placeBenchmark(CommandContext<CommandSourceStack> context,
+                                      int canvasSize, int images, BenchmarkKind kind)
             throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
         int count = IntegerArgumentType.getInteger(context, "count");
 
         long start = System.nanoTime();
-        int placed = PosterBenchmark.place(player, count, canvasSize, images);
+        int placed = PosterBenchmark.place(player, count, canvasSize, images, kind);
         long millis = (System.nanoTime() - start) / 1_000_000;
 
         context.getSource().sendSuccess(() -> Component.literal(
-                "[Artistry] Placed " + placed + " posters, " + canvasSize + "x" + canvasSize
+                "[Artistry] Placed " + placed + " " + kind.name().toLowerCase(java.util.Locale.ROOT)
+                        + ", " + canvasSize + "x" + canvasSize
                         + " canvas, " + images + " images each, in " + millis + " ms"), true);
         return placed;
     }

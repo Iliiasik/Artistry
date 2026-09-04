@@ -1,7 +1,7 @@
 package iliiasik.artistry.fabric;
 
 import iliiasik.artistry.Artistry;
-import iliiasik.artistry.network.ArtistryCommands;
+import iliiasik.artistry.command.ArtistryCommands;
 import iliiasik.artistry.network.ArtistryServerEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;

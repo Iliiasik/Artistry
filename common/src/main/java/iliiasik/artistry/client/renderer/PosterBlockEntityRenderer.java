@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import iliiasik.artistry.block.PosterBlock;
+import iliiasik.artistry.block.AbstractCanvasBlock;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.palette.BlockPalette;
@@ -30,10 +30,8 @@ import org.joml.Quaternionf;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBlockEntity> {
@@ -42,7 +40,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     private static final float Z_IMAGES = 15f / 16f - 0.001f;
 
     private static final Map<Long, PosterState> STATES = new HashMap<>();
-    private static final Set<UUID> pendingRequests = new HashSet<>();
+    private static final Map<UUID, Long> pendingRequests = new HashMap<>();
     private static final Map<ResourceLocation, RenderType> IMAGE_RENDER_LAYERS = new HashMap<>();
 
     private static long lastSweep = 0;
@@ -72,29 +70,30 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     }
 
     @Override
-    public void render(PosterBlockEntity entity, float tickDelta, PoseStack matrices,
+    public void render(@NotNull PosterBlockEntity entity, float tickDelta, @NotNull PoseStack matrices,
                        @NotNull MultiBufferSource vertexConsumers, int light, int overlay) {
         long profilerStart = ArtistryDebug.hooks().isRecording() ? System.nanoTime() : 0L;
         BlockPalette.ensureLoaded();
 
         long now = System.currentTimeMillis();
         List<CanvasImage> images = entity.imageLayer.getImages();
-        if (!images.isEmpty()) requestMissingImages(images);
+        if (!images.isEmpty()) requestMissingImages(images, now);
 
         BlockPos pos = entity.getBlockPos();
         PosterState state = STATES.computeIfAbsent(pos.asLong(), key -> new PosterState());
         state.lastSeen = now;
 
         float worldSize = entity.canvasWorldSize();
-        int desired = PosterLod.select(state.level, cameraDistance(pos, worldSize), worldSize);
+        Direction facing = facingOf(entity);
+        int desired = PosterLod.select(state.level, cameraDistance(pos, facing, worldSize), worldSize);
         state.update(entity, desired, now);
 
         if (state.hasContent) {
             matrices.pushPose();
-            applyFacingRotation(matrices, entity.getBlockState().getValue(PosterBlock.FACING));
-            PosterRenderHelper.renderQuad(matrices, vertexConsumers, state.slot, Z_CANVAS, light);
-            if (!PosterLod.bakesImages(state.level) && entity.canvasData.isSizeChosen() && !images.isEmpty()) {
-                renderImageQuads(matrices, vertexConsumers, entity.canvasData.canvasSize,
+            applyFacingRotation(matrices, facing);
+            PosterRenderHelper.renderQuad(matrices, vertexConsumers, state.slot, worldSize, Z_CANVAS, light);
+            if (PosterLod.usesImageQuads(state.level) && entity.canvasData.isSizeChosen() && !images.isEmpty()) {
+                renderImageQuads(matrices, vertexConsumers, entity.canvasData.canvasSize, worldSize,
                         state.fragments(entity.imageLayer), light);
             }
             matrices.popPose();
@@ -103,12 +102,13 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         if (profilerStart != 0L) ArtistryDebug.hooks().poster(System.nanoTime() - profilerStart);
     }
 
-    private static double cameraDistance(BlockPos pos, float worldSize) {
+    private static double cameraDistance(BlockPos pos, Direction facing, float worldSize) {
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        double half = worldSize * 0.5;
-        double dx = pos.getX() + half - camera.x;
-        double dy = pos.getY() + half - camera.y;
-        double dz = pos.getZ() + half - camera.z;
+        double spread = (worldSize - 1) * 0.5;
+        Direction side = facing.getClockWise();
+        double dx = pos.getX() + 0.5 + side.getStepX() * spread - camera.x;
+        double dy = pos.getY() + 0.5 + spread - camera.y;
+        double dz = pos.getZ() + 0.5 + side.getStepZ() * spread - camera.z;
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
@@ -129,11 +129,13 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         PosterLod.sweep(now);
     }
 
-    private void requestMissingImages(List<CanvasImage> images) {
+    private void requestMissingImages(List<CanvasImage> images, long now) {
         for (CanvasImage img : images) {
-            if (!ClientImageCache.has(img.uuid) && pendingRequests.add(img.uuid)) {
-                ArtistryNetwork.sendToServer(new RequestImageC2SPacket(img.uuid));
-            }
+            if (ClientImageCache.has(img.uuid)) continue;
+            Long sentAt = pendingRequests.get(img.uuid);
+            if (sentAt != null && now - sentAt < RenderTuning.IMAGE_REQUEST_RETRY_MILLIS) continue;
+            pendingRequests.put(img.uuid, now);
+            ArtistryNetwork.sendToServer(new RequestImageC2SPacket(img.uuid));
         }
     }
 
@@ -142,7 +144,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     }
 
     public static void clearPendingRequests(Collection<UUID> uuids) {
-        pendingRequests.removeAll(uuids);
+        pendingRequests.keySet().removeAll(uuids);
     }
 
     public static void clearAllPendingRequests() {
@@ -150,7 +152,8 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     }
 
     private void renderImageQuads(PoseStack matrices, MultiBufferSource vertexConsumers,
-                                  int canvasSize, List<VisibleFragment> fragments, int light) {
+                                  int canvasSize, float worldSize,
+                                  List<VisibleFragment> fragments, int light) {
         for (VisibleFragment frag : fragments) {
             CanvasImage img = frag.image();
             if (!ClientImageCache.has(img.uuid)) continue;
@@ -160,10 +163,10 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
                     : ClientImageCache.getTexture(img.uuid);
             if (imgTex == null) continue;
 
-            float x0 = 1f - (float) frag.destRect().x1() / canvasSize;
-            float x1 = 1f - (float) frag.destRect().x0() / canvasSize;
-            float y0 = 1f - (float) frag.destRect().y0() / canvasSize;
-            float y1 = 1f - (float) frag.destRect().y1() / canvasSize;
+            float x0 = worldSize * (1f - (float) frag.destRect().x1() / canvasSize);
+            float x1 = worldSize * (1f - (float) frag.destRect().x0() / canvasSize);
+            float y0 = worldSize * (1f - (float) frag.destRect().y0() / canvasSize);
+            float y1 = worldSize * (1f - (float) frag.destRect().y1() / canvasSize);
 
             VertexConsumer vc = vertexConsumers.getBuffer(getImageLayer(imgTex));
             Matrix4f mat = matrices.last().pose();
@@ -173,6 +176,10 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
             PosterRenderHelper.vertex(vc, mat, matrices, x1, y1, Z_IMAGES, frag.u0(), frag.v1(), ov, light);
             PosterRenderHelper.vertex(vc, mat, matrices, x0, y1, Z_IMAGES, frag.u1(), frag.v1(), ov, light);
         }
+    }
+
+    private static Direction facingOf(PosterBlockEntity entity) {
+        return entity.getBlockState().getValue(AbstractCanvasBlock.FACING);
     }
 
     private static void applyFacingRotation(PoseStack matrices, Direction facing) {
@@ -205,7 +212,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     private record Acquired(int level, CanvasAtlas.Slot slot) {}
 
     private static Acquired acquire(int desired) {
-        if (!RenderBudget.claim()) return null;
+        if (RenderBudget.exhausted()) return null;
         long start = System.nanoTime();
         try {
             for (int level = desired; level < PosterLod.LEVELS; level++) {
@@ -290,19 +297,19 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         private boolean needsRebuild(PosterBlockEntity entity, long now) {
             if (builtPaletteGeneration != CanvasCellPainter.generation()) return true;
             if (builtCanvasRevision != entity.canvasData.revision()) return true;
-            if (!PosterLod.bakesImages(level)) return false;
+            if (PosterLod.usesImageQuads(level)) return false;
             if (builtLayerRevision != entity.imageLayer.revision()) return true;
             return !builtComplete && now - lastBuild >= RenderTuning.POSTER_INCOMPLETE_RETRY_MILLIS;
         }
 
         private boolean build(PosterBlockEntity entity, int target, CanvasAtlas.Slot targetSlot, long now) {
-            if (!RenderBudget.claim()) return false;
+            if (RenderBudget.exhausted()) return false;
             long start = System.nanoTime();
             int span = PosterLod.slotSize(target);
 
             CanvasComposer.composeCells(targetSlot.image(), targetSlot.originX(), targetSlot.originY(),
                     span, entity.canvasData);
-            if (!PosterLod.bakesImages(target) || !entity.canvasData.isSizeChosen()) {
+            if (PosterLod.usesImageQuads(target) || !entity.canvasData.isSizeChosen()) {
                 builtComplete = true;
             } else if (!hasContent) {
                 builtComplete = false;

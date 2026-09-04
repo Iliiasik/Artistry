@@ -27,7 +27,7 @@ public final class PosterLod {
     private PosterLod() {}
 
     public static int initialLevel(int desired) {
-        return RenderTuning.LOD_BAKES_IMAGES[desired] ? desired : COARSEST_UNBAKED;
+        return usesImageQuads(desired) ? COARSEST_UNBAKED : desired;
     }
 
     public static CanvasAtlas atlas(int level) {
@@ -38,8 +38,8 @@ public final class PosterLod {
         return RenderTuning.LOD_SLOT_SIZE[level];
     }
 
-    public static boolean bakesImages(int level) {
-        return RenderTuning.LOD_BAKES_IMAGES[level];
+    public static boolean usesImageQuads(int level) {
+        return !RenderTuning.LOD_BAKES_IMAGES[level];
     }
 
     public static void refresh(long now) {

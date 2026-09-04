@@ -1,17 +1,28 @@
 package iliiasik.artistry.client.tools;
 
+import iliiasik.artistry.client.palette.PaintSwatch;
+import iliiasik.artistry.client.palette.PaintSwatches;
 import iliiasik.artistry.data.CanvasData;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class PixelPainter {
 
-    private int selectedBlockIndex = 1;
-    private int selectedColor = 0xFFFFFFFF;
-    private boolean colorMode = false;
+    private final PaintSwatches swatches;
+
+    private final Set<Integer> strokeCells = new HashSet<>();
+
     private int brushSize = 1;
     private DrawingTool tool = DrawingTool.BRUSH;
+    private boolean strokeUsesSecondary = false;
 
     private int lastX = -1;
     private int lastY = -1;
+
+    public PixelPainter(PaintSwatches swatches) {
+        this.swatches = swatches;
+    }
 
     public void setTool(DrawingTool tool) {
         this.tool = tool;
@@ -19,16 +30,6 @@ public class PixelPainter {
 
     public DrawingTool getTool() {
         return tool;
-    }
-
-    public void setBlock(int paletteIndex) {
-        this.selectedBlockIndex = paletteIndex;
-        this.colorMode = false;
-    }
-
-    public void setColor(int argb) {
-        this.selectedColor = argb;
-        this.colorMode = true;
     }
 
     public void setSize(int size) {
@@ -56,9 +57,12 @@ public class PixelPainter {
         return new int[]{blockIndex, color};
     }
 
-    public boolean beginStroke(CanvasData canvas, int mx, int my, int areaX, int areaY, double scale) {
+    public boolean beginStroke(CanvasData canvas, int mx, int my, int areaX, int areaY,
+                               double scale, boolean secondary) {
         if (canvas == null) return false;
         if (tool == DrawingTool.PIPETTE) return false;
+        strokeUsesSecondary = secondary;
+        strokeCells.clear();
         int size = canvas.canvasSize > 0 ? canvas.canvasSize : CanvasData.MAX_SIZE;
         lastX = worldToGrid(mx, areaX, scale, size);
         lastY = worldToGrid(my, areaY, scale, size);
@@ -82,6 +86,10 @@ public class PixelPainter {
         lastY = -1;
     }
 
+    public Set<Integer> strokeCells() {
+        return strokeCells;
+    }
+
     private int worldToGrid(int coord, int areaStart, double scale, int size) {
         return Math.clamp((int) Math.floor((coord - areaStart) / scale), 0, Math.max(0, size - 1));
     }
@@ -96,18 +104,20 @@ public class PixelPainter {
 
     private void paintBlock(CanvasData canvas, int cx, int cy, int size) {
         canvas.markChanged();
+        PaintSwatch swatch = swatches.slot(strokeUsesSecondary);
         int half = brushSize / 2;
         for (int dy = -half; dy < brushSize - half; dy++) {
             for (int dx = -half; dx < brushSize - half; dx++) {
                 int px = cx + dx, py = cy + dy;
                 if (px < 0 || px >= size || py < 0 || py >= size) continue;
+                strokeCells.add(py * CanvasData.MAX_SIZE + px);
                 if (tool == DrawingTool.ERASER) {
                     canvas.pixels[py][px] = 0;
                     canvas.colors[py][px] = 0;
-                } else if (colorMode) {
-                    canvas.setColor(px, py, selectedColor);
+                } else if (swatch.isColor()) {
+                    canvas.setColor(px, py, swatch.color());
                 } else {
-                    canvas.pixels[py][px] = (short) selectedBlockIndex;
+                    canvas.pixels[py][px] = swatch.blockIndex();
                     canvas.colors[py][px] = 0;
                 }
             }

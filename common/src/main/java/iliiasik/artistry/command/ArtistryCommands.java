@@ -1,9 +1,11 @@
-package iliiasik.artistry.network;
+package iliiasik.artistry.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.debug.ArtistryDebug;
+import iliiasik.artistry.network.ArtistryNetwork;
+import iliiasik.artistry.network.ServerSettingsS2CPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
