@@ -24,7 +24,7 @@ public class ArtistryConfig {
     public static class NetworkConfig {
         public long batchIntervalMs = 50;
         public long cursorIntervalMs = 100;
-        public long worldSyncIntervalMs = 500;
+        public long worldSyncIntervalMs = 250;
         public long imageBytesPerSecond = 512 * 1024;
 
         private static final long MIN_BATCH_INTERVAL_MS = 10;

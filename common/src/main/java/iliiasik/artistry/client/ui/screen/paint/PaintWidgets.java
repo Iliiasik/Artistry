@@ -257,7 +257,7 @@ public class PaintWidgets {
         if (button == 0 && hexInput != null && hexInput.isVisible() && hexInput.isFocused()) {
             if (hexInput.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
         }
-        if (button == 0 && !imageMode && colorPaletteWidget != null) {
+        if (button == 0 && colorPaletteWidget != null) {
             return colorPaletteWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
         return false;

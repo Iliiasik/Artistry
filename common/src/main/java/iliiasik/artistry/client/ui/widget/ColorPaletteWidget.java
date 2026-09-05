@@ -217,7 +217,7 @@ public class ColorPaletteWidget extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0 && button != 1) return false;
+        if (!visible || (button != 0 && button != 1)) return false;
         BlockPalette.ensureLoaded();
 
         boolean secondary = button == 1;
@@ -249,7 +249,7 @@ public class ColorPaletteWidget extends AbstractWidget {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if (button != 0 || mode != PaletteSwitcherWidget.PaletteMode.COLORS) return false;
+        if (!visible || button != 0 || mode != PaletteSwitcherWidget.PaletteMode.COLORS) return false;
         pickFromClick(mouseX, mouseY);
         return true;
     }

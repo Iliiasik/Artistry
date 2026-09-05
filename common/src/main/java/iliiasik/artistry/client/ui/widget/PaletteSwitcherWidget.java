@@ -51,6 +51,7 @@ public class PaletteSwitcherWidget extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!visible) return false;
         if (button == 0 && isMouseOver(mouseX, mouseY)) {
             mode = (mode == PaletteMode.BLOCKS) ? PaletteMode.COLORS : PaletteMode.BLOCKS;
             onModeChanged.accept(mode);

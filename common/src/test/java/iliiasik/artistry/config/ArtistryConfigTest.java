@@ -45,7 +45,7 @@ class ArtistryConfigTest {
         assertTrue(Files.exists(CONFIG_FILE), "the config file should be written on first load");
         assertEquals(50, config.network.batchIntervalMs);
         assertEquals(100, config.network.cursorIntervalMs);
-        assertEquals(500, config.network.worldSyncIntervalMs);
+        assertEquals(250, config.network.worldSyncIntervalMs);
         assertEquals(3, config.poster.maxEditors);
         assertFalse(config.poster.disableImages);
     }
