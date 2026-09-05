@@ -93,10 +93,14 @@ public class PaintWidgets {
                         if (!secondary) leaveNonPaintingTool();
                     }
                     @Override
-                    public void onColorSelected(int argbColor, boolean secondary) {
-                        swatches.select(PaintSwatch.ofColor(argbColor), secondary);
-                        if (!secondary) leaveNonPaintingTool();
+                    public void onColorSelected(int argbColor) {
+                        swatches.select(PaintSwatch.ofColor(argbColor), false);
+                        leaveNonPaintingTool();
                     }
+                },
+                secondary -> {
+                    PaintSwatch swatch = swatches.slot(secondary);
+                    return swatch.isColor() ? 0 : swatch.blockIndex();
                 }
         );
         swatches.select(PaintSwatch.ofBlock(colorPaletteWidget.getSelectedIndex()), false);
@@ -200,6 +204,12 @@ public class PaintWidgets {
         if (sizeSwitcherWidget != null) sizeSwitcherWidget.setVisible(!on);
         if (imageToolWidget != null) imageToolWidget.setVisible(on);
         if (swatchStripWidget != null) swatchStripWidget.setVisible(!on);
+        if (colorPaletteWidget != null) colorPaletteWidget.setVisible(!on);
+        if (paletteSwitcherWidget != null) paletteSwitcherWidget.setVisible(!on);
+        if (hexInput != null) {
+            hexInput.setVisible(!on && paletteSwitcherWidget != null
+                    && paletteSwitcherWidget.getMode() == PaletteSwitcherWidget.PaletteMode.COLORS);
+        }
         updateSignVisibility();
     }
 
@@ -247,7 +257,7 @@ public class PaintWidgets {
         if (button == 0 && hexInput != null && hexInput.isVisible() && hexInput.isFocused()) {
             if (hexInput.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
         }
-        if (button == 0 && colorPaletteWidget != null) {
+        if (button == 0 && !imageMode && colorPaletteWidget != null) {
             return colorPaletteWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
         }
         return false;

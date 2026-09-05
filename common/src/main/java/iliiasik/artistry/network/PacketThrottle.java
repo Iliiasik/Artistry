@@ -10,7 +10,8 @@ public class PacketThrottle {
 
     public enum Channel { SAVE, CURSOR }
 
-    private static final double BURST_SECONDS = 0.5;
+    private static final double SAVE_BURST_SECONDS = 2.0;
+    private static final double CURSOR_BURST_SECONDS = 0.5;
     private static final double IMAGE_BURST_SECONDS = 2.0;
 
     private static final Map<UUID, Bucket> saveBuckets = new HashMap<>();
@@ -44,8 +45,9 @@ public class PacketThrottle {
                 : ArtistryConfig.get().network.cursorIntervalMs;
         if (interval <= 0) interval = 1;
 
+        double burstSeconds = channel == Channel.SAVE ? SAVE_BURST_SECONDS : CURSOR_BURST_SECONDS;
         double refillPerMs = 1.0 / interval;
-        double capacity = Math.max(3.0, refillPerMs * 1000.0 * BURST_SECONDS);
+        double capacity = Math.max(3.0, refillPerMs * 1000.0 * burstSeconds);
         Map<UUID, Bucket> map = channel == Channel.SAVE ? saveBuckets : cursorBuckets;
 
         return bucket(map, player, capacity).denies(1.0, refillPerMs, capacity);

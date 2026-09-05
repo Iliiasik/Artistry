@@ -57,6 +57,27 @@ class BannerGeometryTest {
     }
 
     @Test
+    @DisplayName("The far corner spans one block sideways and one block up from the origin")
+    void renderBoxCornerCoversTheWholeBanner() {
+        for (Direction facing : Direction.Plane.HORIZONTAL) {
+            BlockPos corner = BannerBlock.partPos(ORIGIN, facing, BannerPart.CORNER);
+
+            assertEquals(ORIGIN.getY() + 1, corner.getY(), facing.toString());
+            assertEquals(ORIGIN.relative(facing.getClockWise()).getX(), corner.getX(), facing.toString());
+            assertEquals(ORIGIN.relative(facing.getClockWise()).getZ(), corner.getZ(), facing.toString());
+
+            for (BannerPart part : BannerPart.values()) {
+                BlockPos cell = BannerBlock.partPos(ORIGIN, facing, part);
+                assertTrue(cell.getY() >= ORIGIN.getY() && cell.getY() <= corner.getY(), facing + " " + part);
+                assertTrue(cell.getX() >= Math.min(ORIGIN.getX(), corner.getX())
+                        && cell.getX() <= Math.max(ORIGIN.getX(), corner.getX()), facing + " " + part);
+                assertTrue(cell.getZ() >= Math.min(ORIGIN.getZ(), corner.getZ())
+                        && cell.getZ() <= Math.max(ORIGIN.getZ(), corner.getZ()), facing + " " + part);
+            }
+        }
+    }
+
+    @Test
     @DisplayName("All four cells lean on their own support behind the same wall")
     void everyCellHasItsOwnSupport() {
         for (Direction facing : Direction.Plane.HORIZONTAL) {

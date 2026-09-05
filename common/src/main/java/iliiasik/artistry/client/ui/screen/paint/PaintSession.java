@@ -198,10 +198,12 @@ public class PaintSession {
     }
 
     public void deleteImage(UUID uuid) {
+        mirrorImageLayerToWorld();
         ArtistryNetwork.sendToServer(new DeleteCanvasImageC2SPacket(target(), uuid));
     }
 
     public void togglePixelize(UUID uuid) {
+        mirrorImageLayerToWorld();
         ArtistryNetwork.sendToServer(new TogglePixelizeC2SPacket(target(), uuid));
     }
 
@@ -225,9 +227,16 @@ public class PaintSession {
         if (img.pixelized) {
             ClientImageCache.rebuildPixelizedTexture(uuid, img.gridW, img.gridH);
         }
+        mirrorImageLayerToWorld();
         ArtistryNetwork.sendToServer(new MoveCanvasImageC2SPacket(
                 target(), uuid, img.gridX, img.gridY, img.gridW, img.gridH));
         lastImageSyncTime = System.currentTimeMillis();
+    }
+
+    private void mirrorImageLayerToWorld() {
+        if (targetEntity == null) return;
+        targetEntity.imageLayer.copyFrom(imageLayer);
+        targetEntity.imageLayer.clampToCanvas(targetEntity.canvasData.canvasSize);
     }
 
     public void tickBatch() {
@@ -246,9 +255,17 @@ public class PaintSession {
         if (changes.isEmpty()) return;
         lastSentSnapshot.copyFrom(canvasData);
         lastFlushTime = System.currentTimeMillis();
+        mirrorToWorld(changes);
         if (connected()) {
             ArtistryNetwork.sendToServer(new SaveCanvasC2SPacket(target(), changes));
         }
+    }
+
+    private void mirrorToWorld(List<CanvasData.PixelChange> changes) {
+        if (targetEntity == null) return;
+        targetEntity.canvasData.canvasSize = canvasData.canvasSize;
+        targetEntity.canvasData.applyChanges(changes);
+        targetEntity.canvasData.markChanged();
     }
 
     private void saveToItem() {
@@ -311,6 +328,7 @@ public class PaintSession {
     public void onImageUploaded(UUID uuid, int gridX, int gridY, int gridW, int gridH) {
         if (imageLayer.findByUuid(uuid) != null) return;
         imageLayer.addImage(new CanvasImage(uuid, gridX, gridY, gridW, gridH));
+        mirrorImageLayerToWorld();
     }
 
     public void receiveCursor(UUID uuid, float gx, float gy) {

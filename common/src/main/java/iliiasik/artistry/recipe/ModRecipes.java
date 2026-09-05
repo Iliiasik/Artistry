@@ -15,7 +15,7 @@ public final class ModRecipes {
 
     public static final Supplier<RecipeSerializer<BannerCraftingRecipe>> BANNER_CRAFTING =
             Services.REGISTRY.register(Registries.RECIPE_SERIALIZER, "banner_crafting",
-                    () -> new SimpleCraftingRecipeSerializer<>(BannerCraftingRecipe::new));
+                    BannerCraftingRecipe.Serializer::new);
 
     private ModRecipes() {}
 

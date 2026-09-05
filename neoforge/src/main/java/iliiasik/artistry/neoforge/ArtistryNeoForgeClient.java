@@ -3,7 +3,6 @@ package iliiasik.artistry.neoforge;
 import iliiasik.artistry.Artistry;
 import iliiasik.artistry.block.entity.ModBlockEntities;
 import iliiasik.artistry.client.ArtistryClientEvents;
-import iliiasik.artistry.client.renderer.PosterBlockEntityRenderer;
 import iliiasik.artistry.debug.ArtistryDebug;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -39,7 +38,7 @@ public final class ArtistryNeoForgeClient {
     }
 
     private static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(ModBlockEntities.POSTER.get(), context -> new PosterBlockEntityRenderer());
+        event.registerBlockEntityRenderer(ModBlockEntities.POSTER.get(), context -> new NeoForgePosterRenderer());
     }
 
     private static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {

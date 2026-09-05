@@ -5,6 +5,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import iliiasik.artistry.block.AbstractCanvasBlock;
+import iliiasik.artistry.block.BannerBlock;
+import iliiasik.artistry.block.BannerPart;
 import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.palette.BlockPalette;
@@ -23,6 +25,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
@@ -100,6 +103,13 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         }
 
         if (profilerStart != 0L) ArtistryDebug.hooks().poster(System.nanoTime() - profilerStart);
+    }
+
+    protected static AABB canvasBounds(PosterBlockEntity entity) {
+        BlockPos pos = entity.getBlockPos();
+        if (!(entity.getBlockState().getBlock() instanceof BannerBlock)) return new AABB(pos);
+        BlockPos corner = BannerBlock.partPos(pos, facingOf(entity), BannerPart.CORNER);
+        return new AABB(pos).minmax(new AABB(corner));
     }
 
     private static double cameraDistance(BlockPos pos, Direction facing, float worldSize) {

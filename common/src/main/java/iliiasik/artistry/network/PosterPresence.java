@@ -6,8 +6,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -21,12 +23,14 @@ public class PosterPresence {
 
     public static void open(ServerPlayer player, ServerLevel level, BlockPos pos) {
         Loc loc = new Loc(level, pos.immutable());
+        CanvasRoom.flush(level, loc.pos());
         viewers.computeIfAbsent(loc, k -> new HashMap<>()).put(player.getUUID(), player);
         byPlayer.computeIfAbsent(player.getUUID(), k -> new HashSet<>()).add(loc);
     }
 
     public static void close(ServerPlayer player, ServerLevel level, BlockPos pos) {
         Loc loc = new Loc(level, pos.immutable());
+        CanvasRoom.flush(level, loc.pos());
         removeViewer(loc, player.getUUID());
         Set<Loc> set = byPlayer.get(player.getUUID());
         if (set != null) {
@@ -41,6 +45,7 @@ public class PosterPresence {
         Set<Loc> set = byPlayer.remove(player.getUUID());
         if (set == null) return;
         for (Loc loc : set) {
+            CanvasRoom.flush(loc.level(), loc.pos());
             removeViewer(loc, player.getUUID());
             releaseLocks(player.getUUID(), loc.level(), loc.pos());
             broadcastLeave(loc, player.getUUID());
@@ -57,6 +62,16 @@ public class PosterPresence {
         }
         open(player, level, pos);
         return true;
+    }
+
+    public static Collection<ServerPlayer> viewersOf(ServerLevel level, BlockPos pos) {
+        Map<UUID, ServerPlayer> v = viewers.get(new Loc(level, pos.immutable()));
+        return v == null ? List.of() : v.values();
+    }
+
+    public static Set<UUID> viewerIdsOf(ServerLevel level, BlockPos pos) {
+        Map<UUID, ServerPlayer> v = viewers.get(new Loc(level, pos.immutable()));
+        return v == null ? Set.of() : v.keySet();
     }
 
     public static void updateCursor(ServerPlayer player, ServerLevel level, BlockPos pos, short gx, short gy) {

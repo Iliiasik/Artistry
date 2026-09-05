@@ -22,8 +22,16 @@ public class PaletteSwitcherWidget extends AbstractWidget {
         this.onModeChanged = onModeChanged;
     }
 
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
     public void setMode(PaletteMode mode) {
         this.mode = mode;
+    }
+
+    public PaletteMode getMode() {
+        return mode;
     }
 
     @Override

@@ -9,6 +9,9 @@ import net.minecraft.server.level.ServerPlayer;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+import java.util.UUID;
+
 public final class ArtistryNetwork {
 
     private ArtistryNetwork() {}
@@ -33,7 +36,20 @@ public final class ArtistryNetwork {
         }
     }
 
+    public static void sendNearExcept(ServerLevel level, BlockPos pos,
+                                      Set<UUID> exclude, CustomPacketPayload payload) {
+        int chunkX = SectionPos.blockToSectionCoord(pos.getX());
+        int chunkZ = SectionPos.blockToSectionCoord(pos.getZ());
+        for (ServerPlayer player : level.players()) {
+            if (exclude.contains(player.getUUID())) continue;
+            if (player.getChunkTrackingView().isInViewDistance(chunkX, chunkZ)) {
+                sendToPlayer(player, payload);
+            }
+        }
+    }
+
     public static void broadcastPosterRemoved(ServerLevel level, BlockPos pos) {
+        CanvasRoom.forget(level, pos);
         sendNear(level, pos, null, new PosterRemovedS2CPacket(pos));
     }
 }

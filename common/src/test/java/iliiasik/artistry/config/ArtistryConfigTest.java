@@ -45,8 +45,50 @@ class ArtistryConfigTest {
         assertTrue(Files.exists(CONFIG_FILE), "the config file should be written on first load");
         assertEquals(50, config.network.batchIntervalMs);
         assertEquals(100, config.network.cursorIntervalMs);
+        assertEquals(500, config.network.worldSyncIntervalMs);
         assertEquals(3, config.poster.maxEditors);
         assertFalse(config.poster.disableImages);
+    }
+
+    @Test
+    @DisplayName("The world sync never runs more often than the room batch")
+    void worldSyncNeverBeatsTheRoom() throws IOException {
+        write("""
+                {
+                  "network": { "batchIntervalMs": 400, "worldSyncIntervalMs": 100 }
+                }
+                """);
+
+        ArtistryConfig config = ArtistryConfig.reload();
+
+        assertEquals(400, config.network.batchIntervalMs);
+        assertEquals(400, config.network.worldSyncIntervalMs);
+    }
+
+    @Test
+    @DisplayName("An out of range world sync interval is clamped like the others")
+    void worldSyncIsClamped() throws IOException {
+        write("""
+                {
+                  "network": { "batchIntervalMs": 50, "worldSyncIntervalMs": 99999 }
+                }
+                """);
+
+        ArtistryConfig config = ArtistryConfig.reload();
+
+        assertEquals(5000, config.network.worldSyncIntervalMs);
+    }
+
+    @Test
+    @DisplayName("A custom world sync interval survives the round trip")
+    void worldSyncIsRead() throws IOException {
+        write("""
+                {
+                  "network": { "batchIntervalMs": 50, "worldSyncIntervalMs": 750 }
+                }
+                """);
+
+        assertEquals(750, ArtistryConfig.reload().network.worldSyncIntervalMs);
     }
 
     @Test

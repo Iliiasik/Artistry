@@ -142,7 +142,8 @@ public class PaintScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (editable() && input != null && input.mouseClicked(mouseX, mouseY, button)) return true;
-        return super.mouseClicked(mouseX, mouseY, button);
+        if (super.mouseClicked(mouseX, mouseY, button)) return true;
+        return editable() && input != null && input.exitImageModeOnMiss(button);
     }
 
     @Override

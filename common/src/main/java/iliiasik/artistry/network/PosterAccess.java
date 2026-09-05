@@ -69,6 +69,8 @@ public abstract class PosterAccess {
 
     public abstract void lock(UUID imageUuid, boolean doLock);
 
+    public abstract void releaseAllLocks();
+
     static final class BlockAccess extends PosterAccess {
 
         private final ServerLevel level;
@@ -120,7 +122,7 @@ public abstract class PosterAccess {
 
         @Override
         public void syncCanvas(List<CanvasData.PixelChange> changes) {
-            ArtistryNetwork.sendNear(level, pos, player, new SyncCanvasS2CPacket(pos, changes));
+            CanvasRoom.publish(level, pos, player, changes);
         }
 
         @Override
@@ -149,6 +151,15 @@ public abstract class PosterAccess {
             ArtistryNetwork.sendNear(level, pos, null, new SyncImageLockS2CPacket(pos, imageUuid, img.lockedByPlayer));
             if (doLock) {
                 ArtistryNetwork.sendNear(level, pos, player, new SyncImageLayerS2CPacket(pos, poster.imageLayer.getImages()));
+            }
+        }
+
+        @Override
+        public void releaseAllLocks() {
+            for (CanvasImage img : poster.imageLayer.getImages()) {
+                if (img.lockedByPlayer == null) continue;
+                img.lockedByPlayer = null;
+                ArtistryNetwork.sendNear(level, pos, null, new SyncImageLockS2CPacket(pos, img.uuid, null));
             }
         }
     }
@@ -252,6 +263,13 @@ public abstract class PosterAccess {
             if (img == null) return;
             if (doLock) imageLayer.moveToTop(imageUuid);
             persist();
+        }
+
+        @Override
+        public void releaseAllLocks() {
+            for (CanvasImage img : imageLayer.getImages()) {
+                img.lockedByPlayer = null;
+            }
         }
     }
 }

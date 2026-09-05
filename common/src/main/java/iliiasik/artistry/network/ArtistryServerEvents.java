@@ -11,6 +11,12 @@ public final class ArtistryServerEvents {
 
     public static void onServerStarted(MinecraftServer server) {
         ImageStorage.init(server);
+        CanvasRoom.clear();
+    }
+
+    @SuppressWarnings("unused")
+    public static void onServerTick(MinecraftServer server) {
+        CanvasRoom.tick();
     }
 
     public static void onPlayerJoin(ServerPlayer player) {

@@ -62,6 +62,10 @@ public class CanvasData {
         }
     }
 
+    public PixelChange changeAt(int x, int y) {
+        return new PixelChange((byte) x, (byte) y, pixels[y][x], colors[y][x]);
+    }
+
     public void setColor(int x, int y, int argb) {
         pixels[y][x] = COLOR_PIXEL;
         colors[y][x] = argb;

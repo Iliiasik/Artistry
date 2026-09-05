@@ -7,6 +7,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public final class NeoForgeServerEvents {
 
@@ -15,6 +16,11 @@ public final class NeoForgeServerEvents {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         ArtistryServerEvents.onServerStarted(event.getServer());
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        ArtistryServerEvents.onServerTick(event.getServer());
     }
 
     @SubscribeEvent

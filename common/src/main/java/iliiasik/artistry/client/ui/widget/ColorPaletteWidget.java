@@ -19,7 +19,11 @@ public class ColorPaletteWidget extends AbstractWidget {
 
     public interface SelectionListener {
         void onBlockSelected(int blockIndex, boolean secondary);
-        void onColorSelected(int argbColor, boolean secondary);
+        void onColorSelected(int argbColor);
+    }
+
+    public interface SlotBlocks {
+        int blockInSlot(boolean secondary);
     }
 
     private static final int COLS       = 7;
@@ -31,6 +35,9 @@ public class ColorPaletteWidget extends AbstractWidget {
     private static final int HEX_H      = 8;
     private static final int SPECTRUM_H = 8;
 
+    private static final int PRIMARY_OUTLINE   = 0xFFFFFFFF;
+    private static final int SECONDARY_OUTLINE = 0xFFFFAA00;
+
     private static final ResourceLocation SPECTRUM_ID = ResourceLocation.fromNamespaceAndPath("artistry", "palette_spectrum_cache");
     private static final ResourceLocation HSV_ID      = ResourceLocation.fromNamespaceAndPath("artistry", "palette_hsv_cache");
     private static DynamicTexture spectrumTex;
@@ -38,6 +45,7 @@ public class ColorPaletteWidget extends AbstractWidget {
     private static float hsvBuiltHue = Float.NaN;
 
     private final SelectionListener listener;
+    private final SlotBlocks slotBlocks;
     private int selectedBlockIndex = 1;
     private int selectedColor = 0xFFFFFFFF;
     private float selectedHue = 0f;
@@ -47,9 +55,14 @@ public class ColorPaletteWidget extends AbstractWidget {
     private PaletteSwitcherWidget.PaletteMode mode = PaletteSwitcherWidget.PaletteMode.BLOCKS;
     private Consumer<Integer> onColorChanged;
 
-    public ColorPaletteWidget(int x, int y, int w, int h, SelectionListener listener) {
+    public ColorPaletteWidget(int x, int y, int w, int h, SelectionListener listener, SlotBlocks slotBlocks) {
         super(x, y, w, h, Component.empty());
         this.listener = listener;
+        this.slotBlocks = slotBlocks;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
     public void setOnColorChanged(Consumer<Integer> callback) {
@@ -165,8 +178,11 @@ public class ColorPaletteWidget extends AbstractWidget {
                 } else {
                     ctx.fill(cx, cy, cx + CELL, cy + CELL, 0xFF888888);
                 }
-                if (!lastSelectionWasColor && i + 1 == selectedBlockIndex) {
-                    ctx.renderOutline(cx, cy, CELL, CELL, 0xFFFFFFFF);
+                int index = i + 1;
+                if (slotBlocks.blockInSlot(false) == index) {
+                    ctx.renderOutline(cx, cy, CELL, CELL, PRIMARY_OUTLINE);
+                } else if (slotBlocks.blockInSlot(true) == index) {
+                    ctx.renderOutline(cx, cy, CELL, CELL, SECONDARY_OUTLINE);
                 }
                 if (vMouse[0] >= cx && vMouse[0] < cx + CELL && vMouse[1] >= cy && vMouse[1] < cy + CELL) {
                     ctx.fill(cx, cy, cx + CELL, cy + CELL, 0x55FFFFFF);
@@ -225,16 +241,16 @@ public class ColorPaletteWidget extends AbstractWidget {
                     return true;
                 }
             }
-        } else {
-            pickFromClick(mouseX, mouseY, secondary);
+        } else if (!secondary) {
+            pickFromClick(mouseX, mouseY);
         }
         return false;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if ((button != 0 && button != 1) || mode != PaletteSwitcherWidget.PaletteMode.COLORS) return false;
-        pickFromClick(mouseX, mouseY, button == 1);
+        if (button != 0 || mode != PaletteSwitcherWidget.PaletteMode.COLORS) return false;
+        pickFromClick(mouseX, mouseY);
         return true;
     }
 
@@ -242,19 +258,14 @@ public class ColorPaletteWidget extends AbstractWidget {
         return Math.clamp(v, 0f, 1f);
     }
 
-    private void pickFromClick(double mouseX, double mouseY, boolean secondary) {
+    private void pickFromClick(double mouseX, double mouseY) {
         float[] vf = toVirtualF(mouseX, mouseY);
         float vx = vf[0];
         float vy = vf[1];
 
         int specY = spectrumY();
         if (vx >= BORDER && vx < BORDER + PREVIEW && vy >= specY && vy < specY + SPECTRUM_H) {
-            float hue = clamp01((vx - BORDER) / PREVIEW);
-            if (secondary) {
-                listener.onColorSelected(ColorPalette.hsvToArgb(hue, selectedSat, selectedVal), true);
-                return;
-            }
-            selectedHue = hue;
+            selectedHue = clamp01((vx - BORDER) / PREVIEW);
             applyHsv();
             return;
         }
@@ -262,14 +273,8 @@ public class ColorPaletteWidget extends AbstractWidget {
         int hsvY = hsvY();
         int hsvH = hsvH();
         if (vx >= BORDER && vx < BORDER + PREVIEW && vy >= hsvY && vy < hsvY + hsvH) {
-            float sat = clamp01((vx - BORDER) / PREVIEW);
-            float val = clamp01(1f - (vy - hsvY) / hsvH);
-            if (secondary) {
-                listener.onColorSelected(ColorPalette.hsvToArgb(selectedHue, sat, val), true);
-                return;
-            }
-            selectedSat = sat;
-            selectedVal = val;
+            selectedSat = clamp01((vx - BORDER) / PREVIEW);
+            selectedVal = clamp01(1f - (vy - hsvY) / hsvH);
             applyHsv();
         }
     }
@@ -277,7 +282,7 @@ public class ColorPaletteWidget extends AbstractWidget {
     private void applyHsv() {
         selectedColor = ColorPalette.hsvToArgb(selectedHue, selectedSat, selectedVal);
         lastSelectionWasColor = true;
-        listener.onColorSelected(selectedColor, false);
+        listener.onColorSelected(selectedColor);
         if (onColorChanged != null) onColorChanged.accept(selectedColor);
     }
 
@@ -290,7 +295,7 @@ public class ColorPaletteWidget extends AbstractWidget {
             selectedSat = hsv[1];
             selectedVal = hsv[2];
             lastSelectionWasColor = true;
-            listener.onColorSelected(selectedColor, false);
+            listener.onColorSelected(selectedColor);
         } catch (NumberFormatException ignored) {}
     }
 

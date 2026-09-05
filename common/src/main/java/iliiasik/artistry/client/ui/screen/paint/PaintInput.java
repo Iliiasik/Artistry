@@ -58,6 +58,12 @@ public class PaintInput {
         if (imageMode) exitImageMode();
     }
 
+    public boolean exitImageModeOnMiss(int button) {
+        if (!imageMode || (button != 0 && button != 1)) return false;
+        exitImageMode();
+        return true;
+    }
+
     public boolean isImageMode() {
         return imageMode;
     }

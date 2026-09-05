@@ -24,12 +24,15 @@ public class ArtistryConfig {
     public static class NetworkConfig {
         public long batchIntervalMs = 50;
         public long cursorIntervalMs = 100;
+        public long worldSyncIntervalMs = 500;
         public long imageBytesPerSecond = 512 * 1024;
 
         private static final long MIN_BATCH_INTERVAL_MS = 10;
         private static final long MAX_BATCH_INTERVAL_MS = 5000;
         private static final long MIN_CURSOR_INTERVAL_MS = 50;
         private static final long MAX_CURSOR_INTERVAL_MS = 1000;
+        private static final long MIN_WORLD_SYNC_INTERVAL_MS = 50;
+        private static final long MAX_WORLD_SYNC_INTERVAL_MS = 5000;
         private static final long MIN_IMAGE_BYTES_PER_SECOND = 32 * 1024;
         private static final long MAX_IMAGE_BYTES_PER_SECOND = 64L * 1024 * 1024;
 
@@ -54,6 +57,17 @@ public class ArtistryConfig {
             } else if (cursorIntervalMs > MAX_CURSOR_INTERVAL_MS) {
                 System.err.println("[Artistry] cursorIntervalMs too high (" + cursorIntervalMs + "), clamping to " + MAX_CURSOR_INTERVAL_MS);
                 cursorIntervalMs = MAX_CURSOR_INTERVAL_MS;
+            }
+            if (worldSyncIntervalMs < MIN_WORLD_SYNC_INTERVAL_MS) {
+                System.err.println("[Artistry] worldSyncIntervalMs too low (" + worldSyncIntervalMs + "), clamping to " + MIN_WORLD_SYNC_INTERVAL_MS);
+                worldSyncIntervalMs = MIN_WORLD_SYNC_INTERVAL_MS;
+            } else if (worldSyncIntervalMs > MAX_WORLD_SYNC_INTERVAL_MS) {
+                System.err.println("[Artistry] worldSyncIntervalMs too high (" + worldSyncIntervalMs + "), clamping to " + MAX_WORLD_SYNC_INTERVAL_MS);
+                worldSyncIntervalMs = MAX_WORLD_SYNC_INTERVAL_MS;
+            }
+            if (worldSyncIntervalMs < batchIntervalMs) {
+                System.err.println("[Artistry] worldSyncIntervalMs below batchIntervalMs, raising to " + batchIntervalMs);
+                worldSyncIntervalMs = batchIntervalMs;
             }
         }
     }
