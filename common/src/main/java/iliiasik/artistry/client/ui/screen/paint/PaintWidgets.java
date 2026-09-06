@@ -80,7 +80,7 @@ public class PaintWidgets {
                 dims.sizeSwitchW, dims.sizeSwitchH,
                 pixelPainter::setSize
         );
-        pixelPainter.setSize(sizeSwitcherWidget.getCurrentSize());
+        sizeSwitcherWidget.setCurrentSize(pixelPainter.getSize());
         adder.accept(sizeSwitcherWidget);
 
         colorPaletteWidget = new ColorPaletteWidget(
@@ -98,12 +98,8 @@ public class PaintWidgets {
                         leaveNonPaintingTool();
                     }
                 },
-                secondary -> {
-                    PaintSwatch swatch = swatches.slot(secondary);
-                    return swatch.isColor() ? 0 : swatch.blockIndex();
-                }
+                swatches::slot
         );
-        swatches.select(PaintSwatch.ofBlock(colorPaletteWidget.getSelectedIndex()), false);
         adder.accept(colorPaletteWidget);
 
         swatchStripWidget = new SwatchStripWidget(dims, swatches, this::syncPaletteToPrimary);
@@ -143,6 +139,10 @@ public class PaintWidgets {
         );
         imageToolWidget.setVisible(false);
         adder.accept(imageToolWidget);
+
+        syncPaletteToPrimary();
+        toolSwitchWidget.setActiveTool(pixelPainter.getTool());
+        setImageMode(imageMode);
     }
 
     public void layout() {
@@ -248,7 +248,7 @@ public class PaintWidgets {
     public void applyPickedBlock(int blockIndex, boolean secondary) {
         swatches.select(PaintSwatch.ofBlock(blockIndex), secondary);
         if (secondary || colorPaletteWidget == null) return;
-        colorPaletteWidget.selectBlock(blockIndex);
+        colorPaletteWidget.showBlocks();
         paletteSwitcherWidget.setMode(PaletteSwitcherWidget.PaletteMode.BLOCKS);
         hexInput.setVisible(false);
     }

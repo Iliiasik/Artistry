@@ -20,7 +20,6 @@ public class SizeSwitcherWidget extends AbstractWidget {
     private int sizeIndex = 0;
     private final IntConsumer onSizeChanged;
     private final HoverFadeHelper hoverFade = new HoverFadeHelper();
-    private boolean visible = true;
 
     public SizeSwitcherWidget(int x, int y, int w, int h, IntConsumer onSizeChanged) {
         super(x, y, w, h, Component.empty());
@@ -31,8 +30,13 @@ public class SizeSwitcherWidget extends AbstractWidget {
         this.visible = visible;
     }
 
-    public int getCurrentSize() {
-        return SIZES[sizeIndex];
+    public void setCurrentSize(int size) {
+        for (int i = 0; i < SIZES.length; i++) {
+            if (SIZES[i] == size) {
+                sizeIndex = i;
+                return;
+            }
+        }
     }
 
     public boolean stepSize(int delta) {

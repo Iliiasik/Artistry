@@ -121,8 +121,9 @@ public class PaintScreen extends Screen {
 
         widgets = new PaintWidgets(dims, swatches, pixelPainter,
                 input::openFilePicker, input::handleImageAction, session::sign);
-        input.setWidgets(widgets);
+        widgets.setImageMode(input.isImageMode());
         widgets.build(this::addRenderableWidget, session.isSigned(), session.canvasData().isSizeChosen());
+        input.setWidgets(widgets);
 
         session.open();
     }

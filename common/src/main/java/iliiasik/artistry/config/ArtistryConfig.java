@@ -20,6 +20,26 @@ public class ArtistryConfig {
 
     public final NetworkConfig network = new NetworkConfig();
     public final PosterConfig poster = new PosterConfig();
+    public final ClientConfig client = new ClientConfig();
+
+    public static class ClientConfig {
+        public static final int DEFAULT_VIEW_DISTANCE = 128;
+
+        public int posterViewDistance = DEFAULT_VIEW_DISTANCE;
+
+        private static final int MIN_VIEW_DISTANCE = 16;
+        private static final int MAX_VIEW_DISTANCE = 512;
+
+        public void validate() {
+            if (posterViewDistance < MIN_VIEW_DISTANCE) {
+                System.err.println("[Artistry] posterViewDistance too low (" + posterViewDistance + "), clamping to " + MIN_VIEW_DISTANCE);
+                posterViewDistance = MIN_VIEW_DISTANCE;
+            } else if (posterViewDistance > MAX_VIEW_DISTANCE) {
+                System.err.println("[Artistry] posterViewDistance too high (" + posterViewDistance + "), clamping to " + MAX_VIEW_DISTANCE);
+                posterViewDistance = MAX_VIEW_DISTANCE;
+            }
+        }
+    }
 
     public static class NetworkConfig {
         public long batchIntervalMs = 50;
@@ -118,6 +138,7 @@ public class ArtistryConfig {
     private void validate() {
         network.validate();
         poster.validate();
+        client.validate();
     }
 
     private static void save(ArtistryConfig cfg) {

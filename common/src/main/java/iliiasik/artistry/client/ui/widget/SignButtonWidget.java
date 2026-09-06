@@ -13,7 +13,6 @@ public class SignButtonWidget extends AbstractWidget {
     private static final int TEXTURE_HEIGHT = PaintDimensions.SIGN_TEXTURE_HEIGHT;
 
     private final Runnable onSign;
-    private boolean visible = true;
 
     public SignButtonWidget(int x, int y, int w, int h, Runnable onSign) {
         super(x, y, w, h, Component.empty());

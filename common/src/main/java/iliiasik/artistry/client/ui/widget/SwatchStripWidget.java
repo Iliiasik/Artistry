@@ -20,7 +20,6 @@ public class SwatchStripWidget extends AbstractWidget {
     private final PaintSwatches swatches;
     private final Runnable onPrimaryChanged;
 
-    private boolean visible = true;
 
     public SwatchStripWidget(PaintDimensions dims, PaintSwatches swatches, Runnable onPrimaryChanged) {
         super(dims.swatchStripX, dims.swatchStripY, dims.swatchStripW, dims.swatchStripH, Component.empty());

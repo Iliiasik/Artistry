@@ -11,6 +11,7 @@ import iliiasik.artistry.block.entity.PosterBlockEntity;
 import iliiasik.artistry.client.image.ClientImageCache;
 import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.client.renderer.ImageOcclusionClipper.VisibleFragment;
+import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.data.CanvasImage;
 import iliiasik.artistry.data.CanvasImageLayer;
 import iliiasik.artistry.debug.ArtistryDebug;
@@ -47,8 +48,14 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     private static final Map<ResourceLocation, RenderType> IMAGE_RENDER_LAYERS = new HashMap<>();
 
     private static long lastSweep = 0;
+    private static int viewDistance = ArtistryConfig.ClientConfig.DEFAULT_VIEW_DISTANCE;
 
     public PosterBlockEntityRenderer() {}
+
+    @Override
+    public int getViewDistance() {
+        return viewDistance;
+    }
 
     private static RenderType getImageLayer(ResourceLocation texture) {
         return IMAGE_RENDER_LAYERS.computeIfAbsent(texture, tex ->
@@ -124,6 +131,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
 
     public static void tick() {
         long now = System.currentTimeMillis();
+        viewDistance = ArtistryConfig.get().client.posterViewDistance;
         PosterLod.refresh(now);
         sweep(now);
     }
@@ -260,7 +268,14 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         private int fragmentsRevision = -1;
         private List<VisibleFragment> fragments = List.of();
 
+        private PosterBlockEntity owner;
+
         private void update(PosterBlockEntity entity, int desired, long now) {
+            if (owner != entity) {
+                owner = entity;
+                forgetBaked();
+            }
+
             if (slot == null) {
                 Acquired acquired = acquire(PosterLod.initialLevel(desired));
                 if (acquired == null) return;
@@ -302,6 +317,16 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
             pendingSlot = null;
             lastSwitch = now;
             markBuilt(entity);
+        }
+
+        private void forgetBaked() {
+            hasContent = false;
+            builtCanvasRevision = -1;
+            builtLayerRevision = -1;
+            builtPaletteGeneration = -1;
+            builtComplete = true;
+            fragmentsRevision = -1;
+            fragments = List.of();
         }
 
         private boolean needsRebuild(PosterBlockEntity entity, long now) {
@@ -360,8 +385,9 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
                 PosterLod.atlas(level).release(slot);
                 slot = null;
                 level = -1;
-                hasContent = false;
             }
+            owner = null;
+            forgetBaked();
             releasePending();
         }
     }

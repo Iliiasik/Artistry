@@ -112,6 +112,54 @@ class CanvasHistoryTest {
     }
 
     @Test
+    @DisplayName("Undo leaves alone a cell somebody else painted over afterwards")
+    void undoSkipsCellsTakenOverByOthers() {
+        canvas.pixels[3][3] = 1;
+        stroke(3, 3, (short) 2);
+        canvas.pixels[3][3] = 9;
+
+        assertTrue(history.undo(canvas));
+        assertEquals((short) 9, canvas.pixels[3][3], "another player's newer work was destroyed");
+    }
+
+    @Test
+    @DisplayName("Redo leaves alone a cell somebody else painted over afterwards")
+    void redoSkipsCellsTakenOverByOthers() {
+        stroke(4, 4, (short) 2);
+        history.undo(canvas);
+        canvas.pixels[4][4] = 9;
+
+        assertTrue(history.redo(canvas));
+        assertEquals((short) 9, canvas.pixels[4][4], "redo climbed on top of a newer stroke");
+    }
+
+    @Test
+    @DisplayName("A partly overpainted stroke is undone only where it survived")
+    void undoAppliesToTheSurvivingPartOfAStroke() {
+        before.copyFrom(canvas);
+        canvas.pixels[0][0] = 5;
+        canvas.pixels[0][1] = 5;
+        history.push(before, canvas, cells(0, 0, 1, 0));
+
+        canvas.pixels[0][1] = 9;
+
+        assertTrue(history.undo(canvas));
+        assertEquals((short) 0, canvas.pixels[0][0], "my untouched cell should have rolled back");
+        assertEquals((short) 9, canvas.pixels[0][1], "the contested cell should have been left alone");
+    }
+
+    @Test
+    @DisplayName("A fully overpainted stroke undoes nothing at all")
+    void fullyOverpaintedStrokeIsInert() {
+        stroke(6, 6, (short) 2);
+        canvas.pixels[6][6] = 9;
+
+        assertTrue(history.undo(canvas));
+        assertTrue(history.redo(canvas));
+        assertEquals((short) 9, canvas.pixels[6][6]);
+    }
+
+    @Test
     @DisplayName("A new stroke drops everything that was redoable")
     void newStrokeClearsRedo() {
         stroke(0, 0, (short) 1);

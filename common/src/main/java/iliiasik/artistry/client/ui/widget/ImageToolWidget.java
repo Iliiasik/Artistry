@@ -18,7 +18,6 @@ public class ImageToolWidget extends AbstractWidget {
     private final ActionListener listener;
     private final HoverFadeHelper hoverDelete  = new HoverFadeHelper();
     private final HoverFadeHelper hoverPixelize = new HoverFadeHelper();
-    private boolean visible = false;
 
     public ImageToolWidget(int x, int y, int w, int h, ActionListener listener) {
         super(x, y, w, h, Component.empty());

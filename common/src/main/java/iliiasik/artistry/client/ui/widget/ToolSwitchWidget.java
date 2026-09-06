@@ -16,7 +16,6 @@ public class ToolSwitchWidget extends AbstractWidget {
 
     private DrawingTool activeTool = DrawingTool.BRUSH;
     private final Consumer<DrawingTool> onToolChanged;
-    private boolean visible = true;
 
     private final HoverFadeHelper hoverBrush   = new HoverFadeHelper();
     private final HoverFadeHelper hoverEraser  = new HoverFadeHelper();

@@ -41,7 +41,7 @@ public class CanvasHistory {
     public boolean undo(CanvasData canvas) {
         Entry entry = undoStack.poll();
         if (entry == null) return false;
-        apply(canvas, entry.undo());
+        apply(canvas, entry.undo(), entry.redo());
         redoStack.push(entry);
         return true;
     }
@@ -49,7 +49,7 @@ public class CanvasHistory {
     public boolean redo(CanvasData canvas) {
         Entry entry = redoStack.poll();
         if (entry == null) return false;
-        apply(canvas, entry.redo());
+        apply(canvas, entry.redo(), entry.undo());
         undoStack.push(entry);
         return true;
     }
@@ -59,8 +59,21 @@ public class CanvasHistory {
         redoStack.clear();
     }
 
-    private static void apply(CanvasData canvas, List<CanvasData.PixelChange> changes) {
-        canvas.applyChanges(changes);
+    private static void apply(CanvasData canvas, List<CanvasData.PixelChange> target,
+                              List<CanvasData.PixelChange> expected) {
+        List<CanvasData.PixelChange> owned = new ArrayList<>(target.size());
+        for (int i = 0; i < target.size(); i++) {
+            if (stillOurs(canvas, expected.get(i))) owned.add(target.get(i));
+        }
+        if (owned.isEmpty()) return;
+        canvas.applyChanges(owned);
         canvas.markChanged();
+    }
+
+    private static boolean stillOurs(CanvasData canvas, CanvasData.PixelChange mine) {
+        int x = mine.x() & 0xFF;
+        int y = mine.y() & 0xFF;
+        if (!canvas.inBounds(x, y)) return false;
+        return canvas.pixels[y][x] == mine.blockIndex() && canvas.colors[y][x] == mine.color();
     }
 }

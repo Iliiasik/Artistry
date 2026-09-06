@@ -125,6 +125,8 @@ class PixelPainterTest {
     void brushSizeIsClamped() {
         swatches.select(PaintSwatch.ofBlock(1), false);
 
+        painter.setSize(3);
+        assertEquals(3, painter.getSize(), "the brush must report the size it was given");
         painter.setSize(0);
         painter.beginStroke(canvas, 8, 8, 0, 0, SCALE, false);
         assertEquals(0, canvas.pixels[7][7], "a size of zero must behave like a single pixel");
@@ -132,6 +134,8 @@ class PixelPainterTest {
         painter.setSize(99);
         int[] bounds = painter.getBrushGridBounds(8, 8, 0, 0, SCALE, SIZE);
         assertEquals(5, bounds[2] - bounds[0] + 1, "the brush must not grow past five cells");
+        assertEquals(5, painter.getSize(), "an oversized brush reports the clamped size");
+        assertEquals(1, new PixelPainter(swatches).getSize(), "a fresh brush starts at one cell");
     }
 
     @Test

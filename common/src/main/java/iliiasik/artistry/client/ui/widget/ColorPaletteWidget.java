@@ -3,6 +3,7 @@ package iliiasik.artistry.client.ui.widget;
 import com.mojang.blaze3d.platform.NativeImage;
 import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.client.palette.ColorPalette;
+import iliiasik.artistry.client.palette.PaintSwatch;
 import iliiasik.artistry.client.util.ModTextures;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,8 +23,8 @@ public class ColorPaletteWidget extends AbstractWidget {
         void onColorSelected(int argbColor);
     }
 
-    public interface SlotBlocks {
-        int blockInSlot(boolean secondary);
+    public interface SlotSwatches {
+        PaintSwatch slot(boolean secondary);
     }
 
     private static final int COLS       = 7;
@@ -45,20 +46,18 @@ public class ColorPaletteWidget extends AbstractWidget {
     private static float hsvBuiltHue = Float.NaN;
 
     private final SelectionListener listener;
-    private final SlotBlocks slotBlocks;
-    private int selectedBlockIndex = 1;
+    private final SlotSwatches slots;
     private int selectedColor = 0xFFFFFFFF;
     private float selectedHue = 0f;
     private float selectedSat = 0f;
     private float selectedVal = 1f;
-    private boolean lastSelectionWasColor = false;
     private PaletteSwitcherWidget.PaletteMode mode = PaletteSwitcherWidget.PaletteMode.BLOCKS;
     private Consumer<Integer> onColorChanged;
 
-    public ColorPaletteWidget(int x, int y, int w, int h, SelectionListener listener, SlotBlocks slotBlocks) {
+    public ColorPaletteWidget(int x, int y, int w, int h, SelectionListener listener, SlotSwatches slots) {
         super(x, y, w, h, Component.empty());
         this.listener = listener;
-        this.slotBlocks = slotBlocks;
+        this.slots = slots;
     }
 
     public void setVisible(boolean visible) {
@@ -71,10 +70,6 @@ public class ColorPaletteWidget extends AbstractWidget {
 
     public void setMode(PaletteSwitcherWidget.PaletteMode mode) {
         this.mode = mode;
-    }
-
-    public int getSelectedIndex() {
-        return selectedBlockIndex;
     }
 
     private int spectrumY() { return BORDER + PREVIEW + BORDER + HEX_H + BORDER; }
@@ -135,16 +130,22 @@ public class ColorPaletteWidget extends AbstractWidget {
     }
 
     private void drawPreview(GuiGraphics ctx) {
-        if (lastSelectionWasColor) {
-            ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, selectedColor);
-        } else {
-            TextureAtlasSprite previewSprite = BlockPalette.getSprite(selectedBlockIndex);
-            if (previewSprite != null) {
-                ctx.blit(BORDER, BORDER, 0, PREVIEW, PREVIEW, previewSprite);
-            } else {
-                ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, 0xFFFDF7E8);
-            }
+        PaintSwatch primary = slots.slot(false);
+        if (primary.isColor()) {
+            ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, primary.color());
+            return;
         }
+        TextureAtlasSprite previewSprite = BlockPalette.getSprite(primary.blockIndex());
+        if (previewSprite != null) {
+            ctx.blit(BORDER, BORDER, 0, PREVIEW, PREVIEW, previewSprite);
+        } else {
+            ctx.fill(BORDER, BORDER, BORDER + PREVIEW, BORDER + PREVIEW, 0xFFFDF7E8);
+        }
+    }
+
+    private int blockInSlot(boolean secondary) {
+        PaintSwatch swatch = slots.slot(secondary);
+        return swatch.isColor() ? 0 : swatch.blockIndex();
     }
 
     @Override
@@ -179,9 +180,9 @@ public class ColorPaletteWidget extends AbstractWidget {
                     ctx.fill(cx, cy, cx + CELL, cy + CELL, 0xFF888888);
                 }
                 int index = i + 1;
-                if (slotBlocks.blockInSlot(false) == index) {
+                if (blockInSlot(false) == index) {
                     ctx.renderOutline(cx, cy, CELL, CELL, PRIMARY_OUTLINE);
-                } else if (slotBlocks.blockInSlot(true) == index) {
+                } else if (blockInSlot(true) == index) {
                     ctx.renderOutline(cx, cy, CELL, CELL, SECONDARY_OUTLINE);
                 }
                 if (vMouse[0] >= cx && vMouse[0] < cx + CELL && vMouse[1] >= cy && vMouse[1] < cy + CELL) {
@@ -233,10 +234,6 @@ public class ColorPaletteWidget extends AbstractWidget {
                 int cy = startY + row * CELL;
                 if (cy + CELL > maxY) break;
                 if (vClick[0] >= cx && vClick[0] < cx + CELL && vClick[1] >= cy && vClick[1] < cy + CELL) {
-                    if (!secondary) {
-                        selectedBlockIndex = i + 1;
-                        lastSelectionWasColor = false;
-                    }
                     listener.onBlockSelected(i + 1, secondary);
                     return true;
                 }
@@ -281,7 +278,6 @@ public class ColorPaletteWidget extends AbstractWidget {
 
     private void applyHsv() {
         selectedColor = ColorPalette.hsvToArgb(selectedHue, selectedSat, selectedVal);
-        lastSelectionWasColor = true;
         listener.onColorSelected(selectedColor);
         if (onColorChanged != null) onColorChanged.accept(selectedColor);
     }
@@ -294,24 +290,19 @@ public class ColorPaletteWidget extends AbstractWidget {
             selectedHue = hsv[0];
             selectedSat = hsv[1];
             selectedVal = hsv[2];
-            lastSelectionWasColor = true;
             listener.onColorSelected(selectedColor);
         } catch (NumberFormatException ignored) {}
     }
 
     public void selectColor(int argb) {
-        selectedColor = argb;
         float[] hsv = ColorPalette.argbToHsv(argb);
         selectedHue = hsv[0];
         selectedSat = hsv[1];
         selectedVal = hsv[2];
-        lastSelectionWasColor = true;
         this.mode = PaletteSwitcherWidget.PaletteMode.COLORS;
     }
 
-    public void selectBlock(int blockIndex) {
-        this.selectedBlockIndex = blockIndex;
-        lastSelectionWasColor = false;
+    public void showBlocks() {
         this.mode = PaletteSwitcherWidget.PaletteMode.BLOCKS;
     }
 

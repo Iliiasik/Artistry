@@ -46,6 +46,7 @@ class ArtistryConfigTest {
         assertEquals(50, config.network.batchIntervalMs);
         assertEquals(100, config.network.cursorIntervalMs);
         assertEquals(250, config.network.worldSyncIntervalMs);
+        assertEquals(128, config.client.posterViewDistance);
         assertEquals(3, config.poster.maxEditors);
         assertFalse(config.poster.disableImages);
     }
@@ -63,6 +64,31 @@ class ArtistryConfigTest {
 
         assertEquals(400, config.network.batchIntervalMs);
         assertEquals(400, config.network.worldSyncIntervalMs);
+    }
+
+    @Test
+    @DisplayName("The poster view distance is read back and clamped to a sane range")
+    void posterViewDistanceIsClamped() throws IOException {
+        write("""
+                {
+                  "client": { "posterViewDistance": 96 }
+                }
+                """);
+        assertEquals(96, ArtistryConfig.reload().client.posterViewDistance);
+
+        write("""
+                {
+                  "client": { "posterViewDistance": 4 }
+                }
+                """);
+        assertEquals(16, ArtistryConfig.reload().client.posterViewDistance);
+
+        write("""
+                {
+                  "client": { "posterViewDistance": 99999 }
+                }
+                """);
+        assertEquals(512, ArtistryConfig.reload().client.posterViewDistance);
     }
 
     @Test

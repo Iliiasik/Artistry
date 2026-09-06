@@ -47,7 +47,6 @@ public class PaintInput {
 
     public void setWidgets(PaintWidgets widgets) {
         this.widgets = widgets;
-        widgets.setImageMode(imageMode);
     }
 
     public void setLocalPlayer(UUID uuid) {

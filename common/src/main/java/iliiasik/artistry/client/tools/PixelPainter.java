@@ -32,6 +32,10 @@ public class PixelPainter {
         return tool;
     }
 
+    public int getSize() {
+        return brushSize;
+    }
+
     public void setSize(int size) {
         this.brushSize = Math.clamp(size, 1, 5);
     }

@@ -19,7 +19,6 @@ public class HexInputWidget extends AbstractWidget {
     private int cursorPos = 1;
     private int selectionStart = 1;
     private boolean focused = false;
-    private boolean visible = true;
     private long focusTime = 0;
     private Consumer<String> changedListener;
 
