@@ -33,6 +33,12 @@ class CanvasHistoryTest {
         history.push(before, canvas, cells(x, y));
     }
 
+    private void remote(int x, int y, short blockIndex) {
+        canvas.pixels[y][x] = blockIndex;
+        canvas.colors[y][x] = 0;
+        history.noteExternal(List.of(new CanvasData.PixelChange((byte) x, (byte) y, blockIndex, 0)));
+    }
+
     private static List<Integer> cells(int... coordinates) {
         List<Integer> packed = new ArrayList<>();
         for (int i = 0; i < coordinates.length; i += 2) {
@@ -116,7 +122,7 @@ class CanvasHistoryTest {
     void undoSkipsCellsTakenOverByOthers() {
         canvas.pixels[3][3] = 1;
         stroke(3, 3, (short) 2);
-        canvas.pixels[3][3] = 9;
+        remote(3, 3, (short) 9);
 
         assertTrue(history.undo(canvas));
         assertEquals((short) 9, canvas.pixels[3][3], "another player's newer work was destroyed");
@@ -127,10 +133,24 @@ class CanvasHistoryTest {
     void redoSkipsCellsTakenOverByOthers() {
         stroke(4, 4, (short) 2);
         history.undo(canvas);
-        canvas.pixels[4][4] = 9;
+        remote(4, 4, (short) 9);
 
         assertTrue(history.redo(canvas));
         assertEquals((short) 9, canvas.pixels[4][4], "redo climbed on top of a newer stroke");
+    }
+
+    @Test
+    @DisplayName("A neighbour repainting the very same value still counts as a conflict")
+    void identicalRepaintIsStillAConflict() {
+        canvas.pixels[7][7] = 1;
+        stroke(7, 7, (short) 2);
+        remote(7, 7, (short) 1);
+
+        assertTrue(history.undo(canvas));
+        assertEquals((short) 1, canvas.pixels[7][7]);
+
+        assertTrue(history.redo(canvas));
+        assertEquals((short) 1, canvas.pixels[7][7], "redo revived a stroke somebody else had overwritten");
     }
 
     @Test
@@ -141,7 +161,7 @@ class CanvasHistoryTest {
         canvas.pixels[0][1] = 5;
         history.push(before, canvas, cells(0, 0, 1, 0));
 
-        canvas.pixels[0][1] = 9;
+        remote(1, 0, (short) 9);
 
         assertTrue(history.undo(canvas));
         assertEquals((short) 0, canvas.pixels[0][0], "my untouched cell should have rolled back");
@@ -152,11 +172,25 @@ class CanvasHistoryTest {
     @DisplayName("A fully overpainted stroke undoes nothing at all")
     void fullyOverpaintedStrokeIsInert() {
         stroke(6, 6, (short) 2);
-        canvas.pixels[6][6] = 9;
+        remote(6, 6, (short) 9);
 
         assertTrue(history.undo(canvas));
         assertTrue(history.redo(canvas));
         assertEquals((short) 9, canvas.pixels[6][6]);
+    }
+
+    @Test
+    @DisplayName("A contested cell stays contested for every later undo and redo")
+    void conflictIsPermanentForThatCell() {
+        stroke(8, 8, (short) 2);
+        remote(8, 8, (short) 9);
+
+        for (int i = 0; i < 5; i++) {
+            history.undo(canvas);
+            history.redo(canvas);
+        }
+
+        assertEquals((short) 9, canvas.pixels[8][8]);
     }
 
     @Test

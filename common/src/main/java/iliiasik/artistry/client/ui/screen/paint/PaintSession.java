@@ -305,6 +305,7 @@ public class PaintSession {
         canvasData.applyChanges(changes);
         lastSentSnapshot.applyChanges(changes);
         canvasData.markChanged();
+        history.noteExternal(changes);
     }
 
     public void applyImageLayerSync(List<CanvasImage> images) {
