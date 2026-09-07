@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.renderer;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -42,7 +43,18 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
 
     private static final float Z_BLOCK_FACE = 15f / 16f;
     private static final float Z_CANVAS = Z_BLOCK_FACE - 0.001f;
-    private static final float Z_IMAGES = Z_BLOCK_FACE - 0.002f;
+    private static final float Z_IMAGES = Z_CANVAS;
+
+    private static final RenderStateShard.LayeringStateShard IMAGE_LAYERING =
+            new RenderStateShard.LayeringStateShard("artistry:image_layering",
+                    () -> {
+                        RenderSystem.polygonOffset(-2.0F, -20.0F);
+                        RenderSystem.enablePolygonOffset();
+                    },
+                    () -> {
+                        RenderSystem.polygonOffset(0.0F, 0.0F);
+                        RenderSystem.disablePolygonOffset();
+                    });
 
     private static final Map<Long, PosterState> STATES = new HashMap<>();
     private static final Map<UUID, Long> pendingRequests = new HashMap<>();
@@ -96,7 +108,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
                                 .setCullState(RenderStateShard.NO_CULL)
                                 .setLightmapState(RenderStateShard.LIGHTMAP)
                                 .setOverlayState(RenderStateShard.OVERLAY)
-                                .setLayeringState(RenderStateShard.POLYGON_OFFSET_LAYERING)
+                                .setLayeringState(IMAGE_LAYERING)
                                 .createCompositeState(false)
                 )
         );
