@@ -15,7 +15,6 @@ public final class RenderTuning {
     public static final long LOD_REFRESH_INTERVAL_MILLIS = 500;
 
     public static final long BUDGET_WINDOW_NANOS = 16_000_000L;
-    public static final long BUDGET_NANOS_PER_WINDOW = 3_000_000L;
 
     public static final long POSTER_IDLE_MILLIS = 10_000;
     public static final long POSTER_SWEEP_INTERVAL_MILLIS = 1_000;

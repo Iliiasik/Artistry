@@ -24,11 +24,15 @@ public class ArtistryConfig {
 
     public static class ClientConfig {
         public static final int DEFAULT_VIEW_DISTANCE = 128;
+        public static final double DEFAULT_BUILD_BUDGET_MS = 3.0;
 
         public int posterViewDistance = DEFAULT_VIEW_DISTANCE;
+        public double buildBudgetMs = DEFAULT_BUILD_BUDGET_MS;
 
         private static final int MIN_VIEW_DISTANCE = 16;
         private static final int MAX_VIEW_DISTANCE = 512;
+        private static final double MIN_BUILD_BUDGET_MS = 0.5;
+        private static final double MAX_BUILD_BUDGET_MS = 12.0;
 
         public void validate() {
             if (posterViewDistance < MIN_VIEW_DISTANCE) {
@@ -37,6 +41,13 @@ public class ArtistryConfig {
             } else if (posterViewDistance > MAX_VIEW_DISTANCE) {
                 System.err.println("[Artistry] posterViewDistance too high (" + posterViewDistance + "), clamping to " + MAX_VIEW_DISTANCE);
                 posterViewDistance = MAX_VIEW_DISTANCE;
+            }
+            if (buildBudgetMs < MIN_BUILD_BUDGET_MS) {
+                System.err.println("[Artistry] buildBudgetMs too low (" + buildBudgetMs + "), clamping to " + MIN_BUILD_BUDGET_MS);
+                buildBudgetMs = MIN_BUILD_BUDGET_MS;
+            } else if (buildBudgetMs > MAX_BUILD_BUDGET_MS) {
+                System.err.println("[Artistry] buildBudgetMs too high (" + buildBudgetMs + "), clamping to " + MAX_BUILD_BUDGET_MS);
+                buildBudgetMs = MAX_BUILD_BUDGET_MS;
             }
         }
     }

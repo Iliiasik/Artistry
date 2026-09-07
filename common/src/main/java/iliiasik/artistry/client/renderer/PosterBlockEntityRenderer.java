@@ -132,6 +132,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     public static void tick() {
         long now = System.currentTimeMillis();
         viewDistance = ArtistryConfig.get().client.posterViewDistance;
+        RenderBudget.refresh();
         PosterLod.refresh(now);
         sweep(now);
     }

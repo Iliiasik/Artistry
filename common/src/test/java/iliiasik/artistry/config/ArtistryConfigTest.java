@@ -47,6 +47,7 @@ class ArtistryConfigTest {
         assertEquals(100, config.network.cursorIntervalMs);
         assertEquals(250, config.network.worldSyncIntervalMs);
         assertEquals(128, config.client.posterViewDistance);
+        assertEquals(3.0, config.client.buildBudgetMs);
         assertEquals(3, config.poster.maxEditors);
         assertFalse(config.poster.disableImages);
     }
@@ -89,6 +90,31 @@ class ArtistryConfigTest {
                 }
                 """);
         assertEquals(512, ArtistryConfig.reload().client.posterViewDistance);
+    }
+
+    @Test
+    @DisplayName("The build budget is read back and clamped to a sane range")
+    void buildBudgetIsClamped() throws IOException {
+        write("""
+                {
+                  "client": { "buildBudgetMs": 6.5 }
+                }
+                """);
+        assertEquals(6.5, ArtistryConfig.reload().client.buildBudgetMs);
+
+        write("""
+                {
+                  "client": { "buildBudgetMs": 0.01 }
+                }
+                """);
+        assertEquals(0.5, ArtistryConfig.reload().client.buildBudgetMs);
+
+        write("""
+                {
+                  "client": { "buildBudgetMs": 500 }
+                }
+                """);
+        assertEquals(12.0, ArtistryConfig.reload().client.buildBudgetMs);
     }
 
     @Test
