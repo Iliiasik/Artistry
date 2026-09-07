@@ -48,8 +48,9 @@ public abstract class AbstractCanvasBlock extends BaseEntityBlock {
 
     @Override
     protected boolean canSurvive(BlockState state, LevelReader world, BlockPos pos) {
-        BlockPos support = pos.relative(state.getValue(FACING).getOpposite());
-        return world.getBlockState(support).isRedstoneConductor(world, support);
+        Direction facing = state.getValue(FACING);
+        BlockPos support = pos.relative(facing.getOpposite());
+        return world.getBlockState(support).isFaceSturdy(world, support, facing);
     }
 
     @Override

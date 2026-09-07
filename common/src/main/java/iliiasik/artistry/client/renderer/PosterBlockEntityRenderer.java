@@ -40,12 +40,14 @@ import java.util.UUID;
 
 public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBlockEntity> {
 
-    private static final float Z_CANVAS = 15f / 16f - 0.001f;
-    private static final float Z_IMAGES = 15f / 16f - 0.001f;
+    private static final float Z_BLOCK_FACE = 15f / 16f;
+    private static final float Z_CANVAS = Z_BLOCK_FACE - 0.001f;
+    private static final float Z_IMAGES = Z_BLOCK_FACE - 0.002f;
 
     private static final Map<Long, PosterState> STATES = new HashMap<>();
     private static final Map<UUID, Long> pendingRequests = new HashMap<>();
     private static final Map<ResourceLocation, RenderType> IMAGE_RENDER_LAYERS = new HashMap<>();
+    private static final Map<ResourceLocation, RenderType> CANVAS_RENDER_LAYERS = new HashMap<>();
 
     private static long lastSweep = 0;
     private static int viewDistance = ArtistryConfig.ClientConfig.DEFAULT_VIEW_DISTANCE;
@@ -55,6 +57,27 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     @Override
     public int getViewDistance() {
         return viewDistance;
+    }
+
+    private static RenderType getCanvasLayer(ResourceLocation texture) {
+        return CANVAS_RENDER_LAYERS.computeIfAbsent(texture, tex ->
+                RenderType.create(
+                        "artistry:poster_canvas/" + tex,
+                        DefaultVertexFormat.NEW_ENTITY,
+                        VertexFormat.Mode.QUADS,
+                        1536,
+                        true,
+                        false,
+                        RenderType.CompositeState.builder()
+                                .setShaderState(RenderStateShard.RENDERTYPE_ENTITY_CUTOUT_SHADER)
+                                .setTextureState(new RenderStateShard.TextureStateShard(tex, false, false))
+                                .setTransparencyState(RenderStateShard.NO_TRANSPARENCY)
+                                .setLightmapState(RenderStateShard.LIGHTMAP)
+                                .setOverlayState(RenderStateShard.OVERLAY)
+                                .setLayeringState(RenderStateShard.POLYGON_OFFSET_LAYERING)
+                                .createCompositeState(true)
+                )
+        );
     }
 
     private static RenderType getImageLayer(ResourceLocation texture) {
@@ -101,7 +124,8 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         if (state.hasContent) {
             matrices.pushPose();
             applyFacingRotation(matrices, facing);
-            PosterRenderHelper.renderQuad(matrices, vertexConsumers, state.slot, worldSize, Z_CANVAS, light);
+            PosterRenderHelper.renderQuad(matrices, vertexConsumers,
+                    getCanvasLayer(state.slot.texture()), state.slot, worldSize, Z_CANVAS, light);
             if (PosterLod.usesImageQuads(state.level) && entity.canvasData.isSizeChosen() && !images.isEmpty()) {
                 renderImageQuads(matrices, vertexConsumers, entity.canvasData.canvasSize, worldSize,
                         state.fragments(entity.imageLayer), light);
@@ -115,8 +139,11 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     protected static AABB canvasBounds(PosterBlockEntity entity) {
         BlockPos pos = entity.getBlockPos();
         if (!(entity.getBlockState().getBlock() instanceof BannerBlock)) return new AABB(pos);
+
         BlockPos corner = BannerBlock.partPos(pos, facingOf(entity), BannerPart.CORNER);
-        return new AABB(pos).minmax(new AABB(corner));
+        return new AABB(
+                Math.min(pos.getX(), corner.getX()), pos.getY(), Math.min(pos.getZ(), corner.getZ()),
+                Math.max(pos.getX(), corner.getX()) + 1.0, corner.getY() + 1.0, Math.max(pos.getZ(), corner.getZ()) + 1.0);
     }
 
     private static double cameraDistance(BlockPos pos, Direction facing, float worldSize) {
@@ -132,7 +159,6 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
     public static void tick() {
         long now = System.currentTimeMillis();
         viewDistance = ArtistryConfig.get().client.posterViewDistance;
-        RenderBudget.refresh();
         PosterLod.refresh(now);
         sweep(now);
     }
@@ -224,6 +250,7 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
         STATES.clear();
         PosterLod.clear();
         IMAGE_RENDER_LAYERS.clear();
+        CANVAS_RENDER_LAYERS.clear();
         lastSweep = 0;
         RenderBudget.reset();
     }

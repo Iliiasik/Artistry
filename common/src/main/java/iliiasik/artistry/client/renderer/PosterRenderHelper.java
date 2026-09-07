@@ -12,8 +12,8 @@ public final class PosterRenderHelper {
     private PosterRenderHelper() {}
 
     public static void renderQuad(PoseStack matrices, MultiBufferSource vertexConsumers,
-                                  CanvasAtlas.Slot slot, float size, float z, int light) {
-        VertexConsumer vc = vertexConsumers.getBuffer(RenderType.entityCutout(slot.texture()));
+                                  RenderType layer, CanvasAtlas.Slot slot, float size, float z, int light) {
+        VertexConsumer vc = vertexConsumers.getBuffer(layer);
         Matrix4f mat = matrices.last().pose();
         int ov = OverlayTexture.NO_OVERLAY;
         vertex(vc, mat, matrices, 0f, size, z, slot.u1(), slot.v0(), ov, light);
