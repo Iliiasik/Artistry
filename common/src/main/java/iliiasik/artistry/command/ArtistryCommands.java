@@ -6,11 +6,15 @@ import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.debug.ArtistryDebug;
 import iliiasik.artistry.network.ArtistryNetwork;
 import iliiasik.artistry.network.ServerSettingsS2CPacket;
+import iliiasik.artistry.server.ImageStorage;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+
+import java.io.IOException;
+import java.util.Locale;
 
 public final class ArtistryCommands {
 
@@ -31,9 +35,30 @@ public final class ArtistryCommands {
                             context.getSource().sendSuccess(
                                     () -> Component.literal("[Artistry] Config reloaded and synced to players"), true);
                             return 1;
-                        }));
+                        }))
+                .then(Commands.literal("images")
+                        .executes(context -> reportImageUsage(context.getSource())));
 
         ArtistryDebug.hooks().extendCommands(root);
         dispatcher.register(root);
+    }
+
+    private static int reportImageUsage(CommandSourceStack source) {
+        ImageStorage.Usage usage;
+        try {
+            usage = ImageStorage.usage();
+        } catch (IOException e) {
+            source.sendFailure(Component.literal("[Artistry] Failed to read the image storage: " + e.getMessage()));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+                "[Artistry] " + usage.files() + " images, " + formatBytes(usage.bytes())), false);
+        return usage.files();
+    }
+
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format(Locale.ROOT, "%.1f KB", bytes / 1024.0);
+        return String.format(Locale.ROOT, "%.1f MB", bytes / (1024.0 * 1024.0));
     }
 }

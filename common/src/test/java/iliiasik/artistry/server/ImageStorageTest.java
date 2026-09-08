@@ -10,12 +10,17 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,17 +48,101 @@ class ImageStorageTest {
     }
 
     @Test
-    @DisplayName("Identical payloads get distinct identifiers")
-    void identicalPayloadsAreStoredSeparately() throws IOException {
+    @DisplayName("Identical payloads collapse onto one identifier and one file")
+    void identicalPayloadsAreDeduplicated() throws IOException {
         byte[] bytes = McFixture.pattern(512);
         Set<UUID> ids = new HashSet<>();
         for (int i = 0; i < 16; i++) {
             ids.add(ImageStorage.save(bytes));
         }
-        assertTrue(ids.size() == 16, "every save must produce a unique id");
-        for (UUID id : ids) {
-            assertArrayEquals(bytes, ImageStorage.load(id));
+
+        assertEquals(1, ids.size(), "the same bytes must always map to the same id");
+        assertArrayEquals(bytes, ImageStorage.load(ids.iterator().next()));
+        assertEquals(1, ImageStorage.usage().files(), "only one file should have been written");
+    }
+
+    @Test
+    @DisplayName("Different payloads keep different identifiers")
+    void differentPayloadsStayApart() throws IOException {
+        UUID first = ImageStorage.save(McFixture.pattern(512));
+        UUID second = ImageStorage.save(McFixture.pattern(513));
+
+        assertNotEquals(first, second);
+        assertEquals(2, ImageStorage.usage().files());
+    }
+
+    @Test
+    @DisplayName("A single flipped byte produces a different identifier")
+    void oneBitApartIsADifferentImage() throws IOException {
+        byte[] bytes = McFixture.pattern(256);
+        byte[] altered = bytes.clone();
+        altered[128] = (byte) (altered[128] ^ 0x01);
+
+        assertNotEquals(ImageStorage.save(bytes), ImageStorage.save(altered));
+    }
+
+    @Test
+    @DisplayName("The identifier depends only on the bytes, not on the storage state")
+    void identifierIsPureFunctionOfContent() {
+        byte[] bytes = McFixture.pattern(1024);
+
+        assertEquals(ImageStorage.idOf(bytes), ImageStorage.idOf(bytes.clone()));
+        assertNotEquals(ImageStorage.idOf(bytes), ImageStorage.idOf(McFixture.pattern(1025)));
+    }
+
+    @Test
+    @DisplayName("Re-saving does not disturb a file that was edited on disk")
+    void resavingKeepsTheExistingFile() throws IOException {
+        byte[] bytes = McFixture.pattern(64);
+        UUID uuid = ImageStorage.save(bytes);
+        Files.write(storage.resolve(uuid + ".img"), new byte[]{9, 9, 9});
+
+        assertEquals(uuid, ImageStorage.save(bytes));
+        assertArrayEquals(new byte[]{9, 9, 9}, ImageStorage.load(uuid),
+                "an existing file must not be rewritten");
+    }
+
+    @Test
+    @DisplayName("A file only becomes visible once it is written whole")
+    void savePublishesAtomically() throws Exception {
+        int threads = 8;
+        byte[] bytes = McFixture.pattern(2 * 1024 * 1024);
+        List<Throwable> failures = Collections.synchronizedList(new ArrayList<>());
+        List<Thread> workers = new ArrayList<>();
+
+        for (int i = 0; i < threads; i++) {
+            Thread worker = new Thread(() -> {
+                try {
+                    UUID uuid = ImageStorage.save(bytes);
+                    assertArrayEquals(bytes, ImageStorage.load(uuid), "a half written file was published");
+                } catch (Throwable throwable) {
+                    failures.add(throwable);
+                }
+            });
+            workers.add(worker);
+            worker.start();
         }
+        for (Thread worker : workers) {
+            worker.join();
+        }
+
+        assertTrue(failures.isEmpty(), "concurrent saves failed: " + failures);
+        assertEquals(1, ImageStorage.usage().files(), "no temporary files may be left behind");
+    }
+
+    @Test
+    @DisplayName("Usage counts the files and their total size")
+    void usageReportsFilesAndBytes() throws IOException {
+        assertEquals(0, ImageStorage.usage().files());
+        assertEquals(0L, ImageStorage.usage().bytes());
+
+        ImageStorage.save(McFixture.pattern(100));
+        ImageStorage.save(McFixture.pattern(200));
+        Files.writeString(storage.resolve("not-an-image.txt"), "ignore me");
+
+        ImageStorage.Usage usage = ImageStorage.usage();
+        assertEquals(2, usage.files(), "only .img files count");
+        assertEquals(300L, usage.bytes());
     }
 
     @Test

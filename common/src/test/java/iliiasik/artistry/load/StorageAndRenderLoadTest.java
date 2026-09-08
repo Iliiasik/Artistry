@@ -17,8 +17,10 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -46,20 +48,20 @@ class StorageAndRenderLoadTest {
     void hundredsOfLargeImages() throws IOException {
         int count = 200;
         int size = 512 * 1024;
-        byte[] payload = McFixture.pattern(size);
-        Set<UUID> ids = new HashSet<>();
+        Map<UUID, byte[]> saved = new HashMap<>();
 
         long start = System.nanoTime();
         for (int i = 0; i < count; i++) {
-            ids.add(ImageStorage.save(payload));
+            byte[] payload = McFixture.pattern(size + i);
+            saved.put(ImageStorage.save(payload), payload);
         }
         long writeMs = (System.nanoTime() - start) / 1_000_000;
 
-        assertEquals(count, ids.size(), "every save must produce a unique id");
+        assertEquals(count, saved.size(), "distinct images must get distinct ids");
 
-        for (UUID id : ids) {
-            assertTrue(ImageStorage.exists(id));
-            assertArrayEquals(payload, ImageStorage.load(id));
+        for (Map.Entry<UUID, byte[]> entry : saved.entrySet()) {
+            assertTrue(ImageStorage.exists(entry.getKey()));
+            assertArrayEquals(entry.getValue(), ImageStorage.load(entry.getKey()));
         }
 
         assertTrue(writeMs < 120_000, "writing " + count + " images took " + writeMs + " ms");
@@ -75,11 +77,11 @@ class StorageAndRenderLoadTest {
         List<Throwable> failures = java.util.Collections.synchronizedList(new ArrayList<>());
 
         for (int t = 0; t < threads; t++) {
+            int offset = t * perThread;
             Thread worker = new Thread(() -> {
                 try {
-                    byte[] payload = McFixture.pattern(64 * 1024);
                     for (int i = 0; i < perThread; i++) {
-                        ids.add(ImageStorage.save(payload));
+                        ids.add(ImageStorage.save(McFixture.pattern(64 * 1024 + offset + i)));
                     }
                 } catch (Throwable throwable) {
                     failures.add(throwable);
@@ -94,6 +96,21 @@ class StorageAndRenderLoadTest {
 
         assertTrue(failures.isEmpty(), "concurrent uploads failed: " + failures);
         assertEquals(threads * perThread, ids.size());
+    }
+
+    @Test
+    @DisplayName("A crowd uploading the same picture costs one file")
+    void duplicateUploadsCollapse() throws IOException {
+        byte[] shared = McFixture.pattern(256 * 1024);
+        Set<UUID> ids = new HashSet<>();
+
+        for (int i = 0; i < 500; i++) {
+            ids.add(ImageStorage.save(shared));
+        }
+
+        assertEquals(1, ids.size());
+        assertEquals(1, ImageStorage.usage().files());
+        assertEquals(shared.length, ImageStorage.usage().bytes());
     }
 
     @Test

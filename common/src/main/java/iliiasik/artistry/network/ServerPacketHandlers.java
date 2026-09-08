@@ -40,6 +40,7 @@ public final class ServerPacketHandlers {
 
     public static void onUploadImage(UploadImageC2SPacket payload, ServerPlayer player) {
         if (ArtistryConfig.get().poster.disableImages) return;
+        if (PacketThrottle.imageThrottled(player.getUUID(), payload.bytes().length)) return;
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
         if (!access.canvasData().isSizeChosen()) return;
