@@ -43,7 +43,6 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
 
     private static final float Z_BLOCK_FACE = 15f / 16f;
     private static final float Z_CANVAS = Z_BLOCK_FACE - 0.001f;
-    private static final float Z_IMAGES = Z_CANVAS;
 
     private static final RenderStateShard.LayeringStateShard IMAGE_LAYERING =
             new RenderStateShard.LayeringStateShard("artistry:image_layering",
@@ -228,10 +227,10 @@ public class PosterBlockEntityRenderer implements BlockEntityRenderer<PosterBloc
             VertexConsumer vc = vertexConsumers.getBuffer(getImageLayer(imgTex));
             Matrix4f mat = matrices.last().pose();
             int ov = OverlayTexture.NO_OVERLAY;
-            PosterRenderHelper.vertex(vc, mat, matrices, x0, y0, Z_IMAGES, frag.u1(), frag.v0(), ov, light);
-            PosterRenderHelper.vertex(vc, mat, matrices, x1, y0, Z_IMAGES, frag.u0(), frag.v0(), ov, light);
-            PosterRenderHelper.vertex(vc, mat, matrices, x1, y1, Z_IMAGES, frag.u0(), frag.v1(), ov, light);
-            PosterRenderHelper.vertex(vc, mat, matrices, x0, y1, Z_IMAGES, frag.u1(), frag.v1(), ov, light);
+            PosterRenderHelper.vertex(vc, mat, matrices, x0, y0, Z_CANVAS, frag.u1(), frag.v0(), ov, light);
+            PosterRenderHelper.vertex(vc, mat, matrices, x1, y0, Z_CANVAS, frag.u0(), frag.v0(), ov, light);
+            PosterRenderHelper.vertex(vc, mat, matrices, x1, y1, Z_CANVAS, frag.u0(), frag.v1(), ov, light);
+            PosterRenderHelper.vertex(vc, mat, matrices, x0, y1, Z_CANVAS, frag.u1(), frag.v1(), ov, light);
         }
     }
 

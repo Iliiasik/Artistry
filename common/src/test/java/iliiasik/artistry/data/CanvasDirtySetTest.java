@@ -31,7 +31,6 @@ class CanvasDirtySetTest {
         CanvasDirtySet dirty = new CanvasDirtySet();
 
         assertTrue(dirty.isEmpty());
-        assertEquals(0, dirty.size());
         assertTrue(dirty.collect(canvas()).isEmpty());
     }
 
@@ -44,7 +43,7 @@ class CanvasDirtySetTest {
             dirty.add(List.of(change(4, 7, i)));
         }
 
-        assertEquals(1, dirty.size());
+        assertEquals(1, dirty.collect(canvas()).size());
         assertFalse(dirty.isEmpty());
     }
 
@@ -125,20 +124,10 @@ class CanvasDirtySetTest {
             rawChanges += changes.size();
         }
 
+        int coalesced = dirty.collect(canvas).size();
+
         assertEquals(180, rawChanges);
-        assertTrue(dirty.size() <= 16, "only a 4x4 corner was touched, got " + dirty.size());
-        assertTrue(dirty.size() < rawChanges);
-    }
-
-    @Test
-    @DisplayName("Clearing drops everything that was queued")
-    void clearEmptiesTheSet() {
-        CanvasDirtySet dirty = new CanvasDirtySet();
-        dirty.add(List.of(change(1, 1, 5), change(2, 2, 6)));
-
-        dirty.clear();
-
-        assertTrue(dirty.isEmpty());
-        assertEquals(0, dirty.size());
+        assertTrue(coalesced <= 16, "only a 4x4 corner was touched, got " + coalesced);
+        assertTrue(coalesced < rawChanges);
     }
 }

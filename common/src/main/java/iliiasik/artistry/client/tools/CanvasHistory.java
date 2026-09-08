@@ -4,7 +4,6 @@ import iliiasik.artistry.data.CanvasData;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
@@ -71,13 +70,6 @@ public class CanvasHistory {
         apply(canvas, entry, entry.redo());
         undoStack.push(entry);
         return true;
-    }
-
-    public void clear() {
-        undoStack.clear();
-        redoStack.clear();
-        Arrays.fill(stamps, 0);
-        clock = 0;
     }
 
     private void apply(CanvasData canvas, Entry entry, List<CanvasData.PixelChange> target) {

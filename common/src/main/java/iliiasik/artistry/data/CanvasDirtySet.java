@@ -23,19 +23,11 @@ public final class CanvasDirtySet {
         return cells.isEmpty();
     }
 
-    public int size() {
-        return cells.cardinality();
-    }
-
     public List<CanvasData.PixelChange> collect(CanvasData canvas) {
         List<CanvasData.PixelChange> merged = new ArrayList<>(cells.cardinality());
         for (int cell = cells.nextSetBit(0); cell >= 0; cell = cells.nextSetBit(cell + 1)) {
             merged.add(canvas.changeAt(cell % CanvasData.MAX_SIZE, cell / CanvasData.MAX_SIZE));
         }
         return merged;
-    }
-
-    public void clear() {
-        cells.clear();
     }
 }
