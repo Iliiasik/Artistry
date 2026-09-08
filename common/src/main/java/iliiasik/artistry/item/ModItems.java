@@ -23,7 +23,7 @@ public final class ModItems {
     }
 
     public static void init() {
-        Services.REGISTRY.addToCreativeTab(CreativeModeTabs.TOOLS_AND_UTILITIES, POSTER);
-        Services.REGISTRY.addToCreativeTab(CreativeModeTabs.TOOLS_AND_UTILITIES, BANNER);
+        Services.REGISTRY.addToCreativeTab(CreativeModeTabs.FUNCTIONAL_BLOCKS, POSTER);
+        Services.REGISTRY.addToCreativeTab(CreativeModeTabs.FUNCTIONAL_BLOCKS, BANNER);
     }
 }
