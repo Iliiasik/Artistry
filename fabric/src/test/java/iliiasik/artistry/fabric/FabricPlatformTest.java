@@ -142,4 +142,19 @@ class FabricPlatformTest {
         assertEquals("https://github.com/Iliiasik/Artistry/issues", contact.get("issues").getAsString());
         assertEquals("https://github.com/Iliiasik/Artistry", contact.get("sources").getAsString());
     }
+
+    @Test
+    @DisplayName("Catalogue finds the banner and the background at the jar root")
+    void catalogueMetadataIsDeclared() throws IOException {
+        JsonObject json = JsonParser.parseString(resource("/fabric.mod.json")).getAsJsonObject();
+        JsonObject catalogue = json.getAsJsonObject("custom").getAsJsonObject("catalogue");
+
+        assertEquals("artistry_banner.png", catalogue.get("banner").getAsString());
+        assertEquals("artistry_background.png", catalogue.get("background").getAsString());
+
+        for (String file : List.of("artistry_banner.png", "artistry_background.png", "artistry_icon.png")) {
+            assertNotNull(FabricPlatformTest.class.getResourceAsStream("/" + file),
+                    file + " must sit at the jar root");
+        }
+    }
 }

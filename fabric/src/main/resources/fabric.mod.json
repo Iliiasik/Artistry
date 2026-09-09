@@ -32,5 +32,11 @@
     "fabric-api": "*",
     "minecraft": "${minecraft_version}",
     "java": ">=${java_version}"
+  },
+  "custom": {
+    "catalogue": {
+      "banner": "${mod_id}_banner.png",
+      "background": "${mod_id}_background.png"
+    }
   }
 }
