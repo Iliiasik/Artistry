@@ -4,6 +4,7 @@ import iliiasik.artistry.Artistry;
 import iliiasik.artistry.client.ArtistryClientEvents;
 import iliiasik.artistry.debug.ArtistryDebug;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
@@ -43,6 +44,7 @@ public final class ForgeClientEvents {
         ItemStack stack = event.getItemStack();
         if (ArtistryClientEvents.openPosterScreen(stack, event.getHand())) {
             event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
         }
     }
 
@@ -51,6 +53,7 @@ public final class ForgeClientEvents {
         if (!event.getLevel().isClientSide()) return;
         if (ArtistryClientEvents.requestPosterAccess(event.getLevel(), event.getPos())) {
             event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
         }
     }
 }

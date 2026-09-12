@@ -3,6 +3,7 @@
   "minVersion": "0.8",
   "package": "iliiasik.artistry.mixin",
   "compatibilityLevel": "JAVA_17",
+  "refmap": "${mod_id}.refmap.json",
   "mixins": [
     "ItemStackMixin"
   ],

@@ -111,4 +111,22 @@ class RecipeResourceTest {
         assertEquals(3, rows(poster).size());
         assertEquals(16, key.getAsJsonArray("D").size(), "every vanilla dye must be accepted");
     }
+
+    @Test
+    @DisplayName("The poster is paper in the middle, sticks in the corners and dye on the edges")
+    void posterRecipeShape() throws IOException {
+        JsonObject poster = recipe("poster");
+        List<String> pattern = rows(poster);
+        JsonObject key = poster.getAsJsonObject("key");
+
+        assertEquals(List.of("SDS", "DPD", "SDS"), pattern);
+
+        char corner = pattern.get(0).charAt(0);
+        char edge = pattern.get(0).charAt(1);
+        char centre = pattern.get(1).charAt(1);
+
+        assertEquals("minecraft:stick", key.getAsJsonObject(String.valueOf(corner)).get("item").getAsString());
+        assertEquals("minecraft:paper", key.getAsJsonObject(String.valueOf(centre)).get("item").getAsString());
+        assertEquals(16, key.getAsJsonArray(String.valueOf(edge)).size());
+    }
 }

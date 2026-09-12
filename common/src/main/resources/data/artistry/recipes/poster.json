@@ -2,11 +2,12 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "DDD",
+    "SDS",
     "DPD",
-    "DDD"
+    "SDS"
   ],
   "key": {
+    "S": {"item": "minecraft:stick"},
     "D": [
       {"item": "minecraft:white_dye"},
       {"item": "minecraft:orange_dye"},
