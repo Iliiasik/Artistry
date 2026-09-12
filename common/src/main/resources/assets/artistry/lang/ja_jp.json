@@ -1,0 +1,11 @@
+{
+  "item.artistry.poster": "ポスター",
+  "block.artistry.poster": "ポスター",
+  "item.artistry.banner": "バナー",
+  "block.artistry.banner": "バナー",
+  "itemGroup.artistry": "Artistry Live",
+  "screen.artistry.choose_size": "サイズを選択",
+  "message.artistry.too_many_editors": "プレイヤーが多すぎるこのポスターを編集しています",
+  "key.categories.artistry": "Artistry Live",
+  "key.artistry.profiler": "描画プロファイラーの切り替え"
+}

@@ -1,0 +1,24 @@
+{
+  "type": "artistry:banner_crafting",
+  "category": "misc",
+  "pattern": [
+    "SPS",
+    "PBP",
+    "SPS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stick"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "B": {
+      "item": "artistry:poster"
+    }
+  },
+  "result": {
+    "item": "artistry:banner",
+    "count": 1
+  }
+}

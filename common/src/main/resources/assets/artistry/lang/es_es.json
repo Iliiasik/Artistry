@@ -1,0 +1,11 @@
+{
+  "item.artistry.poster": "Póster",
+  "block.artistry.poster": "Póster",
+  "item.artistry.banner": "Estandarte",
+  "block.artistry.banner": "Estandarte",
+  "itemGroup.artistry": "Artistry Live",
+  "screen.artistry.choose_size": "Elegir tamaño",
+  "message.artistry.too_many_editors": "Demasiados jugadores están editando este cartel",
+  "key.categories.artistry": "Artistry Live",
+  "key.artistry.profiler": "Alternar el perfilador de renderizado"
+}

@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "artistry:item/poster_empty"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "artistry:has_canvas": 1
+      },
+      "model": "artistry:item/poster_filled"
+    },
+    {
+      "predicate": {
+        "artistry:signed": 1
+      },
+      "model": "artistry:item/poster_signed"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "item.artistry.poster": "Постер",
+  "block.artistry.poster": "Постер",
+  "item.artistry.banner": "Баннер",
+  "block.artistry.banner": "Баннер",
+  "itemGroup.artistry": "Artistry Live",
+  "screen.artistry.choose_size": "Размер холста",
+  "message.artistry.too_many_editors": "Слишком много игроков редактируют этот постер",
+  "key.categories.artistry": "Artistry Live",
+  "key.artistry.profiler": "Переключить профилировщик отрисовки"
+}

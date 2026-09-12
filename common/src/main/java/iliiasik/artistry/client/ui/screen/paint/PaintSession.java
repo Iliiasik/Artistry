@@ -1,0 +1,348 @@
+package iliiasik.artistry.client.ui.screen.paint;
+
+import iliiasik.artistry.block.entity.PosterBlockEntity;
+import iliiasik.artistry.client.ClientServerSettings;
+import iliiasik.artistry.client.image.ClientImageCache;
+import iliiasik.artistry.client.presence.CanvasPresence;
+import iliiasik.artistry.client.tools.CanvasHistory;
+import iliiasik.artistry.data.CanvasData;
+import iliiasik.artistry.data.CanvasImage;
+import iliiasik.artistry.data.CanvasImageLayer;
+import iliiasik.artistry.data.CanvasSignature;
+import iliiasik.artistry.network.ArtistryNetwork;
+import iliiasik.artistry.network.CanvasCursorC2SPacket;
+import iliiasik.artistry.network.CanvasViewC2SPacket;
+import iliiasik.artistry.network.DeleteCanvasImageC2SPacket;
+import iliiasik.artistry.network.LockCanvasImageC2SPacket;
+import iliiasik.artistry.network.MoveCanvasImageC2SPacket;
+import iliiasik.artistry.network.PosterTarget;
+import iliiasik.artistry.network.RequestImageC2SPacket;
+import iliiasik.artistry.network.SaveCanvasC2SPacket;
+import iliiasik.artistry.network.SignPosterC2SPacket;
+import iliiasik.artistry.network.TogglePixelizeC2SPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+
+public class PaintSession {
+
+    private static final long IMAGE_SYNC_INTERVAL_MS = 150;
+
+    private final PosterBlockEntity targetEntity;
+    private final ItemStack targetStack;
+    private final InteractionHand targetHand;
+
+    private final CanvasData canvasData = new CanvasData();
+    private final CanvasData lastSentSnapshot = new CanvasData();
+    private final CanvasData strokeSnapshot = new CanvasData();
+    private final CanvasHistory history = new CanvasHistory();
+    private final CanvasImageLayer imageLayer = new CanvasImageLayer();
+    private final CanvasSignature signature = new CanvasSignature();
+    private final CanvasPresence presence = new CanvasPresence();
+
+    private boolean viewRegistered = false;
+
+    private long lastFlushTime = 0;
+    private long lastImageSyncTime = 0;
+    private UUID pendingMoveUuid = null;
+
+    private long lastCursorSentTime = 0;
+    private int lastSentCursorGx = Integer.MIN_VALUE;
+    private int lastSentCursorGy = Integer.MIN_VALUE;
+
+    public PaintSession(PosterBlockEntity entity) {
+        this.targetEntity = entity;
+        this.targetStack = null;
+        this.targetHand = null;
+        canvasData.copyFrom(entity.canvasData);
+        lastSentSnapshot.copyFrom(entity.canvasData);
+        imageLayer.copyFrom(entity.imageLayer);
+        signature.copyFrom(entity.signature);
+        requestMissingImages();
+    }
+
+    public PaintSession(ItemStack stack, InteractionHand hand, int chosenSize) {
+        this.targetEntity = null;
+        this.targetStack = stack;
+        this.targetHand = hand;
+        CompoundTag nbt = stack.getTag();
+        if (nbt != null) {
+            if (nbt.contains("canvas")) {
+                canvasData.fromNbt(nbt.getCompound("canvas"));
+            }
+            if (nbt.contains("images")) {
+                imageLayer.fromNbt(nbt.getList("images", Tag.TAG_COMPOUND));
+            }
+            if (nbt.contains(CanvasSignature.NBT_KEY)) {
+                signature.fromNbt(nbt.getCompound(CanvasSignature.NBT_KEY));
+            }
+        }
+        if (chosenSize > 0) {
+            canvasData.canvasSize = chosenSize;
+        }
+        lastSentSnapshot.copyFrom(canvasData);
+        requestMissingImages();
+    }
+
+    public CanvasData canvasData() {
+        return canvasData;
+    }
+
+    public CanvasImageLayer imageLayer() {
+        return imageLayer;
+    }
+
+    public CanvasPresence presence() {
+        return presence;
+    }
+
+    public void beginStrokeHistory() {
+        strokeSnapshot.copyFrom(canvasData);
+    }
+
+    public void endStrokeHistory(Collection<Integer> cells) {
+        history.push(strokeSnapshot, canvasData, cells);
+    }
+
+    public boolean undo() {
+        return history.undo(canvasData);
+    }
+
+    public boolean redo() {
+        return history.redo(canvasData);
+    }
+
+    public boolean isSigned() {
+        return signature.isSigned();
+    }
+
+    @Nullable
+    public String signerName() {
+        return signature.playerName();
+    }
+
+    public void applySignature(@Nullable String name) {
+        signature.applyRemote(name);
+    }
+
+    public void sign() {
+        if (signature.isSigned() || !canvasData.isSizeChosen()) return;
+        if (!connected()) return;
+        flushPending();
+        ArtistryNetwork.sendToServer(new SignPosterC2SPacket(target()));
+    }
+
+    private void flushPending() {
+        if (targetEntity != null) {
+            flushPixels();
+            flushImageMove();
+        } else {
+            saveToItem();
+        }
+    }
+
+    public boolean isWorld() {
+        return targetEntity != null;
+    }
+
+    public BlockPos targetPos() {
+        return targetEntity != null ? targetEntity.getBlockPos() : null;
+    }
+
+    private PosterTarget target() {
+        if (targetEntity != null) return new PosterTarget.World(targetEntity.getBlockPos());
+        return new PosterTarget.Held(targetHand);
+    }
+
+    private boolean connected() {
+        return Minecraft.getInstance().getConnection() != null;
+    }
+
+    public void requestMissingImages() {
+        for (CanvasImage img : imageLayer.getImages()) {
+            if (!ClientImageCache.has(img.uuid)) {
+                ArtistryNetwork.sendToServer(new RequestImageC2SPacket(img.uuid));
+            }
+        }
+    }
+
+    public void open() {
+        if (targetEntity == null || viewRegistered) return;
+        if (connected()) {
+            ArtistryNetwork.sendToServer(new CanvasViewC2SPacket(targetEntity.getBlockPos(), true));
+            viewRegistered = true;
+        }
+    }
+
+    public void close() {
+        if (targetEntity == null || !viewRegistered) return;
+        if (connected()) {
+            ArtistryNetwork.sendToServer(new CanvasViewC2SPacket(targetEntity.getBlockPos(), false));
+        }
+        viewRegistered = false;
+    }
+
+    public void onScreenClosed() {
+        flushPixels();
+        close();
+        if (targetStack != null) {
+            saveToItem();
+        }
+    }
+
+    public void lockImage(UUID uuid, boolean lock) {
+        ArtistryNetwork.sendToServer(new LockCanvasImageC2SPacket(target(), uuid, lock));
+    }
+
+    public void deleteImage(UUID uuid) {
+        mirrorImageLayerToWorld();
+        ArtistryNetwork.sendToServer(new DeleteCanvasImageC2SPacket(target(), uuid));
+    }
+
+    public void togglePixelize(UUID uuid) {
+        mirrorImageLayerToWorld();
+        ArtistryNetwork.sendToServer(new TogglePixelizeC2SPacket(target(), uuid));
+    }
+
+    public void uploadImage(byte[] bytes) {
+        ArtistryNetwork.uploadImage(target(), bytes);
+    }
+
+    public void markImageMoved(UUID uuid) {
+        pendingMoveUuid = uuid;
+    }
+
+    public void flushImageMove() {
+        if (pendingMoveUuid == null) return;
+        sendImageMove(pendingMoveUuid);
+        pendingMoveUuid = null;
+    }
+
+    private void sendImageMove(UUID uuid) {
+        CanvasImage img = imageLayer.findByUuid(uuid);
+        if (img == null) return;
+        if (img.pixelized) {
+            ClientImageCache.rebuildPixelizedTexture(uuid, img.gridW, img.gridH);
+        }
+        mirrorImageLayerToWorld();
+        ArtistryNetwork.sendToServer(new MoveCanvasImageC2SPacket(
+                target(), uuid, img.gridX, img.gridY, img.gridW, img.gridH));
+        lastImageSyncTime = System.currentTimeMillis();
+    }
+
+    private void mirrorImageLayerToWorld() {
+        if (targetEntity == null) return;
+        targetEntity.imageLayer.copyFrom(imageLayer);
+        targetEntity.imageLayer.clampToCanvas(targetEntity.canvasData.canvasSize);
+    }
+
+    public void tickBatch() {
+        long now = System.currentTimeMillis();
+        if (targetEntity != null && now - lastFlushTime >= ClientServerSettings.batchIntervalMs()) {
+            flushPixels();
+        }
+        if (targetEntity != null && pendingMoveUuid != null && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
+            flushImageMove();
+        }
+    }
+
+    private void flushPixels() {
+        if (targetEntity == null) return;
+        List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
+        if (changes.isEmpty()) return;
+        lastSentSnapshot.copyFrom(canvasData);
+        lastFlushTime = System.currentTimeMillis();
+        mirrorToWorld(changes);
+        if (connected()) {
+            ArtistryNetwork.sendToServer(new SaveCanvasC2SPacket(target(), changes));
+        }
+    }
+
+    private void mirrorToWorld(List<CanvasData.PixelChange> changes) {
+        if (targetEntity == null) return;
+        targetEntity.canvasData.canvasSize = canvasData.canvasSize;
+        targetEntity.canvasData.applyChanges(changes);
+        targetEntity.canvasData.markChanged();
+    }
+
+    private void saveToItem() {
+        CompoundTag existing = targetStack.getTag();
+        CompoundTag tag = existing != null ? existing.copy() : new CompoundTag();
+        List<CanvasData.PixelChange> changes = canvasData.diff(lastSentSnapshot);
+        if (!changes.isEmpty()) {
+            tag.put("canvas", canvasData.toNbt());
+            lastSentSnapshot.copyFrom(canvasData);
+        }
+        ListTag images = imageLayer.toNbt();
+        if (images.isEmpty()) {
+            tag.remove("images");
+        } else {
+            tag.put("images", images);
+        }
+        targetStack.setTag(tag);
+        if (!changes.isEmpty() && connected()) {
+            ArtistryNetwork.sendToServer(new SaveCanvasC2SPacket(target(), changes));
+        }
+    }
+
+    public void maybeSendCursor(short gx, short gy) {
+        if (targetEntity == null || !viewRegistered) return;
+        long now = System.currentTimeMillis();
+        if (now - lastCursorSentTime < ClientServerSettings.cursorIntervalMs()) return;
+        if (gx == lastSentCursorGx && gy == lastSentCursorGy) return;
+        lastSentCursorGx = gx;
+        lastSentCursorGy = gy;
+        lastCursorSentTime = now;
+        if (connected()) {
+            ArtistryNetwork.sendToServer(new CanvasCursorC2SPacket(targetEntity.getBlockPos(), gx, gy));
+        }
+    }
+
+    public void applyRemoteChanges(List<CanvasData.PixelChange> changes) {
+        canvasData.applyChanges(changes);
+        lastSentSnapshot.applyChanges(changes);
+        canvasData.markChanged();
+        history.noteExternal(changes);
+    }
+
+    public void applyImageLayerSync(List<CanvasImage> images) {
+        imageLayer.getImages().clear();
+        for (CanvasImage img : images) {
+            imageLayer.addImage(img);
+        }
+        imageLayer.clampToCanvas(canvasData.canvasSize);
+        requestMissingImages();
+    }
+
+    public void applyImageLockSync(UUID imageUuid, @Nullable UUID playerUuid) {
+        CanvasImage img = imageLayer.findByUuid(imageUuid);
+        if (img != null) img.lockedByPlayer = playerUuid;
+    }
+
+    public void receiveImageBytes(UUID uuid, byte[] bytes) {
+        ClientImageCache.store(uuid, bytes);
+    }
+
+    public void onImageUploaded(UUID uuid, int gridX, int gridY, int gridW, int gridH) {
+        if (imageLayer.findByUuid(uuid) != null) return;
+        imageLayer.addImage(new CanvasImage(uuid, gridX, gridY, gridW, gridH));
+        mirrorImageLayerToWorld();
+    }
+
+    public void receiveCursor(UUID uuid, float gx, float gy) {
+        presence.updateCursor(uuid, gx, gy);
+    }
+
+    public void removePresence(UUID uuid) {
+        presence.remove(uuid);
+    }
+}

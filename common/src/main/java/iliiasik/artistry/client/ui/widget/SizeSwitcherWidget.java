@@ -1,0 +1,90 @@
+package iliiasik.artistry.client.ui.widget;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import iliiasik.artistry.client.util.ModTextures;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+
+import java.util.function.IntConsumer;
+
+public class SizeSwitcherWidget extends AbstractWidget {
+    private static final ResourceLocation TEXTURE = ModTextures.SIZE_SWITCHER;
+
+    private static final int[] SIZES = {1, 2, 3, 4, 5};
+    private static final int TEXT_COLOR = 0xFF666155;
+
+    private int sizeIndex = 0;
+    private final IntConsumer onSizeChanged;
+    private final HoverFadeHelper hoverFade = new HoverFadeHelper();
+
+    public SizeSwitcherWidget(int x, int y, int w, int h, IntConsumer onSizeChanged) {
+        super(x, y, w, h, Component.empty());
+        this.onSizeChanged = onSizeChanged;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
+    }
+
+    public void setCurrentSize(int size) {
+        for (int i = 0; i < SIZES.length; i++) {
+            if (SIZES[i] == size) {
+                sizeIndex = i;
+                return;
+            }
+        }
+    }
+
+    public boolean stepSize(int delta) {
+        int next = Mth.clamp(sizeIndex + delta, 0, SIZES.length - 1);
+        if (next == sizeIndex) return false;
+        sizeIndex = next;
+        onSizeChanged.accept(SIZES[sizeIndex]);
+        return true;
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+        if (!visible) return;
+        hoverFade.update(isHovered());
+        hoverFade.applyShaderColor();
+        ctx.blit(
+                TEXTURE,
+                getX(), getY(),
+                getWidth(), getHeight(),
+                0f, 0f,
+                32, 32,
+                32, 32
+        );
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
+        String label = String.valueOf(SIZES[sizeIndex]);
+        Minecraft client = Minecraft.getInstance();
+        int textX = getX() + getWidth() / 2 - client.font.width(label) / 2;
+        int textY = getY() + getHeight() / 2 - 4;
+        ctx.drawString(client.font, label, textX, textY, TEXT_COLOR, false);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!visible) return false;
+        if ((button != 0 && button != 1) || !isMouseOver(mouseX, mouseY)) return false;
+        int step = button == 0 ? 1 : SIZES.length - 1;
+        sizeIndex = (sizeIndex + step) % SIZES.length;
+        onSizeChanged.accept(SIZES[sizeIndex]);
+        return true;
+    }
+
+    @Override
+    protected void updateWidgetNarration(NarrationElementOutput builder) {}
+}

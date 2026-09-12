@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_poster": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [{"items": ["artistry:poster"]}]
+      }
+    }
+  },
+  "rewards": {
+    "recipes": ["artistry:banner"]
+  }
+}

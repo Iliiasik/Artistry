@@ -1,0 +1,11 @@
+{
+  "item.artistry.poster": "Plakat",
+  "block.artistry.poster": "Plakat",
+  "item.artistry.banner": "Baner",
+  "block.artistry.banner": "Baner",
+  "itemGroup.artistry": "Artistry Live",
+  "screen.artistry.choose_size": "Wybierz rozmiar",
+  "message.artistry.too_many_editors": "Zbyt wielu graczy edytuje ten plakat",
+  "key.categories.artistry": "Artistry Live",
+  "key.artistry.profiler": "Przełącz profiler renderowania"
+}

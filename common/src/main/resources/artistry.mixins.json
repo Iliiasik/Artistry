@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "iliiasik.artistry.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "ItemStackMixin"
+  ],
+  "client": [
+    "ItemInHandRendererMixin",
+    "ItemPropertiesAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

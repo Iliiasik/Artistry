@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "artistry:block/poster", "y": 0   },
-    "facing=east":  { "model": "artistry:block/poster", "y": 90  },
-    "facing=south": { "model": "artistry:block/poster", "y": 180 },
-    "facing=west":  { "model": "artistry:block/poster", "y": 270 }
-  }
-}

@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north,part=origin": { "model": "artistry:block/banner" },
+    "facing=north,part=side":   { "model": "artistry:block/banner_part" },
+    "facing=north,part=top":    { "model": "artistry:block/banner_part" },
+    "facing=north,part=corner": { "model": "artistry:block/banner_part" },
+    "facing=east,part=origin":  { "model": "artistry:block/banner", "y": 90 },
+    "facing=east,part=side":    { "model": "artistry:block/banner_part", "y": 90 },
+    "facing=east,part=top":     { "model": "artistry:block/banner_part", "y": 90 },
+    "facing=east,part=corner":  { "model": "artistry:block/banner_part", "y": 90 },
+    "facing=south,part=origin": { "model": "artistry:block/banner", "y": 180 },
+    "facing=south,part=side":   { "model": "artistry:block/banner_part", "y": 180 },
+    "facing=south,part=top":    { "model": "artistry:block/banner_part", "y": 180 },
+    "facing=south,part=corner": { "model": "artistry:block/banner_part", "y": 180 },
+    "facing=west,part=origin":  { "model": "artistry:block/banner", "y": 270 },
+    "facing=west,part=side":    { "model": "artistry:block/banner_part", "y": 270 },
+    "facing=west,part=top":     { "model": "artistry:block/banner_part", "y": 270 },
+    "facing=west,part=corner":  { "model": "artistry:block/banner_part", "y": 270 }
+  }
+}

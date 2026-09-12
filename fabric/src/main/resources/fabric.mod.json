@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "artistry",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contact": {
+    "issues": "https://github.com/Iliiasik/Artistry/issues",
+    "sources": "https://github.com/Iliiasik/Artistry"
+  },
+  "license": "${license}",
+  "icon": "${mod_id}_icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "iliiasik.artistry.fabric.ArtistryFabric"
+    ],
+    "client": [
+      "iliiasik.artistry.fabric.ArtistryFabricClient"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json",
+    "${mod_id}.fabric.mixins.json"
+  ],
+  "accessWidener": "${mod_id}.accesswidener",
+  "depends": {
+    "fabricloader": "${fabric_loader_version_range}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version_range}",
+    "java": ">=${java_version}"
+  },
+  "custom": {
+    "catalogue": {
+      "banner": "${mod_id}_banner.png",
+      "background": "${mod_id}_background.png"
+    }
+  }
+}
