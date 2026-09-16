@@ -2,7 +2,6 @@ package iliiasik.artistry.client.ui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import iliiasik.artistry.client.util.ModTextures;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -16,7 +15,7 @@ public class SizeSwitcherWidget extends AbstractWidget {
     private static final ResourceLocation TEXTURE = ModTextures.SIZE_SWITCHER;
 
     private static final int[] SIZES = {1, 2, 3, 4, 5};
-    private static final int TEXT_COLOR = 0xFF666155;
+    private static final int BUTTON_TEXTURE_SIZE = 32;
 
     private int sizeIndex = 0;
     private final IntConsumer onSizeChanged;
@@ -66,13 +65,20 @@ public class SizeSwitcherWidget extends AbstractWidget {
                 32, 32,
                 32, 32
         );
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-        String label = String.valueOf(SIZES[sizeIndex]);
-        Minecraft client = Minecraft.getInstance();
-        int textX = getX() + getWidth() / 2 - client.font.width(label) / 2;
-        int textY = getY() + getHeight() / 2 - 4;
-        ctx.drawString(client.font, label, textX, textY, TEXT_COLOR, false);
+        int icon = ModTextures.SIZE_ICON_TEXTURE_SIZE;
+        int iconW = Math.round((float) icon * getWidth() / BUTTON_TEXTURE_SIZE);
+        int iconH = Math.round((float) icon * getHeight() / BUTTON_TEXTURE_SIZE);
+        ctx.blit(
+                ModTextures.SIZE_ICONS[sizeIndex],
+                getX() + (getWidth() - iconW) / 2,
+                getY() + (getHeight() - iconH) / 2,
+                iconW, iconH,
+                0f, 0f,
+                icon, icon,
+                icon, icon
+        );
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     @Override

@@ -34,11 +34,11 @@ public final class BlockPalette {
             "minecraft:birch_wood",             "minecraft:jungle_wood",            "minecraft:acacia_wood",
             "minecraft:dark_oak_wood",
 
-            "minecraft:oak_leaves",             "minecraft:spruce_leaves",          "minecraft:birch_leaves",
-            "minecraft:jungle_leaves",          "minecraft:acacia_leaves",          "minecraft:dark_oak_leaves",
-            "minecraft:mangrove_leaves",
+            "minecraft:melon",                  "minecraft:warped_wart_block",      "minecraft:lime_concrete_powder",
+            "minecraft:green_concrete_powder",  "minecraft:green_glazed_terracotta", "minecraft:warped_stem",
+            "minecraft:warped_hyphae",
 
-            "minecraft:cherry_leaves",          "minecraft:azalea_leaves",          "minecraft:flowering_azalea_leaves",
+            "minecraft:pink_concrete_powder",   "minecraft:stripped_warped_hyphae", "minecraft:pink_glazed_terracotta",
             "minecraft:grass_block",            "minecraft:dirt",                   "minecraft:coarse_dirt",
             "minecraft:podzol",
 
@@ -47,7 +47,7 @@ public final class BlockPalette {
             "minecraft:gravel",
 
             "minecraft:clay",                   "minecraft:soul_sand",              "minecraft:soul_soil",
-            "minecraft:moss_block",             "minecraft:snow_block",             "minecraft:ice",
+            "minecraft:moss_block",             "minecraft:snow_block",             "minecraft:light_blue_concrete_powder",
             "minecraft:packed_ice",
 
             "minecraft:blue_ice",               "minecraft:stone",                  "minecraft:cobblestone",
@@ -110,11 +110,11 @@ public final class BlockPalette {
             "minecraft:amethyst_block",         "minecraft:bone_block",             "minecraft:hay_block",
             "minecraft:dried_kelp_block",
 
-            "minecraft:slime_block",            "minecraft:honey_block",            "minecraft:magma_block",
+            "minecraft:lime_glazed_terracotta", "minecraft:honeycomb_block",        "minecraft:magma_block",
             "minecraft:glowstone",              "minecraft:sea_lantern",            "minecraft:shroomlight",
             "minecraft:sculk",
 
-            "minecraft:glass",                  "minecraft:bookshelf",              "minecraft:terracotta",
+            "minecraft:white_concrete_powder",  "minecraft:bookshelf",              "minecraft:terracotta",
             "minecraft:white_terracotta",       "minecraft:light_gray_terracotta",  "minecraft:gray_terracotta",
             "minecraft:black_terracotta",
 

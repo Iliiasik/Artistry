@@ -147,6 +147,7 @@ public class PaintSession {
             flushImageMove();
         } else {
             saveToItem();
+            flushImageMove();
         }
     }
 
@@ -250,7 +251,7 @@ public class PaintSession {
         if (targetEntity != null && now - lastFlushTime >= ClientServerSettings.batchIntervalMs()) {
             flushPixels();
         }
-        if (targetEntity != null && pendingMoveUuid != null && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
+        if (pendingMoveUuid != null && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
             flushImageMove();
         }
     }

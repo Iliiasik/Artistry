@@ -176,6 +176,89 @@ class PaintDimensionsTest {
     }
 
     @Test
+    @DisplayName("The whole screen is driven by one snapped scale")
+    void everyWidgetSharesThePaletteScale() {
+        int[][] screens = {{854, 480}, {900, 600}, {1280, 720}, {1366, 768}, {1440, 900},
+                {1600, 900}, {1680, 1050}, {1920, 1080}, {2560, 1440}, {3440, 1440}, {3840, 2160}};
+
+        for (int[] screen : screens) {
+            dimensions.calculate(screen[0], screen[1]);
+            String at = " at " + screen[0] + "x" + screen[1];
+
+            assertEquals(dimensions.paletteSwitcherW, dimensions.panelButton,
+                    "the tool button must match the palette switcher" + at);
+            assertEquals(dimensions.panelButton, dimensions.toolSwitchW, "tool switch" + at);
+            assertEquals(dimensions.panelButton, dimensions.sizeSwitchW, "size switch" + at);
+            assertEquals(dimensions.panelButton, dimensions.sizeSwitchH, "size switch is square" + at);
+            assertEquals(dimensions.panelButton, dimensions.signW, "sign width" + at);
+            assertEquals(dimensions.signW, dimensions.signH * 2, "the sign is 32x16" + at);
+            assertEquals(dimensions.badgeH, dimensions.sealW, "the seal matches the badge height" + at);
+            assertEquals(dimensions.sealW, dimensions.sealH, "the seal is square" + at);
+        }
+    }
+
+    @Test
+    @DisplayName("The tool panel height matches the buttons the widget actually stacks")
+    void toolPanelHeightMatchesTheStackedButtons() {
+        int[][] screens = {{854, 480}, {900, 600}, {1280, 720}, {1600, 900},
+                {1920, 1080}, {2560, 1440}, {3840, 2160}};
+
+        for (int[] screen : screens) {
+            dimensions.calculate(screen[0], screen[1]);
+            String at = " at " + screen[0] + "x" + screen[1];
+
+            int button = dimensions.panelButton;
+            int gap = PaintDimensions.buttonGap(button);
+            int lastButtonTop = button * 3 + gap * 3;
+
+            assertEquals(button * 4 + gap * 3, dimensions.toolSwitchH,
+                    "the layout and the widget disagree on the stack height" + at);
+            assertEquals(dimensions.toolSwitchH, lastButtonTop + button,
+                    "the fourth button does not end where the panel ends" + at);
+        }
+    }
+
+    @Test
+    @DisplayName("The right column fits above and below on every common screen")
+    void panelFitsVertically() {
+        int[][] screens = {{854, 480}, {1280, 720}, {1600, 900}, {1920, 1080}, {2560, 1440}, {3840, 2160}};
+
+        for (int[] screen : screens) {
+            dimensions.calculate(screen[0], screen[1]);
+            assertTrue(dimensions.signY + dimensions.signH <= screen[1],
+                    "the sign button ran off the bottom at " + screen[0] + "x" + screen[1]);
+            String at = " at " + screen[0] + "x" + screen[1];
+
+            assertEquals(dimensions.panelButton / 2, dimensions.badgeH,
+                    "the badge must stay on the same scale as the rest of the ui" + at);
+
+            assertTrue(dimensions.badgeY >= 0,
+                    "the signature ran off the top" + at);
+            assertTrue(dimensions.badgeY + dimensions.badgeH <= dimensions.canvasY,
+                    "the signature overlaps the frame" + at);
+
+            int above = dimensions.badgeY;
+            int below = dimensions.canvasY - (dimensions.badgeY + dimensions.badgeH);
+            assertTrue(Math.abs(above - below) <= 1,
+                    "the signature is not centred in the band above the frame" + at);
+        }
+    }
+
+    @Test
+    @DisplayName("The panel still fits beside the canvas on every common screen")
+    void panelFitsBesideTheCanvas() {
+        int[][] screens = {{854, 480}, {1280, 720}, {1600, 900}, {1920, 1080}, {2560, 1440}, {3840, 2160}};
+
+        for (int[] screen : screens) {
+            dimensions.calculate(screen[0], screen[1]);
+            assertTrue(dimensions.toolSwitchX + dimensions.toolSwitchW <= screen[0],
+                    "the tool panel ran off the screen at " + screen[0] + "x" + screen[1]);
+            assertTrue(dimensions.badgeX >= 0,
+                    "the signature ran off the screen at " + screen[0] + "x" + screen[1]);
+        }
+    }
+
+    @Test
     @DisplayName("A larger screen produces a larger layout")
     void largerScreenProducesLargerLayout() {
         dimensions.calculate(900, 600);

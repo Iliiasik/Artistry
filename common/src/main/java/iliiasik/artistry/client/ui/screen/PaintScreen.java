@@ -257,8 +257,8 @@ public class PaintScreen extends Screen {
                 dims.canvasX, dims.canvasY,
                 dims.canvasSize, dims.canvasSize,
                 0.0F, 0.0F,
-                128, 128,
-                128, 128
+                512, 512,
+                512, 512
         );
 
         CanvasData canvasData = session.canvasData();

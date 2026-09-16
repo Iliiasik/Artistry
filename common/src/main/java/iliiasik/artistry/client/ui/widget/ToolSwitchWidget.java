@@ -3,6 +3,7 @@ package iliiasik.artistry.client.ui.widget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import iliiasik.artistry.client.ClientServerSettings;
 import iliiasik.artistry.client.tools.DrawingTool;
+import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.util.ModTextures;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -41,7 +42,7 @@ public class ToolSwitchWidget extends AbstractWidget {
     }
 
     private int gap() {
-        return Math.round(getWidth() * (6.0f / 64.0f));
+        return PaintDimensions.buttonGap(getWidth());
     }
 
     private int brushY()   { return getY(); }

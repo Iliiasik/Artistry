@@ -18,17 +18,25 @@ public final class ModTextures {
     public static final ResourceLocation PIXELIZE         = Artistry.id("textures/ui/pixelize.png");
     public static final ResourceLocation DELETE           = Artistry.id("textures/ui/delete.png");
     public static final ResourceLocation SIZE_SWITCHER    = Artistry.id("textures/ui/size_switcher.png");
+
+    public static final int SIZE_ICON_TEXTURE_SIZE = 28;
+
+    public static final ResourceLocation[] SIZE_ICONS = {
+            Artistry.id("textures/ui/size_1.png"),
+            Artistry.id("textures/ui/size_2.png"),
+            Artistry.id("textures/ui/size_3.png"),
+            Artistry.id("textures/ui/size_4.png"),
+            Artistry.id("textures/ui/size_5.png")
+    };
+
     public static final ResourceLocation PALETTE_SWITCHER = Artistry.id("textures/ui/palette_switcher.png");
     public static final ResourceLocation SIZE_SCREEN      = Artistry.id("textures/ui/size_screen.png");
     public static final ResourceLocation IN_HAND_FRAME    = Artistry.id("textures/ui/in_hand_frame.png");
     public static final ResourceLocation SIGN             = Artistry.id("textures/ui/sign.png");
-    public static final ResourceLocation SIGN_HOVER       = Artistry.id("textures/ui/sign_hover.png");
     public static final ResourceLocation BADGE            = Artistry.id("textures/ui/badge.png");
     public static final ResourceLocation WAX_SEAL         = Artistry.id("textures/ui/wax_seal.png");
-    public static final ResourceLocation SECONDARY_COLOR       = Artistry.id("textures/ui/secondary_color.png");
-    public static final ResourceLocation SECONDARY_COLOR_HOVER = Artistry.id("textures/ui/secondary_color_hover.png");
-    public static final ResourceLocation PREVIOUS_COLOR        = Artistry.id("textures/ui/previous_color.png");
-    public static final ResourceLocation PREVIOUS_COLOR_HOVER  = Artistry.id("textures/ui/previous_color_hover.png");
+    public static final ResourceLocation SECONDARY_COLOR = Artistry.id("textures/ui/secondary_color.png");
+    public static final ResourceLocation PREVIOUS_COLOR  = Artistry.id("textures/ui/previous_color.png");
 
     private ModTextures() {}
 }

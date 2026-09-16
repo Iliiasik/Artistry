@@ -18,12 +18,15 @@ public class PaintDimensions {
     public static final int HISTORY_TEXTURE_SIZE = 16;
     public static final int SWATCH_FRAME_BORDER = 2;
 
-    private static final int PANEL_SCALE = 2;
+    public static final int BUTTON_GAP_TEXELS = 3;
+
+    private static final int PANEL_ICON_TEXTURE_SIZE = 32;
     private static final int SWATCH_GAP = 2;
 
     private static final int PANEL_GAP = 6;
 
     public float uiScale;
+    public int panelButton;
 
     public int canvasSize;
     public int canvasX;
@@ -101,19 +104,21 @@ public class PaintDimensions {
         drawingAreaX = canvasX + border;
         drawingAreaY = canvasY + border;
 
+        float rawScale = uiScale * 2.5f;
+        float perfectScale = Math.max(0.5f, Math.round(rawScale * 2.0f) / 2.0f);
+
+        panelButton = Math.round(PANEL_ICON_TEXTURE_SIZE * perfectScale);
+
         int toolButtons = ClientServerSettings.imagesDisabled() ? 3 : 4;
-        toolSwitchW = s(64);
-        toolSwitchH = s(64) * toolButtons + Math.round(s(64) * (6.0f / 64.0f)) * (toolButtons - 1);
+        toolSwitchW = panelButton;
+        toolSwitchH = panelButton * toolButtons + buttonGap(panelButton) * (toolButtons - 1);
         toolSwitchX = canvasX + canvasSize + s(12);
         toolSwitchY = canvasY;
 
-        sizeSwitchW = s(64);
-        sizeSwitchH = s(64);
+        sizeSwitchW = panelButton;
+        sizeSwitchH = panelButton;
         sizeSwitchX = toolSwitchX;
         sizeSwitchY = toolSwitchY + toolSwitchH + s(PANEL_GAP);
-
-        float rawScale = uiScale * 2.5f;
-        float perfectScale = Math.max(0.5f, Math.round(rawScale * 2.0f) / 2.0f);
 
         paletteW = Math.round(32 * perfectScale);
         paletteH = Math.round(162 * perfectScale);
@@ -144,24 +149,28 @@ public class PaintDimensions {
         hexInputW = Math.round(28 * perfectScale);
         hexInputH = Math.round(7 * perfectScale);
 
-        signW = s(SIGN_TEXTURE_WIDTH * PANEL_SCALE);
-        signH = s(SIGN_TEXTURE_HEIGHT * PANEL_SCALE);
+        signW = Math.round(SIGN_TEXTURE_WIDTH * perfectScale);
+        signH = Math.round(SIGN_TEXTURE_HEIGHT * perfectScale);
         signX = sizeSwitchX;
         signY = sizeSwitchY + sizeSwitchH + s(PANEL_GAP);
 
-        badgeW = s(BADGE_TEXTURE_WIDTH * PANEL_SCALE);
-        badgeH = s(BADGE_TEXTURE_HEIGHT * PANEL_SCALE);
-        sealW = s(SEAL_TEXTURE_SIZE);
-        sealH = s(SEAL_TEXTURE_SIZE);
+        badgeW = Math.round(BADGE_TEXTURE_WIDTH * perfectScale);
+        badgeH = Math.round(BADGE_TEXTURE_HEIGHT * perfectScale);
+        sealW = badgeH;
+        sealH = badgeH;
 
         int signatureGap = s(PANEL_GAP);
         int signatureWidth = badgeW + signatureGap + sealW;
         int signatureHeight = Math.max(badgeH, sealH);
-        int signatureTop = canvasY - signatureHeight - signatureGap;
+        int signatureTop = Math.max(0, (canvasY - signatureHeight) / 2);
         badgeX = canvasX + (canvasSize - signatureWidth) / 2;
         badgeY = signatureTop + (signatureHeight - badgeH) / 2;
         sealX = badgeX + badgeW + signatureGap;
         sealY = signatureTop + (signatureHeight - sealH) / 2;
+    }
+
+    public static int buttonGap(int buttonSize) {
+        return Math.round(buttonSize * (float) BUTTON_GAP_TEXELS / PANEL_ICON_TEXTURE_SIZE);
     }
 
     public int s(int virtualValue) {
