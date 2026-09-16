@@ -24,6 +24,7 @@ public class PaintDimensions {
     public static final int BUTTON_GAP_TEXELS = 3;
 
     private static final int PANEL_ICON_TEXTURE_SIZE = 32;
+    private static final int SEAL_BUTTONS = 2;
     private static final int SWATCH_GAP = 2;
 
     private static final int PANEL_GAP = 6;
@@ -126,8 +127,8 @@ public class PaintDimensions {
 
         panelButton = Math.round(PANEL_ICON_TEXTURE_SIZE * perfectScale);
 
-        sealW = panelButton;
-        sealH = panelButton;
+        sealW = panelButton * SEAL_BUTTONS;
+        sealH = sealW;
         badgeW = Math.round(BADGE_TEXTURE_WIDTH * perfectScale);
         badgeH = Math.round(BADGE_TEXTURE_HEIGHT * perfectScale);
         dateW = Math.round(DATE_TEXTURE_WIDTH * perfectScale);
@@ -146,14 +147,14 @@ public class PaintDimensions {
 
         signatureX = canvasX + canvasSize + signatureGap;
         signatureY = canvasY + (canvasSize - signatureH) / 2;
-        sealX = signatureX + (signatureW - sealW) / 2;
-        sealY = signatureY;
         headX = signatureX + (signatureW - headSize) / 2;
-        headY = sealY + sealH + signatureGap;
+        headY = signatureY;
         badgeX = signatureX + (signatureW - badgeW) / 2;
         badgeY = headY + headSize + signatureGap;
         dateX = signatureX + (signatureW - dateW) / 2;
         dateY = badgeY + badgeH + signatureGap;
+        sealX = signatureX + (signatureW - sealW) / 2;
+        sealY = dateY + dateH + signatureGap;
 
         int toolButtons = ClientServerSettings.imagesDisabled() ? 3 : 4;
         toolSwitchW = panelButton;

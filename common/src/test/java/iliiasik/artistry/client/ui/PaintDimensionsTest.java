@@ -152,12 +152,12 @@ class PaintDimensionsTest {
             assertTrue(dimensions.signatureX >= dimensions.canvasX + dimensions.canvasSize,
                     "the column overlaps the frame" + at);
 
-            assertTrue(dimensions.headY >= dimensions.sealY + dimensions.sealH,
-                    "the head overlaps the seal" + at);
             assertTrue(dimensions.badgeY >= dimensions.headY + dimensions.headSize,
                     "the badge overlaps the head" + at);
             assertTrue(dimensions.dateY >= dimensions.badgeY + dimensions.badgeH,
                     "the date overlaps the badge" + at);
+            assertTrue(dimensions.sealY >= dimensions.dateY + dimensions.dateH,
+                    "the seal overlaps the date" + at);
             assertEquals(centreOf(dimensions.dateX, dimensions.dateW),
                     centreOf(dimensions.headX, dimensions.headSize),
                     "the head is not on the column axis" + at);
@@ -232,8 +232,10 @@ class PaintDimensionsTest {
             assertEquals(dimensions.panelButton, dimensions.sizeSwitchH, "size switch is square" + at);
             assertEquals(dimensions.panelButton, dimensions.signW, "sign width" + at);
             assertEquals(dimensions.signW, dimensions.signH * 2, "the sign is 32x16" + at);
-            assertEquals(dimensions.panelButton, dimensions.sealW, "the seal matches a button" + at);
+            assertEquals(dimensions.panelButton * 2, dimensions.sealW, "the seal is two buttons wide" + at);
             assertEquals(dimensions.sealW, dimensions.sealH, "the seal is square" + at);
+            assertEquals(0, dimensions.sealW % PaintDimensions.SEAL_TEXTURE_SIZE,
+                    "the seal must scale by whole texels" + at);
             assertEquals(dimensions.panelButton / 2, dimensions.badgeH, "badge height" + at);
             assertEquals(dimensions.badgeH, dimensions.dateH, "the date plate matches the badge" + at);
             assertEquals(dimensions.badgeW, dimensions.dateW, "the date plate matches the badge" + at);
