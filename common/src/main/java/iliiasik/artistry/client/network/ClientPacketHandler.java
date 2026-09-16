@@ -161,11 +161,11 @@ public final class ClientPacketHandler {
         BlockPos pos = payload.pos();
         if (pos != null && mc.level != null
                 && mc.level.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
-            poster.signature.applyRemote(payload.playerName());
+            poster.signature.applyRemote(payload.playerName(), payload.playerUuid(), payload.signedAt());
         }
         if (mc.screen instanceof PaintScreen screen) {
             if (pos == null || pos.equals(screen.getTargetPos())) {
-                screen.applySignature(payload.playerName());
+                screen.applySignature(payload.playerName(), payload.playerUuid(), payload.signedAt());
             }
         }
     }

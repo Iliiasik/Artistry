@@ -141,24 +141,64 @@ class PaintDimensionsTest {
     }
 
     @Test
-    @DisplayName("The signature sits above the frame, badge and seal centred together")
-    void signatureSitsAboveTheFrame() {
-        dimensions.calculate(1600, 900);
-        assertTrue(dimensions.badgeY + dimensions.badgeH <= dimensions.canvasY,
-                "the badge overlaps the frame");
-        assertTrue(dimensions.sealY + dimensions.sealH <= dimensions.canvasY,
-                "the seal overlaps the frame");
-        assertTrue(dimensions.sealX >= dimensions.badgeX + dimensions.badgeW,
-                "the seal overlaps the badge");
-        assertEquals(dimensions.badgeY + dimensions.badgeH / 2,
-                dimensions.sealY + dimensions.sealH / 2,
-                "the badge and the seal are not on one line");
+    @DisplayName("The signature column stacks seal, badge and date to the right of the frame")
+    void signatureColumnStacksToTheRight() {
+        int[][] screens = {{854, 480}, {1280, 720}, {1600, 900}, {1920, 1080}, {3840, 2160}};
 
-        int groupLeft = dimensions.badgeX;
-        int groupRight = dimensions.sealX + dimensions.sealW;
-        int canvasCentre = dimensions.canvasX + dimensions.canvasSize / 2;
-        assertTrue(Math.abs((groupLeft + groupRight) / 2 - canvasCentre) <= 1,
-                "the signature group is not centred on the frame");
+        for (int[] screen : screens) {
+            dimensions.calculate(screen[0], screen[1], true);
+            String at = " at " + screen[0] + "x" + screen[1];
+
+            assertTrue(dimensions.signatureX >= dimensions.canvasX + dimensions.canvasSize,
+                    "the column overlaps the frame" + at);
+
+            assertTrue(dimensions.headY >= dimensions.sealY + dimensions.sealH,
+                    "the head overlaps the seal" + at);
+            assertTrue(dimensions.badgeY >= dimensions.headY + dimensions.headSize,
+                    "the badge overlaps the head" + at);
+            assertTrue(dimensions.dateY >= dimensions.badgeY + dimensions.badgeH,
+                    "the date overlaps the badge" + at);
+            assertEquals(centreOf(dimensions.dateX, dimensions.dateW),
+                    centreOf(dimensions.headX, dimensions.headSize),
+                    "the head is not on the column axis" + at);
+
+            assertEquals(centreOf(dimensions.sealX, dimensions.sealW),
+                    centreOf(dimensions.badgeX, dimensions.badgeW),
+                    "the seal and the badge are not on one axis" + at);
+            assertEquals(centreOf(dimensions.badgeX, dimensions.badgeW),
+                    centreOf(dimensions.dateX, dimensions.dateW),
+                    "the badge and the date are not on one axis" + at);
+
+            assertTrue(dimensions.signatureX + dimensions.signatureW <= screen[0],
+                    "the column ran off the right edge" + at);
+            assertTrue(dimensions.signatureY >= 0
+                            && dimensions.signatureY + dimensions.signatureH <= screen[1],
+                    "the column ran off the top or bottom" + at);
+        }
+    }
+
+    @Test
+    @DisplayName("The frame and the signature column are centred together")
+    void signedLayoutCentresTheWholeGroup() {
+        int[][] screens = {{1280, 720}, {1920, 1080}, {3840, 2160}};
+
+        for (int[] screen : screens) {
+            dimensions.calculate(screen[0], screen[1], true);
+            String at = " at " + screen[0] + "x" + screen[1];
+
+            int groupLeft = dimensions.canvasX;
+            int groupRight = dimensions.signatureX + dimensions.signatureW;
+            assertTrue(Math.abs((groupLeft + groupRight) / 2 - screen[0] / 2) <= 1,
+                    "the frame and the column are not centred as one group" + at);
+
+            dimensions.calculate(screen[0], screen[1], false);
+            assertEquals((screen[0] - dimensions.canvasSize) / 2, dimensions.canvasX,
+                    "an unsigned canvas must stay centred on its own" + at);
+        }
+    }
+
+    private static int centreOf(int start, int size) {
+        return start + size / 2;
     }
 
     @Test
@@ -192,8 +232,14 @@ class PaintDimensionsTest {
             assertEquals(dimensions.panelButton, dimensions.sizeSwitchH, "size switch is square" + at);
             assertEquals(dimensions.panelButton, dimensions.signW, "sign width" + at);
             assertEquals(dimensions.signW, dimensions.signH * 2, "the sign is 32x16" + at);
-            assertEquals(dimensions.badgeH, dimensions.sealW, "the seal matches the badge height" + at);
+            assertEquals(dimensions.panelButton, dimensions.sealW, "the seal matches a button" + at);
             assertEquals(dimensions.sealW, dimensions.sealH, "the seal is square" + at);
+            assertEquals(dimensions.panelButton / 2, dimensions.badgeH, "badge height" + at);
+            assertEquals(dimensions.badgeH, dimensions.dateH, "the date plate matches the badge" + at);
+            assertEquals(dimensions.badgeW, dimensions.dateW, "the date plate matches the badge" + at);
+            assertEquals(dimensions.badgeW, dimensions.headSize, "the head matches the badge width" + at);
+            assertEquals(0, dimensions.headSize % PaintDimensions.HEAD_FACE_TEXELS,
+                    "the head must scale by whole texels" + at);
         }
     }
 
@@ -225,22 +271,12 @@ class PaintDimensionsTest {
 
         for (int[] screen : screens) {
             dimensions.calculate(screen[0], screen[1]);
-            assertTrue(dimensions.signY + dimensions.signH <= screen[1],
-                    "the sign button ran off the bottom at " + screen[0] + "x" + screen[1]);
             String at = " at " + screen[0] + "x" + screen[1];
 
-            assertEquals(dimensions.panelButton / 2, dimensions.badgeH,
-                    "the badge must stay on the same scale as the rest of the ui" + at);
-
-            assertTrue(dimensions.badgeY >= 0,
-                    "the signature ran off the top" + at);
-            assertTrue(dimensions.badgeY + dimensions.badgeH <= dimensions.canvasY,
-                    "the signature overlaps the frame" + at);
-
-            int above = dimensions.badgeY;
-            int below = dimensions.canvasY - (dimensions.badgeY + dimensions.badgeH);
-            assertTrue(Math.abs(above - below) <= 1,
-                    "the signature is not centred in the band above the frame" + at);
+            assertTrue(dimensions.signY + dimensions.signH <= screen[1],
+                    "the sign button ran off the bottom" + at);
+            assertTrue(dimensions.toolSwitchY >= 0,
+                    "the tool panel ran off the top" + at);
         }
     }
 
@@ -253,8 +289,8 @@ class PaintDimensionsTest {
             dimensions.calculate(screen[0], screen[1]);
             assertTrue(dimensions.toolSwitchX + dimensions.toolSwitchW <= screen[0],
                     "the tool panel ran off the screen at " + screen[0] + "x" + screen[1]);
-            assertTrue(dimensions.badgeX >= 0,
-                    "the signature ran off the screen at " + screen[0] + "x" + screen[1]);
+            assertTrue(dimensions.swatchStripX >= 0,
+                    "the palette ran off the screen at " + screen[0] + "x" + screen[1]);
         }
     }
 

@@ -11,13 +11,20 @@ public class CanvasSignature {
     public static final String NBT_KEY = "signature";
     public static final int MAX_NAME_LENGTH = 32;
 
+    public static final long UNKNOWN_DATE = 0L;
+
     @Nullable
     private String playerName = null;
     @Nullable
     private UUID playerUuid = null;
+    private long signedAt = UNKNOWN_DATE;
 
     public boolean isSigned() {
         return playerName != null;
+    }
+
+    public long signedAt() {
+        return signedAt;
     }
 
     @Nullable
@@ -30,26 +37,35 @@ public class CanvasSignature {
         return playerUuid;
     }
 
-    public void sign(String name, UUID uuid) {
+    public void sign(String name, UUID uuid, long epochMillis) {
         String sanitized = sanitize(name);
         if (sanitized == null) return;
         playerName = sanitized;
         playerUuid = uuid;
+        signedAt = epochMillis;
     }
 
     public void clear() {
         playerName = null;
         playerUuid = null;
+        signedAt = UNKNOWN_DATE;
     }
 
-    public void applyRemote(@Nullable String name) {
+    public void applyRemote(@Nullable String name, @Nullable UUID uuid, long epochMillis) {
         playerName = name == null ? null : sanitize(name);
-        if (playerName == null) playerUuid = null;
+        if (playerName == null) {
+            playerUuid = null;
+            signedAt = UNKNOWN_DATE;
+            return;
+        }
+        playerUuid = uuid;
+        signedAt = epochMillis;
     }
 
     public void copyFrom(CanvasSignature other) {
         playerName = other.playerName;
         playerUuid = other.playerUuid;
+        signedAt = other.signedAt;
     }
 
     public CompoundTag toNbt() {
@@ -59,6 +75,7 @@ public class CanvasSignature {
             tag.putLong("uuid_most", playerUuid.getMostSignificantBits());
             tag.putLong("uuid_least", playerUuid.getLeastSignificantBits());
         }
+        if (signedAt != UNKNOWN_DATE) tag.putLong("signed_at", signedAt);
         return tag;
     }
 
@@ -67,6 +84,7 @@ public class CanvasSignature {
         playerUuid = tag.contains("uuid_most") && tag.contains("uuid_least")
                 ? new UUID(tag.getLong("uuid_most"), tag.getLong("uuid_least"))
                 : null;
+        signedAt = tag.contains("signed_at") ? tag.getLong("signed_at") : UNKNOWN_DATE;
     }
 
     public static boolean isSignedStack(ItemStack stack) {

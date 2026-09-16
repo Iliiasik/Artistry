@@ -96,8 +96,8 @@ public class PaintScreen extends Screen {
         session.removePresence(uuid);
     }
 
-    public void applySignature(@Nullable String playerName) {
-        session.applySignature(playerName);
+    public void applySignature(@Nullable String playerName, @Nullable UUID playerUuid, long signedAt) {
+        session.applySignature(playerName, playerUuid, signedAt);
         if (input != null) input.exitImageModeIfActive();
         rebuildWidgets();
     }
@@ -109,7 +109,7 @@ public class PaintScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        dims.calculate(width, height);
+        dims.calculate(width, height, session.isSigned());
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) localPlayerUuid = mc.player.getUUID();
@@ -249,7 +249,7 @@ public class PaintScreen extends Screen {
 
         session.tickBatch();
         tickCursor();
-        dims.calculate(width, height);
+        dims.calculate(width, height, session.isSigned());
         if (widgets != null) widgets.layout();
 
         context.blit(
@@ -277,7 +277,8 @@ public class PaintScreen extends Screen {
 
         String signerName = session.signerName();
         if (signerName != null) {
-            SignatureRenderer.render(context, this.font, signerName, dims);
+            SignatureRenderer.render(context, this.font, signerName,
+                    session.signerUuid(), session.signedAt(), dims);
             return;
         }
 

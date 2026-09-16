@@ -194,14 +194,22 @@ class PacketCodecTest {
         SignPosterC2SPacket sign = new SignPosterC2SPacket(new PosterTarget.World(POS));
         assertEquals(sign, roundTrip(sign, SignPosterC2SPacket::read));
 
-        SyncSignatureS2CPacket signed = new SyncSignatureS2CPacket(POS, "Author");
+        SyncSignatureS2CPacket signed =
+                new SyncSignatureS2CPacket(POS, "Author", UUID_A, 1_789_000_000_000L);
         assertEquals(signed, roundTrip(signed, SyncSignatureS2CPacket::read));
 
-        SyncSignatureS2CPacket held = new SyncSignatureS2CPacket(null, "Author");
+        SyncSignatureS2CPacket held = new SyncSignatureS2CPacket(null, "Author", UUID_B, 1L);
         assertNull(roundTrip(held, SyncSignatureS2CPacket::read).pos());
 
-        SyncSignatureS2CPacket cleared = new SyncSignatureS2CPacket(POS, null);
-        assertNull(roundTrip(cleared, SyncSignatureS2CPacket::read).playerName());
+        SyncSignatureS2CPacket cleared = new SyncSignatureS2CPacket(POS, null, null, 0L);
+        SyncSignatureS2CPacket decodedCleared = roundTrip(cleared, SyncSignatureS2CPacket::read);
+        assertNull(decodedCleared.playerName());
+        assertNull(decodedCleared.playerUuid());
+
+        SyncSignatureS2CPacket legacy = new SyncSignatureS2CPacket(POS, "Author", null, 0L);
+        SyncSignatureS2CPacket decodedLegacy = roundTrip(legacy, SyncSignatureS2CPacket::read);
+        assertEquals(0L, decodedLegacy.signedAt());
+        assertNull(decodedLegacy.playerUuid());
     }
 
     @Test

@@ -13,7 +13,10 @@ public class PaintDimensions {
     public static final int SIGN_TEXTURE_HEIGHT = 16;
     public static final int BADGE_TEXTURE_WIDTH = 80;
     public static final int BADGE_TEXTURE_HEIGHT = 16;
+    public static final int DATE_TEXTURE_WIDTH = 80;
+    public static final int DATE_TEXTURE_HEIGHT = 16;
     public static final int SEAL_TEXTURE_SIZE = 32;
+    public static final int HEAD_FACE_TEXELS = 8;
     public static final int SECONDARY_TEXTURE_SIZE = 24;
     public static final int HISTORY_TEXTURE_SIZE = 16;
     public static final int SWATCH_FRAME_BORDER = 2;
@@ -90,7 +93,25 @@ public class PaintDimensions {
     public int swatchStripW;
     public int swatchStripH;
 
+    public int dateX;
+    public int dateY;
+    public int dateW;
+    public int dateH;
+
+    public int headX;
+    public int headY;
+    public int headSize;
+
+    public int signatureX;
+    public int signatureY;
+    public int signatureW;
+    public int signatureH;
+
     public void calculate(int screenWidth, int screenHeight) {
+        calculate(screenWidth, screenHeight, false);
+    }
+
+    public void calculate(int screenWidth, int screenHeight, boolean signed) {
         float scaleX = screenWidth / BASE_W;
         float scaleY = screenHeight / BASE_H;
         uiScale = Math.min(scaleX, scaleY);
@@ -99,15 +120,40 @@ public class PaintDimensions {
         drawingAreaSize = (rawDrawing / 32) * 32;
         int border = Math.round(drawingAreaSize * 16.0f / 480.0f);
         canvasSize = drawingAreaSize + border * 2;
-        canvasX = (screenWidth - canvasSize) / 2;
-        canvasY = (screenHeight - canvasSize) / 2;
-        drawingAreaX = canvasX + border;
-        drawingAreaY = canvasY + border;
 
         float rawScale = uiScale * 2.5f;
         float perfectScale = Math.max(0.5f, Math.round(rawScale * 2.0f) / 2.0f);
 
         panelButton = Math.round(PANEL_ICON_TEXTURE_SIZE * perfectScale);
+
+        sealW = panelButton;
+        sealH = panelButton;
+        badgeW = Math.round(BADGE_TEXTURE_WIDTH * perfectScale);
+        badgeH = Math.round(BADGE_TEXTURE_HEIGHT * perfectScale);
+        dateW = Math.round(DATE_TEXTURE_WIDTH * perfectScale);
+        dateH = Math.round(DATE_TEXTURE_HEIGHT * perfectScale);
+        headSize = badgeW;
+
+        int signatureGap = s(PANEL_GAP);
+        signatureW = Math.max(Math.max(sealW, headSize), Math.max(badgeW, dateW));
+        signatureH = sealH + badgeH + dateH + headSize + signatureGap * 3;
+
+        int groupWidth = signed ? canvasSize + signatureGap + signatureW : canvasSize;
+        canvasX = (screenWidth - groupWidth) / 2;
+        canvasY = (screenHeight - canvasSize) / 2;
+        drawingAreaX = canvasX + border;
+        drawingAreaY = canvasY + border;
+
+        signatureX = canvasX + canvasSize + signatureGap;
+        signatureY = canvasY + (canvasSize - signatureH) / 2;
+        sealX = signatureX + (signatureW - sealW) / 2;
+        sealY = signatureY;
+        headX = signatureX + (signatureW - headSize) / 2;
+        headY = sealY + sealH + signatureGap;
+        badgeX = signatureX + (signatureW - badgeW) / 2;
+        badgeY = headY + headSize + signatureGap;
+        dateX = signatureX + (signatureW - dateW) / 2;
+        dateY = badgeY + badgeH + signatureGap;
 
         int toolButtons = ClientServerSettings.imagesDisabled() ? 3 : 4;
         toolSwitchW = panelButton;
@@ -153,20 +199,6 @@ public class PaintDimensions {
         signH = Math.round(SIGN_TEXTURE_HEIGHT * perfectScale);
         signX = sizeSwitchX;
         signY = sizeSwitchY + sizeSwitchH + s(PANEL_GAP);
-
-        badgeW = Math.round(BADGE_TEXTURE_WIDTH * perfectScale);
-        badgeH = Math.round(BADGE_TEXTURE_HEIGHT * perfectScale);
-        sealW = badgeH;
-        sealH = badgeH;
-
-        int signatureGap = s(PANEL_GAP);
-        int signatureWidth = badgeW + signatureGap + sealW;
-        int signatureHeight = Math.max(badgeH, sealH);
-        int signatureTop = Math.max(0, (canvasY - signatureHeight) / 2);
-        badgeX = canvasX + (canvasSize - signatureWidth) / 2;
-        badgeY = signatureTop + (signatureHeight - badgeH) / 2;
-        sealX = badgeX + badgeW + signatureGap;
-        sealY = signatureTop + (signatureHeight - sealH) / 2;
     }
 
     public static int buttonGap(int buttonSize) {

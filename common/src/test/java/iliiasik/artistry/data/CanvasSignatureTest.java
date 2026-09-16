@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CanvasSignatureTest {
 
+    private static final long SIGNED_AT = 1_789_000_000_000L;
+
     @BeforeAll
     static void boot() {
         McFixture.bootstrap();
@@ -43,30 +45,32 @@ class CanvasSignatureTest {
     }
 
     @Test
-    @DisplayName("Signing stores the name and the uuid")
+    @DisplayName("Signing stores the name, the uuid and the date")
     void signStoresAuthor() {
         CanvasSignature signature = new CanvasSignature();
         UUID uuid = UUID.randomUUID();
-        signature.sign("Iliiasik", uuid);
+        signature.sign("Iliiasik", uuid, SIGNED_AT);
 
         assertTrue(signature.isSigned());
         assertEquals("Iliiasik", signature.playerName());
         assertEquals(uuid, signature.playerUuid());
+        assertEquals(SIGNED_AT, signature.signedAt());
     }
 
     @Test
     @DisplayName("A blank name never signs the canvas")
     void blankNameIsRejected() {
         CanvasSignature signature = new CanvasSignature();
-        signature.sign("   ", UUID.randomUUID());
+        signature.sign("   ", UUID.randomUUID(), SIGNED_AT);
         assertFalse(signature.isSigned());
+        assertEquals(CanvasSignature.UNKNOWN_DATE, signature.signedAt());
     }
 
     @Test
     @DisplayName("An overlong name is cut to the limit")
     void longNameIsTruncated() {
         CanvasSignature signature = new CanvasSignature();
-        signature.sign("x".repeat(CanvasSignature.MAX_NAME_LENGTH + 20), UUID.randomUUID());
+        signature.sign("x".repeat(CanvasSignature.MAX_NAME_LENGTH + 20), UUID.randomUUID(), SIGNED_AT);
         String name = signature.playerName();
         assertNotNull(name);
         assertEquals(CanvasSignature.MAX_NAME_LENGTH, name.length());
@@ -77,32 +81,59 @@ class CanvasSignatureTest {
     void nbtRoundTrip() {
         CanvasSignature source = new CanvasSignature();
         UUID uuid = UUID.randomUUID();
-        source.sign("Author", uuid);
+        source.sign("Author", uuid, SIGNED_AT);
 
         CanvasSignature restored = new CanvasSignature();
         restored.fromNbt(source.toNbt());
 
         assertEquals("Author", restored.playerName());
         assertEquals(uuid, restored.playerUuid());
+        assertEquals(SIGNED_AT, restored.signedAt());
+    }
+
+    @Test
+    @DisplayName("A signature written before dates existed reads back as unknown")
+    void legacySignatureHasNoDate() {
+        CompoundTag legacy = new CompoundTag();
+        legacy.putString("name", "Author");
+
+        CanvasSignature restored = new CanvasSignature();
+        restored.fromNbt(legacy);
+
+        assertTrue(restored.isSigned());
+        assertEquals(CanvasSignature.UNKNOWN_DATE, restored.signedAt());
     }
 
     @Test
     @DisplayName("Reading empty nbt clears the signature")
     void emptyNbtClears() {
         CanvasSignature signature = new CanvasSignature();
-        signature.sign("Author", UUID.randomUUID());
+        signature.sign("Author", UUID.randomUUID(), SIGNED_AT);
         signature.fromNbt(new CompoundTag());
         assertFalse(signature.isSigned());
+        assertEquals(CanvasSignature.UNKNOWN_DATE, signature.signedAt());
     }
 
     @Test
     @DisplayName("A remote update without a name unsigns the canvas")
     void remoteClear() {
         CanvasSignature signature = new CanvasSignature();
-        signature.sign("Author", UUID.randomUUID());
-        signature.applyRemote(null);
+        signature.sign("Author", UUID.randomUUID(), SIGNED_AT);
+        signature.applyRemote(null, null, SIGNED_AT);
         assertFalse(signature.isSigned());
         assertNull(signature.playerUuid());
+        assertEquals(CanvasSignature.UNKNOWN_DATE, signature.signedAt());
+    }
+
+    @Test
+    @DisplayName("A remote update carries the uuid and the date across")
+    void remoteCarriesDate() {
+        CanvasSignature signature = new CanvasSignature();
+        UUID uuid = UUID.randomUUID();
+        signature.applyRemote("Author", uuid, SIGNED_AT);
+        assertTrue(signature.isSigned());
+        assertEquals(uuid, signature.playerUuid());
+        assertEquals(SIGNED_AT, signature.signedAt());
     }
 
     @Test

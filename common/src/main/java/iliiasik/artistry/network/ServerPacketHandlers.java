@@ -122,7 +122,8 @@ public final class ServerPacketHandlers {
         if (access == null) return;
         if (!access.canvasData().isSizeChosen()) return;
         if (access.signature().isSigned()) return;
-        access.signature().sign(player.getGameProfile().getName(), player.getUUID());
+        access.signature().sign(player.getGameProfile().getName(), player.getUUID(),
+                System.currentTimeMillis());
         access.releaseAllLocks();
         access.persist();
         access.syncSignature();
