@@ -30,6 +30,7 @@ public final class SignatureRenderer {
     private static final int TEXT_COLOR = 0xFFFDF7E8;
     private static final int TEXT_PADDING = 4;
     private static final int FONT_HEIGHT = 8;
+    private static final int DIGIT_INK_HEIGHT = 7;
     private static final float TEXT_HEIGHT_RATIO = 0.5f;
     private static final float MIN_TEXT_SCALE = 1.0f;
 
@@ -62,9 +63,11 @@ public final class SignatureRenderer {
                 dims.headX, dims.headY, dims.headSize);
 
         drawCentred(ctx, font, playerName,
-                dims.badgeX, dims.badgeY, dims.badgeW, dims.badgeH, BADGE_TEXTURE_WIDTH);
+                dims.badgeX, dims.badgeY, dims.badgeW, dims.badgeH,
+                BADGE_TEXTURE_WIDTH, FONT_HEIGHT);
         drawCentred(ctx, font, formatDate(signedAt),
-                dims.dateX, dims.dateY, dims.dateW, dims.dateH, DATE_TEXTURE_WIDTH);
+                dims.dateX, dims.dateY, dims.dateW, dims.dateH,
+                DATE_TEXTURE_WIDTH, DIGIT_INK_HEIGHT);
     }
 
     public static String formatDate(long signedAt) {
@@ -73,7 +76,8 @@ public final class SignatureRenderer {
     }
 
     private static void drawCentred(GuiGraphics ctx, Font font, String text,
-                                    int x, int y, int width, int height, int textureWidth) {
+                                    int x, int y, int width, int height,
+                                    int textureWidth, int inkHeight) {
         float plateScale = (float) width / textureWidth;
         float textScale = Math.max(MIN_TEXT_SCALE, height * TEXT_HEIGHT_RATIO / FONT_HEIGHT);
         int padding = Math.round(TEXT_PADDING * plateScale);
@@ -83,7 +87,7 @@ public final class SignatureRenderer {
         if (fitted.isEmpty()) return;
 
         float textWidth = font.width(fitted) * textScale;
-        float textHeight = FONT_HEIGHT * textScale;
+        float textHeight = inkHeight * textScale;
 
         ctx.pose().pushPose();
         ctx.pose().translate(
