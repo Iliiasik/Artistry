@@ -20,6 +20,9 @@
     ],
     "client": [
       "iliiasik.artistry.fabric.ArtistryFabricClient"
+    ],
+    "modmenu": [
+      "iliiasik.artistry.fabric.ArtistryModMenu"
     ]
   },
   "mixins": [
@@ -30,13 +33,16 @@
   "depends": {
     "fabricloader": "${fabric_loader_version_range}",
     "fabric-api": "*",
-    "minecraft": "${minecraft_version_range}",
+    "minecraft": "${fabric_minecraft_version_range}",
     "java": ">=${java_version}"
   },
   "custom": {
     "catalogue": {
       "banner": "${mod_id}_banner.png",
       "background": "${mod_id}_background.png"
+    },
+    "modmenu": {
+      "update_checker": true
     }
   }
 }

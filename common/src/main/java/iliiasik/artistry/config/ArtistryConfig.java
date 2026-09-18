@@ -27,8 +27,8 @@ public class ArtistryConfig {
 
         public int posterViewDistance = DEFAULT_VIEW_DISTANCE;
 
-        private static final int MIN_VIEW_DISTANCE = 16;
-        private static final int MAX_VIEW_DISTANCE = 512;
+        public static final int MIN_VIEW_DISTANCE = 16;
+        public static final int MAX_VIEW_DISTANCE = 512;
 
         public void validate() {
             if (posterViewDistance < MIN_VIEW_DISTANCE) {
@@ -47,14 +47,14 @@ public class ArtistryConfig {
         public long worldSyncIntervalMs = 250;
         public long imageBytesPerSecond = 512 * 1024;
 
-        private static final long MIN_BATCH_INTERVAL_MS = 10;
-        private static final long MAX_BATCH_INTERVAL_MS = 5000;
-        private static final long MIN_CURSOR_INTERVAL_MS = 50;
-        private static final long MAX_CURSOR_INTERVAL_MS = 1000;
-        private static final long MIN_WORLD_SYNC_INTERVAL_MS = 50;
-        private static final long MAX_WORLD_SYNC_INTERVAL_MS = 5000;
-        private static final long MIN_IMAGE_BYTES_PER_SECOND = 32 * 1024;
-        private static final long MAX_IMAGE_BYTES_PER_SECOND = 64L * 1024 * 1024;
+        public static final long MIN_BATCH_INTERVAL_MS = 10;
+        public static final long MAX_BATCH_INTERVAL_MS = 5000;
+        public static final long MIN_CURSOR_INTERVAL_MS = 50;
+        public static final long MAX_CURSOR_INTERVAL_MS = 1000;
+        public static final long MIN_WORLD_SYNC_INTERVAL_MS = 50;
+        public static final long MAX_WORLD_SYNC_INTERVAL_MS = 5000;
+        public static final long MIN_IMAGE_BYTES_PER_SECOND = 32 * 1024;
+        public static final long MAX_IMAGE_BYTES_PER_SECOND = 64L * 1024 * 1024;
 
         public void validate() {
             if (imageBytesPerSecond < MIN_IMAGE_BYTES_PER_SECOND) {
@@ -93,13 +93,20 @@ public class ArtistryConfig {
     }
 
     public static class PosterConfig {
+        public static final int UNLIMITED_EDITORS = 0;
+        public static final int MIN_EDITORS = 0;
+        public static final int MAX_EDITORS = 64;
+
         public int maxEditors = 3;
         public boolean disableImages = false;
 
         public void validate() {
-            if (maxEditors < 0) {
-                System.err.println("[Artistry] maxEditors below 0 (" + maxEditors + "), clamping to 0");
-                maxEditors = 0;
+            if (maxEditors < MIN_EDITORS) {
+                System.err.println("[Artistry] maxEditors below " + MIN_EDITORS + " (" + maxEditors + "), clamping to " + MIN_EDITORS);
+                maxEditors = MIN_EDITORS;
+            } else if (maxEditors > MAX_EDITORS) {
+                System.err.println("[Artistry] maxEditors too high (" + maxEditors + "), clamping to " + MAX_EDITORS);
+                maxEditors = MAX_EDITORS;
             }
         }
     }
@@ -112,6 +119,12 @@ public class ArtistryConfig {
     public static ArtistryConfig reload() {
         instance = load();
         return instance;
+    }
+
+    public static void flush() {
+        ArtistryConfig cfg = get();
+        cfg.validate();
+        save(cfg);
     }
 
     private static ArtistryConfig load() {

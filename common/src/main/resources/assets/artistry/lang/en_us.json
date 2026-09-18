@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "Choose canvas size",
   "message.artistry.too_many_editors": "Too many players are editing this poster",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "Toggle render profiler"
+  "key.artistry.profiler": "Toggle render profiler",
+  "screen.artistry.config": "Artistry Live Settings",
+  "screen.artistry.config.server_controlled": "Server options are set by the server",
+  "option.artistry.poster_view_distance": "Poster render distance",
+  "option.artistry.max_editors": "Editors per poster",
+  "option.artistry.disable_images": "Disable images",
+  "option.artistry.batch_interval": "Draw batch interval",
+  "option.artistry.cursor_interval": "Cursor update interval",
+  "option.artistry.world_sync_interval": "World sync interval",
+  "option.artistry.image_bandwidth": "Image bandwidth",
+  "option.artistry.blocks": "%s blocks",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s KiB/s",
+  "option.artistry.unlimited": "Unlimited",
+  "modmenu.descriptionTranslation.artistry": "Create your own paintings with images together with your friends!"
 }

@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "사이즈 선택",
   "message.artistry.too_many_editors": "너무 많은 플레이어가 이 포스터를 편집하고 있습니다",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "렌더링 프로파일러 전환"
+  "key.artistry.profiler": "렌더링 프로파일러 전환",
+  "screen.artistry.config": "Artistry Live 설정",
+  "screen.artistry.config.server_controlled": "서버 옵션은 서버가 결정합니다",
+  "option.artistry.poster_view_distance": "포스터 렌더링 거리",
+  "option.artistry.max_editors": "포스터당 편집자 수",
+  "option.artistry.disable_images": "이미지 비활성화",
+  "option.artistry.batch_interval": "그리기 일괄 처리 간격",
+  "option.artistry.cursor_interval": "커서 갱신 간격",
+  "option.artistry.world_sync_interval": "월드 동기화 간격",
+  "option.artistry.image_bandwidth": "이미지 전송 속도",
+  "option.artistry.blocks": "%s 블록",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s KiB/초",
+  "option.artistry.unlimited": "무제한",
+  "modmenu.descriptionTranslation.artistry": "친구들과 함께 이미지로 나만의 그림을 만들어 보세요!"
 }

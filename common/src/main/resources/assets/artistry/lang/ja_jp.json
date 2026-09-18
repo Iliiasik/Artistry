@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "サイズを選択",
   "message.artistry.too_many_editors": "プレイヤーが多すぎるこのポスターを編集しています",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "描画プロファイラーの切り替え"
+  "key.artistry.profiler": "描画プロファイラーの切り替え",
+  "screen.artistry.config": "Artistry Live の設定",
+  "screen.artistry.config.server_controlled": "サーバー設定はサーバーが決定します",
+  "option.artistry.poster_view_distance": "ポスターの描画距離",
+  "option.artistry.max_editors": "ポスターあたりの編集人数",
+  "option.artistry.disable_images": "画像を無効化",
+  "option.artistry.batch_interval": "描画バッチ間隔",
+  "option.artistry.cursor_interval": "カーソル更新間隔",
+  "option.artistry.world_sync_interval": "ワールド同期間隔",
+  "option.artistry.image_bandwidth": "画像の転送速度",
+  "option.artistry.blocks": "%s ブロック",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s KiB/秒",
+  "option.artistry.unlimited": "無制限",
+  "modmenu.descriptionTranslation.artistry": "友達と一緒に画像から自分だけの絵を作ろう！"
 }

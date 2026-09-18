@@ -5,28 +5,22 @@ import iliiasik.artistry.client.renderer.PosterInHandRenderer;
 import iliiasik.artistry.client.renderer.PosterInHandState;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
 
-    @Redirect(
+    @ModifyVariable(
             method = "renderArmWithItem",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/ItemStack;is(Lnet/minecraft/world/item/Item;)Z",
-                    ordinal = 0))
-    private boolean artistry$treatPosterAsMap(ItemStack instance, Item item) {
-        if (PosterInHandState.shouldRenderAsMap(instance)) {
-            PosterInHandState.markRendering();
-            return true;
-        }
-        return instance.is(item);
+            at = @At("HEAD"),
+            argsOnly = true)
+    private ItemStack artistry$treatPosterAsMap(ItemStack stack) {
+        return PosterInHandState.asMapProxy(stack);
     }
 
     @Inject(
@@ -35,8 +29,9 @@ public abstract class ItemInHandRendererMixin {
             cancellable = true)
     private void artistry$renderPosterInHand(PoseStack poseStack, MultiBufferSource buffer,
                                              int combinedLight, ItemStack stack, CallbackInfo ci) {
-        if (PosterInHandState.consumeRendering()) {
-            PosterInHandRenderer.render(poseStack, buffer, combinedLight, stack);
+        ItemStack poster = PosterInHandState.consumePoster(stack);
+        if (!poster.isEmpty()) {
+            PosterInHandRenderer.render(poseStack, buffer, combinedLight, poster);
             ci.cancel();
         }
     }

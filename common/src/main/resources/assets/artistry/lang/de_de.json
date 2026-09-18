@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "Größe wählen",
   "message.artistry.too_many_editors": "Zu viele Spieler bearbeiten dieses poster",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "Render-Profiler umschalten"
+  "key.artistry.profiler": "Render-Profiler umschalten",
+  "screen.artistry.config": "Artistry-Live-Einstellungen",
+  "screen.artistry.config.server_controlled": "Servereinstellungen legt der Server fest",
+  "option.artistry.poster_view_distance": "Render-Distanz für Poster",
+  "option.artistry.max_editors": "Bearbeiter pro Poster",
+  "option.artistry.disable_images": "Bilder deaktivieren",
+  "option.artistry.batch_interval": "Zeichen-Batch-Intervall",
+  "option.artistry.cursor_interval": "Cursor-Aktualisierungsintervall",
+  "option.artistry.world_sync_interval": "Welt-Synchronisationsintervall",
+  "option.artistry.image_bandwidth": "Bild-Bandbreite",
+  "option.artistry.blocks": "%s Blöcke",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s KiB/s",
+  "option.artistry.unlimited": "Unbegrenzt",
+  "modmenu.descriptionTranslation.artistry": "Erstelle zusammen mit deinen Freunden eigene Gemälde aus Bildern!"
 }

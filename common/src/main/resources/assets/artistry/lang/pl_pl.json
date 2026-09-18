@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "Wybierz rozmiar",
   "message.artistry.too_many_editors": "Zbyt wielu graczy edytuje ten plakat",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "Przełącz profiler renderowania"
+  "key.artistry.profiler": "Przełącz profiler renderowania",
+  "screen.artistry.config": "Ustawienia Artistry Live",
+  "screen.artistry.config.server_controlled": "Opcje serwera ustala serwer",
+  "option.artistry.poster_view_distance": "Zasięg renderowania plakatów",
+  "option.artistry.max_editors": "Edytujących na plakat",
+  "option.artistry.disable_images": "Wyłącz obrazy",
+  "option.artistry.batch_interval": "Interwał partii rysowania",
+  "option.artistry.cursor_interval": "Interwał aktualizacji kursora",
+  "option.artistry.world_sync_interval": "Interwał synchronizacji świata",
+  "option.artistry.image_bandwidth": "Przepustowość obrazów",
+  "option.artistry.blocks": "%s bloków",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s KiB/s",
+  "option.artistry.unlimited": "Bez ograniczeń",
+  "modmenu.descriptionTranslation.artistry": "Twórz własne obrazy ze zdjęć razem ze znajomymi!"
 }

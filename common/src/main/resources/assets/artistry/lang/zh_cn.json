@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "选择尺寸",
   "message.artistry.too_many_editors": "太多玩家在编辑这张海报",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "切换渲染性能分析器"
+  "key.artistry.profiler": "切换渲染性能分析器",
+  "screen.artistry.config": "Artistry Live 设置",
+  "screen.artistry.config.server_controlled": "服务器选项由服务器决定",
+  "option.artistry.poster_view_distance": "海报渲染距离",
+  "option.artistry.max_editors": "每张海报的编辑人数",
+  "option.artistry.disable_images": "禁用图片",
+  "option.artistry.batch_interval": "绘制批处理间隔",
+  "option.artistry.cursor_interval": "光标更新间隔",
+  "option.artistry.world_sync_interval": "世界同步间隔",
+  "option.artistry.image_bandwidth": "图片传输速率",
+  "option.artistry.blocks": "%s 格",
+  "option.artistry.milliseconds": "%s 毫秒",
+  "option.artistry.kib_per_second": "%s KiB/秒",
+  "option.artistry.unlimited": "无限制",
+  "modmenu.descriptionTranslation.artistry": "和朋友一起用图片创作属于你们的画作！"
 }

@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "Choisir format",
   "message.artistry.too_many_editors": "Trop de joueurs éditent cette affiche",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "Activer/désactiver le profileur de rendu"
+  "key.artistry.profiler": "Activer/désactiver le profileur de rendu",
+  "screen.artistry.config": "Paramètres d'Artistry Live",
+  "screen.artistry.config.server_controlled": "Les options du serveur sont définies par le serveur",
+  "option.artistry.poster_view_distance": "Distance de rendu des affiches",
+  "option.artistry.max_editors": "Éditeurs par affiche",
+  "option.artistry.disable_images": "Désactiver les images",
+  "option.artistry.batch_interval": "Intervalle de lot de dessin",
+  "option.artistry.cursor_interval": "Intervalle de mise à jour du curseur",
+  "option.artistry.world_sync_interval": "Intervalle de synchronisation du monde",
+  "option.artistry.image_bandwidth": "Bande passante des images",
+  "option.artistry.blocks": "%s blocs",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s Kio/s",
+  "option.artistry.unlimited": "Illimité",
+  "modmenu.descriptionTranslation.artistry": "Créez vos propres tableaux à partir d'images avec vos amis !"
 }

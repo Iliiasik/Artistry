@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "Scegli formato",
   "message.artistry.too_many_editors": "Troppi giocatori stanno modificando questo poster",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "Attiva/disattiva il profiler di rendering"
+  "key.artistry.profiler": "Attiva/disattiva il profiler di rendering",
+  "screen.artistry.config": "Impostazioni di Artistry Live",
+  "screen.artistry.config.server_controlled": "Le opzioni del server sono definite dal server",
+  "option.artistry.poster_view_distance": "Distanza di rendering dei poster",
+  "option.artistry.max_editors": "Editor per poster",
+  "option.artistry.disable_images": "Disattiva immagini",
+  "option.artistry.batch_interval": "Intervallo del lotto di disegno",
+  "option.artistry.cursor_interval": "Intervallo di aggiornamento del cursore",
+  "option.artistry.world_sync_interval": "Intervallo di sincronizzazione del mondo",
+  "option.artistry.image_bandwidth": "Larghezza di banda immagini",
+  "option.artistry.blocks": "%s blocchi",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s KiB/s",
+  "option.artistry.unlimited": "Illimitato",
+  "modmenu.descriptionTranslation.artistry": "Crea i tuoi dipinti con le immagini insieme ai tuoi amici!"
 }

@@ -7,5 +7,19 @@
   "screen.artistry.choose_size": "Elegir tamaño",
   "message.artistry.too_many_editors": "Demasiados jugadores están editando este cartel",
   "key.categories.artistry": "Artistry Live",
-  "key.artistry.profiler": "Alternar el perfilador de renderizado"
+  "key.artistry.profiler": "Alternar el perfilador de renderizado",
+  "screen.artistry.config": "Ajustes de Artistry Live",
+  "screen.artistry.config.server_controlled": "Las opciones del servidor las define el servidor",
+  "option.artistry.poster_view_distance": "Distancia de renderizado de pósteres",
+  "option.artistry.max_editors": "Editores por póster",
+  "option.artistry.disable_images": "Desactivar imágenes",
+  "option.artistry.batch_interval": "Intervalo de lote de dibujo",
+  "option.artistry.cursor_interval": "Intervalo de actualización del cursor",
+  "option.artistry.world_sync_interval": "Intervalo de sincronización del mundo",
+  "option.artistry.image_bandwidth": "Ancho de banda de imágenes",
+  "option.artistry.blocks": "%s bloques",
+  "option.artistry.milliseconds": "%s ms",
+  "option.artistry.kib_per_second": "%s KiB/s",
+  "option.artistry.unlimited": "Sin límite",
+  "modmenu.descriptionTranslation.artistry": "¡Crea tus propias pinturas con imágenes junto a tus amigos!"
 }
