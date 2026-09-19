@@ -187,16 +187,21 @@ class ForgePlatformTest {
     }
 
     @Test
-    @DisplayName("The in hand mixin is shared by both loaders instead of being duplicated")
-    void inHandMixinLivesInCommon() throws IOException {
+    @DisplayName("The in hand mixin is split: the cancel is shared, the branch flip is per loader")
+    void inHandMixinIsSplitPerLoader() throws IOException {
         assertDoesNotThrow(() -> Class.forName("iliiasik.artistry.mixin.ItemInHandRendererMixin"));
 
         JsonObject forgeMixins =
                 JsonParser.parseString(resource("/artistry.forge.mixins.json")).getAsJsonObject();
         assertEquals(0, forgeMixins.getAsJsonArray("mixins").size(),
-                "the forge config must stay empty while the mixin lives in common");
-        assertEquals(0, forgeMixins.getAsJsonArray("client").size(),
-                "the forge config must stay empty while the mixin lives in common");
+                "the branch flip is client only");
+
+        List<String> client = new ArrayList<>();
+        for (JsonElement element : forgeMixins.getAsJsonArray("client")) {
+            client.add(element.getAsString());
+        }
+        assertEquals(List.of("ItemInHandRendererForgeMixin"), client,
+                "forge flips the map branch with its own mixin");
     }
 
     @Test

@@ -7,11 +7,13 @@ import com.google.gson.JsonParser;
 import iliiasik.artistry.platform.services.INetworkHelper;
 import iliiasik.artistry.platform.services.IPlatformHelper;
 import iliiasik.artistry.platform.services.IRegistryHelper;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FabricPlatformTest {
@@ -142,16 +145,32 @@ class FabricPlatformTest {
     }
 
     @Test
-    @DisplayName("The in hand mixin is shared by both loaders instead of being duplicated")
-    void inHandMixinLivesInCommon() throws IOException {
+    @DisplayName("The in hand mixin is split: the cancel is shared, the branch flip is per loader")
+    void inHandMixinIsSplitPerLoader() throws IOException {
         assertDoesNotThrow(() -> Class.forName("iliiasik.artistry.mixin.ItemInHandRendererMixin"));
 
         JsonObject fabricMixins =
                 JsonParser.parseString(resource("/artistry.fabric.mixins.json")).getAsJsonObject();
         assertEquals(0, fabricMixins.getAsJsonArray("mixins").size(),
-                "the fabric config must stay empty while the mixin lives in common");
-        assertEquals(0, fabricMixins.getAsJsonArray("client").size(),
-                "the fabric config must stay empty while the mixin lives in common");
+                "the branch flip is client only");
+
+        List<String> client = new ArrayList<>();
+        for (JsonElement element : fabricMixins.getAsJsonArray("client")) {
+            client.add(element.getAsString());
+        }
+        assertEquals(List.of("ItemInHandRendererFabricMixin"), client,
+                "fabric flips the map branch with its own mixin");
+    }
+
+    @Test
+    @DisplayName("Fabric mixins never use Redirect, MixinExtras cannot read it here")
+    void fabricMixinsAvoidRedirect() throws ClassNotFoundException {
+        Class<?> mixin = Class.forName("iliiasik.artistry.fabric.mixin.ItemInHandRendererFabricMixin");
+        for (Method method : mixin.getDeclaredMethods()) {
+            assertNull(method.getAnnotation(Redirect.class),
+                    method.getName() + " uses @Redirect, which MixinExtras 0.5.4 fails to parse "
+                            + "because Mixin 0.8.7 compiles its at value as an array");
+        }
     }
 
     @Test
