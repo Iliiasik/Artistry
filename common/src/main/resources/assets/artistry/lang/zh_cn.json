@@ -8,7 +8,7 @@
   "message.artistry.too_many_editors": "太多玩家在编辑这张海报",
   "key.categories.artistry": "Artistry Live",
   "key.artistry.profiler": "切换渲染性能分析器",
-  "screen.artistry.config": "Artistry Live 设置",
+  "screen.artistry.config": "Artistry Live",
   "screen.artistry.config.server_controlled": "服务器选项由服务器决定",
   "option.artistry.poster_view_distance": "海报渲染距离",
   "option.artistry.max_editors": "每张海报的编辑人数",
@@ -21,5 +21,12 @@
   "option.artistry.milliseconds": "%s 毫秒",
   "option.artistry.kib_per_second": "%s KiB/秒",
   "option.artistry.unlimited": "无限制",
-  "modmenu.descriptionTranslation.artistry": "和朋友一起用图片创作属于你们的画作！"
+  "modmenu.descriptionTranslation.artistry": "和朋友一起用图片创作属于你们的画作！",
+  "option.artistry.poster_view_distance.tooltip": "海报继续渲染的距离。降低数值可在海报密集处提升性能。基于 Sodium 的模组可能用自己的剔除限制该距离。",
+  "option.artistry.max_editors.tooltip": "同时打开同一张海报的人数上限。填 0 表示不限制。",
+  "option.artistry.disable_images.tooltip": "禁止向画布上传和放置图片。手绘仍然可用。",
+  "option.artistry.batch_interval.tooltip": "累积的笔触发送到服务器的间隔。数值越大越省流量，但别人的绘制看起来会卡顿。",
+  "option.artistry.cursor_interval.tooltip": "向正在编辑同一张画布的其他玩家发送光标位置的间隔。",
+  "option.artistry.world_sync_interval.tooltip": "为在世界中观看而非编辑画布的玩家更新画布的间隔。不会短于绘制批处理间隔。",
+  "option.artistry.image_bandwidth.tooltip": "每位玩家上传图片的速度上限。数值越低越能保护服务器，但大图片需要更久。"
 }

@@ -8,7 +8,7 @@
   "message.artistry.too_many_editors": "Too many players are editing this poster",
   "key.categories.artistry": "Artistry Live",
   "key.artistry.profiler": "Toggle render profiler",
-  "screen.artistry.config": "Artistry Live Settings",
+  "screen.artistry.config": "Artistry Live",
   "screen.artistry.config.server_controlled": "Server options are set by the server",
   "option.artistry.poster_view_distance": "Poster render distance",
   "option.artistry.max_editors": "Editors per poster",
@@ -21,5 +21,12 @@
   "option.artistry.milliseconds": "%s ms",
   "option.artistry.kib_per_second": "%s KiB/s",
   "option.artistry.unlimited": "Unlimited",
-  "modmenu.descriptionTranslation.artistry": "Create your own paintings with images together with your friends!"
+  "modmenu.descriptionTranslation.artistry": "Create your own paintings with images together with your friends!",
+  "option.artistry.poster_view_distance.tooltip": "How far away posters keep rendering. Lower values help performance where posters are dense. Sodium-based mods may cap this with their own block entity culling.",
+  "option.artistry.max_editors.tooltip": "How many players may keep the same poster open at once. 0 removes the limit.",
+  "option.artistry.disable_images.tooltip": "Blocks uploading and placing images on canvases. Drawing by hand stays available.",
+  "option.artistry.batch_interval.tooltip": "How often accumulated brush strokes are sent to the server. Higher values save traffic but make other players' drawing look choppy.",
+  "option.artistry.cursor_interval.tooltip": "How often your cursor position is sent to other players editing the same canvas.",
+  "option.artistry.world_sync_interval.tooltip": "How often canvases refresh for players looking at them in the world instead of editing. Never more often than the draw batch interval.",
+  "option.artistry.image_bandwidth.tooltip": "Upload speed limit per player for images. Lower values spare the server on a weak connection, but large images take longer."
 }

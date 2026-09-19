@@ -1,12 +1,14 @@
 package iliiasik.artistry.client.ui.screen.config;
 
 import iliiasik.artistry.config.ArtistryConfig;
+import iliiasik.artistry.network.ServerSettingsSync;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.OptionsList;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -20,6 +22,15 @@ public class ArtistryConfigScreen extends Screen {
     private static final String MILLIS_KEY = "option.artistry.milliseconds";
     private static final String KIB_PER_SECOND_KEY = "option.artistry.kib_per_second";
     private static final String UNLIMITED_KEY = "option.artistry.unlimited";
+
+    private static final String VIEW_DISTANCE_KEY = "option.artistry.poster_view_distance";
+    private static final String MAX_EDITORS_KEY = "option.artistry.max_editors";
+    private static final String DISABLE_IMAGES_KEY = "option.artistry.disable_images";
+    private static final String BATCH_INTERVAL_KEY = "option.artistry.batch_interval";
+    private static final String CURSOR_INTERVAL_KEY = "option.artistry.cursor_interval";
+    private static final String WORLD_SYNC_INTERVAL_KEY = "option.artistry.world_sync_interval";
+    private static final String IMAGE_BANDWIDTH_KEY = "option.artistry.image_bandwidth";
+    private static final String TOOLTIP_SUFFIX = ".tooltip";
 
     private static final int LIST_TOP = 32;
     private static final int LIST_BOTTOM = 32;
@@ -68,14 +79,18 @@ public class ArtistryConfigScreen extends Screen {
                 .build());
     }
 
+    private static <T> OptionInstance.TooltipSupplier<T> tooltip(String key) {
+        return OptionInstance.cachedConstantTooltip(Component.translatable(key + TOOLTIP_SUFFIX));
+    }
+
     private static Component valueLabel(Component caption, Component value) {
         return Component.translatable(GENERIC_VALUE_KEY, caption, value);
     }
 
     private static OptionInstance<Integer> viewDistance(ArtistryConfig config) {
         return new OptionInstance<>(
-                "option.artistry.poster_view_distance",
-                OptionInstance.noTooltip(),
+                VIEW_DISTANCE_KEY,
+                tooltip(VIEW_DISTANCE_KEY),
                 (caption, value) -> valueLabel(caption, Component.translatable(BLOCKS_KEY, value)),
                 new OptionInstance.IntRange(
                         ArtistryConfig.ClientConfig.MIN_VIEW_DISTANCE,
@@ -86,8 +101,8 @@ public class ArtistryConfigScreen extends Screen {
 
     private static OptionInstance<Integer> maxEditors(ArtistryConfig config) {
         return new OptionInstance<>(
-                "option.artistry.max_editors",
-                OptionInstance.noTooltip(),
+                MAX_EDITORS_KEY,
+                tooltip(MAX_EDITORS_KEY),
                 (caption, value) -> valueLabel(caption, value == ArtistryConfig.PosterConfig.UNLIMITED_EDITORS
                         ? Component.translatable(UNLIMITED_KEY)
                         : Component.literal(String.valueOf(value))),
@@ -100,14 +115,15 @@ public class ArtistryConfigScreen extends Screen {
 
     private static OptionInstance<Boolean> disableImages(ArtistryConfig config) {
         return OptionInstance.createBoolean(
-                "option.artistry.disable_images",
+                DISABLE_IMAGES_KEY,
+                tooltip(DISABLE_IMAGES_KEY),
                 config.poster.disableImages,
                 value -> config.poster.disableImages = value);
     }
 
     private static OptionInstance<Integer> batchInterval(ArtistryConfig config) {
         return millisOption(
-                "option.artistry.batch_interval",
+                BATCH_INTERVAL_KEY,
                 ArtistryConfig.NetworkConfig.MIN_BATCH_INTERVAL_MS,
                 ArtistryConfig.NetworkConfig.MAX_BATCH_INTERVAL_MS,
                 config.network.batchIntervalMs,
@@ -116,7 +132,7 @@ public class ArtistryConfigScreen extends Screen {
 
     private static OptionInstance<Integer> cursorInterval(ArtistryConfig config) {
         return millisOption(
-                "option.artistry.cursor_interval",
+                CURSOR_INTERVAL_KEY,
                 ArtistryConfig.NetworkConfig.MIN_CURSOR_INTERVAL_MS,
                 ArtistryConfig.NetworkConfig.MAX_CURSOR_INTERVAL_MS,
                 config.network.cursorIntervalMs,
@@ -125,7 +141,7 @@ public class ArtistryConfigScreen extends Screen {
 
     private static OptionInstance<Integer> worldSyncInterval(ArtistryConfig config) {
         return millisOption(
-                "option.artistry.world_sync_interval",
+                WORLD_SYNC_INTERVAL_KEY,
                 ArtistryConfig.NetworkConfig.MIN_WORLD_SYNC_INTERVAL_MS,
                 ArtistryConfig.NetworkConfig.MAX_WORLD_SYNC_INTERVAL_MS,
                 config.network.worldSyncIntervalMs,
@@ -136,7 +152,7 @@ public class ArtistryConfigScreen extends Screen {
                                                         LongSetter setter) {
         return new OptionInstance<>(
                 key,
-                OptionInstance.noTooltip(),
+                tooltip(key),
                 (caption, value) -> valueLabel(caption, Component.translatable(MILLIS_KEY, value)),
                 new OptionInstance.IntRange((int) min, (int) max),
                 (int) current,
@@ -145,8 +161,8 @@ public class ArtistryConfigScreen extends Screen {
 
     private static OptionInstance<Integer> imageBandwidth(ArtistryConfig config) {
         return new OptionInstance<>(
-                "option.artistry.image_bandwidth",
-                OptionInstance.noTooltip(),
+                IMAGE_BANDWIDTH_KEY,
+                tooltip(IMAGE_BANDWIDTH_KEY),
                 (caption, value) -> valueLabel(caption, Component.translatable(KIB_PER_SECOND_KEY, value)),
                 new OptionInstance.IntRange(
                         (int) (ArtistryConfig.NetworkConfig.MIN_IMAGE_BYTES_PER_SECOND / KIB),
@@ -170,7 +186,10 @@ public class ArtistryConfigScreen extends Screen {
     @Override
     public void onClose() {
         ArtistryConfig.flush();
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft minecraft = Minecraft.getInstance();
+        IntegratedServer server = minecraft.getSingleplayerServer();
+        if (server != null) server.execute(() -> ServerSettingsSync.broadcast(server));
+        minecraft.setScreen(parent);
     }
 
     @FunctionalInterface

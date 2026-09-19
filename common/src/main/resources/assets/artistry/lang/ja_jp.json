@@ -8,7 +8,7 @@
   "message.artistry.too_many_editors": "プレイヤーが多すぎるこのポスターを編集しています",
   "key.categories.artistry": "Artistry Live",
   "key.artistry.profiler": "描画プロファイラーの切り替え",
-  "screen.artistry.config": "Artistry Live の設定",
+  "screen.artistry.config": "Artistry Live",
   "screen.artistry.config.server_controlled": "サーバー設定はサーバーが決定します",
   "option.artistry.poster_view_distance": "ポスターの描画距離",
   "option.artistry.max_editors": "ポスターあたりの編集人数",
@@ -21,5 +21,12 @@
   "option.artistry.milliseconds": "%s ms",
   "option.artistry.kib_per_second": "%s KiB/秒",
   "option.artistry.unlimited": "無制限",
-  "modmenu.descriptionTranslation.artistry": "友達と一緒に画像から自分だけの絵を作ろう！"
+  "modmenu.descriptionTranslation.artistry": "友達と一緒に画像から自分だけの絵を作ろう！",
+  "option.artistry.poster_view_distance.tooltip": "ポスターが描画され続ける距離です。値を下げるとポスターの多い場所で動作が軽くなります。Sodium 系の Mod は独自の間引きで距離を制限することがあります。",
+  "option.artistry.max_editors.tooltip": "同じポスターを同時に開ける人数です。0 で無制限になります。",
+  "option.artistry.disable_images.tooltip": "キャンバスへの画像のアップロードと配置を禁止します。手描きは引き続き利用できます。",
+  "option.artistry.batch_interval.tooltip": "ためた筆跡をサーバーへ送る間隔です。値を大きくすると通信量は減りますが、他の人の描画がカクついて見えます。",
+  "option.artistry.cursor_interval.tooltip": "同じキャンバスを編集している他の人へカーソル位置を送る間隔です。",
+  "option.artistry.world_sync_interval.tooltip": "編集せずに世界の中で眺めている人に対してキャンバスを更新する間隔です。描画バッチ間隔より短くはなりません。",
+  "option.artistry.image_bandwidth.tooltip": "プレイヤーごとの画像アップロード速度の上限です。値を下げるとサーバーの負荷は減りますが、大きな画像は時間がかかります。"
 }

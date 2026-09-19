@@ -8,7 +8,7 @@
   "message.artistry.too_many_editors": "Слишком много игроков редактируют этот постер",
   "key.categories.artistry": "Artistry Live",
   "key.artistry.profiler": "Переключить профилировщик отрисовки",
-  "screen.artistry.config": "Настройки Artistry Live",
+  "screen.artistry.config": "Artistry Live",
   "screen.artistry.config.server_controlled": "Серверные настройки задаёт сервер",
   "option.artistry.poster_view_distance": "Дальность отрисовки постеров",
   "option.artistry.max_editors": "Редакторов на постер",
@@ -21,5 +21,12 @@
   "option.artistry.milliseconds": "%s мс",
   "option.artistry.kib_per_second": "%s КиБ/с",
   "option.artistry.unlimited": "Без ограничений",
-  "modmenu.descriptionTranslation.artistry": "Создавайте свои картины из изображений вместе с друзьями!"
+  "modmenu.descriptionTranslation.artistry": "Создавайте свои картины из изображений вместе с друзьями!",
+  "option.artistry.poster_view_distance.tooltip": "На каком расстоянии постеры продолжают отрисовываться. Меньшие значения помогают производительности там, где постеров много. Моды на основе Sodium могут ограничивать дистанцию своим отбором блок-сущностей.",
+  "option.artistry.max_editors.tooltip": "Сколько игроков могут держать один постер открытым одновременно. 0 снимает ограничение.",
+  "option.artistry.disable_images.tooltip": "Запрещает загружать и размещать изображения на холстах. Рисование вручную остаётся доступным.",
+  "option.artistry.batch_interval.tooltip": "Как часто накопленные мазки уходят на сервер. Большие значения экономят трафик, но рисование других игроков выглядит рывками.",
+  "option.artistry.cursor_interval.tooltip": "Как часто позиция твоего курсора отправляется другим игрокам, редактирующим тот же холст.",
+  "option.artistry.world_sync_interval.tooltip": "Как часто холсты обновляются у тех, кто смотрит на них в мире, а не редактирует. Не чаще интервала пакета рисования.",
+  "option.artistry.image_bandwidth.tooltip": "Предел скорости загрузки изображений для одного игрока. Меньшие значения берегут сервер на слабом канале, но большие картинки грузятся дольше."
 }
