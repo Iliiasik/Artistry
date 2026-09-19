@@ -3,11 +3,14 @@
   "minVersion": "0.8",
   "package": "iliiasik.artistry.fabric.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": [
-  ],
+  "mixins": [],
   "client": [
+    "ItemInHandRendererFabricMixin"
   ],
   "injectors": {
     "defaultRequire": 1
+  },
+  "mixinextras": {
+    "minVersion": "0.4.0"
   }
 }

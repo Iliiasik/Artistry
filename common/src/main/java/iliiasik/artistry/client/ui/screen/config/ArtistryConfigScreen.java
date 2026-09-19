@@ -1,7 +1,9 @@
 package iliiasik.artistry.client.ui.screen.config;
 
+import iliiasik.artistry.client.util.ModTextures;
 import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.network.ServerSettingsSync;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
@@ -32,11 +34,14 @@ public class ArtistryConfigScreen extends Screen {
     private static final String IMAGE_BANDWIDTH_KEY = "option.artistry.image_bandwidth";
     private static final String TOOLTIP_SUFFIX = ".tooltip";
 
-    private static final int LIST_TOP = 32;
+    private static final int LIST_TOP = 36;
     private static final int LIST_BOTTOM = 32;
     private static final int LIST_BOTTOM_WITH_NOTE = 46;
     private static final int ITEM_HEIGHT = 25;
     private static final int TITLE_Y = 20;
+    private static final int ICON_SIZE = 16;
+    private static final int ICON_GAP = 4;
+    private static final int FONT_HALF_HEIGHT = 4;
     private static final int NOTE_BOTTOM = 42;
     private static final int DONE_WIDTH = 200;
     private static final int DONE_HEIGHT = 20;
@@ -50,7 +55,7 @@ public class ArtistryConfigScreen extends Screen {
     private OptionsList list;
 
     public ArtistryConfigScreen(@Nullable Screen parent) {
-        super(Component.translatable(TITLE_KEY));
+        super(Component.translatable(TITLE_KEY).withStyle(ChatFormatting.BOLD));
         this.parent = parent;
     }
 
@@ -175,12 +180,26 @@ public class ArtistryConfigScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics);
         list.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(font, title, width / 2, TITLE_Y, TITLE_COLOR);
+        renderHeader(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
         if (!serverOptionsEditable()) {
             graphics.drawCenteredString(font, Component.translatable(NOTE_KEY),
                     width / 2, height - NOTE_BOTTOM, NOTE_COLOR);
         }
+    }
+
+    private void renderHeader(GuiGraphics graphics) {
+        int headerWidth = ICON_SIZE + ICON_GAP + font.width(title);
+        int headerX = (width - headerWidth) / 2;
+
+        graphics.blit(ModTextures.ICON,
+                headerX, TITLE_Y + FONT_HALF_HEIGHT - ICON_SIZE / 2,
+                ICON_SIZE, ICON_SIZE,
+                0f, 0f,
+                ModTextures.ICON_TEXTURE_SIZE, ModTextures.ICON_TEXTURE_SIZE,
+                ModTextures.ICON_TEXTURE_SIZE, ModTextures.ICON_TEXTURE_SIZE);
+
+        graphics.drawString(font, title, headerX + ICON_SIZE + ICON_GAP, TITLE_Y, TITLE_COLOR);
     }
 
     @Override

@@ -38,6 +38,9 @@ public final class ModTextures {
     public static final ResourceLocation WAX_SEAL         = Artistry.id("textures/ui/wax_seal.png");
     public static final ResourceLocation SECONDARY_COLOR = Artistry.id("textures/ui/secondary_color.png");
     public static final ResourceLocation PREVIOUS_COLOR  = Artistry.id("textures/ui/previous_color.png");
+    public static final ResourceLocation ICON            = Artistry.id("textures/ui/icon.png");
+
+    public static final int ICON_TEXTURE_SIZE = 32;
 
     private ModTextures() {}
 }

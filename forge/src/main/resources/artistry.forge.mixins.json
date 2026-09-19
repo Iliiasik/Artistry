@@ -4,9 +4,9 @@
   "package": "iliiasik.artistry.forge.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "${mod_id}.refmap.json",
-  "mixins": [
-  ],
+  "mixins": [],
   "client": [
+    "ItemInHandRendererForgeMixin"
   ],
   "injectors": {
     "defaultRequire": 1
