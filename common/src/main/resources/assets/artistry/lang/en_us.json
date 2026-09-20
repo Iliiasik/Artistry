@@ -28,6 +28,5 @@
   "option.artistry.batch_interval.tooltip": "How often accumulated brush strokes are sent to the server. Higher values save traffic but make other players' drawing look choppy.",
   "option.artistry.cursor_interval.tooltip": "How often your cursor position is sent to other players editing the same canvas.",
   "option.artistry.world_sync_interval.tooltip": "How often canvases refresh for players looking at them in the world instead of editing. Never more often than the draw batch interval.",
-  "option.artistry.image_bandwidth.tooltip": "Upload speed limit per player for images. Lower values spare the server on a weak connection, but large images take longer.",
-  "message.artistry.image_rate_limited": "Image upload limit reached, try again in a moment"
+  "option.artistry.image_bandwidth.tooltip": "Upload speed limit per player for images. Lower values spare the server on a weak connection, but large images take longer."
 }

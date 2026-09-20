@@ -28,6 +28,5 @@
   "option.artistry.batch_interval.tooltip": "Jak często zebrane pociągnięcia trafiają na serwer. Wyższe wartości oszczędzają transfer, ale rysowanie innych graczy wygląda na szarpane.",
   "option.artistry.cursor_interval.tooltip": "Jak często pozycja twojego kursora jest wysyłana do innych graczy edytujących to samo płótno.",
   "option.artistry.world_sync_interval.tooltip": "Jak często płótna odświeżają się u tych, którzy patrzą na nie w świecie zamiast edytować. Nigdy częściej niż interwał partii rysowania.",
-  "option.artistry.image_bandwidth.tooltip": "Limit prędkości wysyłania obrazów na gracza. Niższe wartości chronią serwer, ale duże obrazy ładują się dłużej.",
-  "message.artistry.image_rate_limited": "Osiągnięto limit wysyłania obrazów, spróbuj za chwilę"
+  "option.artistry.image_bandwidth.tooltip": "Limit prędkości wysyłania obrazów na gracza. Niższe wartości chronią serwer, ale duże obrazy ładują się dłużej."
 }

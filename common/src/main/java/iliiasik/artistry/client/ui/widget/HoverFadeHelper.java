@@ -6,7 +6,7 @@ public class HoverFadeHelper {
 
     private static final int RESTING_BRIGHTNESS = 200;
     private static final int HOVER_BRIGHTNESS = 255;
-    private static final int DISABLED_BRIGHTNESS = 70;
+    private static final int DISABLED_BRIGHTNESS = 130;
     private static final float FADE_SPEED = 8f;
 
     private float hoverProgress = 0f;

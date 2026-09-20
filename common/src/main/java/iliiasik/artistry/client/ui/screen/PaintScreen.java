@@ -82,10 +82,12 @@ public class PaintScreen extends Screen {
 
     public void receiveImageBytes(UUID uuid, byte[] bytes) {
         session.receiveImageBytes(uuid, bytes);
+        if (input != null) input.onImageBytes(uuid);
     }
 
     public void onImageUploaded(UUID uuid, int gridX, int gridY, int gridW, int gridH) {
         session.onImageUploaded(uuid, gridX, gridY, gridW, gridH);
+        if (input != null) input.awaitImageBytes(uuid);
     }
 
     public void receiveCursor(UUID uuid, float gx, float gy) {

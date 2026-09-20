@@ -28,6 +28,5 @@
   "option.artistry.batch_interval.tooltip": "Con qué frecuencia se envían al servidor los trazos acumulados. Valores altos ahorran tráfico, pero el dibujo de otros jugadores se ve a saltos.",
   "option.artistry.cursor_interval.tooltip": "Con qué frecuencia se envía la posición de tu cursor a los demás jugadores que editan el mismo lienzo.",
   "option.artistry.world_sync_interval.tooltip": "Con qué frecuencia se actualizan los lienzos para quienes los miran en el mundo en vez de editarlos. Nunca más a menudo que el intervalo de lote de dibujo.",
-  "option.artistry.image_bandwidth.tooltip": "Límite de velocidad de subida de imágenes por jugador. Valores bajos protegen al servidor, pero las imágenes grandes tardan más.",
-  "message.artistry.image_rate_limited": "Límite de subida de imágenes alcanzado, inténtalo en un momento"
+  "option.artistry.image_bandwidth.tooltip": "Límite de velocidad de subida de imágenes por jugador. Valores bajos protegen al servidor, pero las imágenes grandes tardan más."
 }

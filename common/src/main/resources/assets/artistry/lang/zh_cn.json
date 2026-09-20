@@ -28,6 +28,5 @@
   "option.artistry.batch_interval.tooltip": "累积的笔触发送到服务器的间隔。数值越大越省流量，但别人的绘制看起来会卡顿。",
   "option.artistry.cursor_interval.tooltip": "向正在编辑同一张画布的其他玩家发送光标位置的间隔。",
   "option.artistry.world_sync_interval.tooltip": "为在世界中观看而非编辑画布的玩家更新画布的间隔。不会短于绘制批处理间隔。",
-  "option.artistry.image_bandwidth.tooltip": "每位玩家上传图片的速度上限。数值越低越能保护服务器，但大图片需要更久。",
-  "message.artistry.image_rate_limited": "已达到图片上传限制，请稍后再试"
+  "option.artistry.image_bandwidth.tooltip": "每位玩家上传图片的速度上限。数值越低越能保护服务器，但大图片需要更久。"
 }

@@ -32,7 +32,11 @@ public class PaintInput {
     private boolean isDrawing = false;
     private int drawingButton = -1;
     private DrawingTool toolBeforePipette = null;
+    private static final long UPLOAD_TIMEOUT_MS = 30_000;
+
     private volatile boolean uploading = false;
+    private volatile long uploadStartedAt = 0;
+    private volatile UUID awaitedImage = null;
     private boolean pipettePicked = false;
     private boolean imageDragging = false;
     private boolean imageMode = false;
@@ -263,13 +267,34 @@ public class PaintInput {
     }
 
     public boolean isUploading() {
-        return uploading;
+        if (!uploading) return false;
+        if (System.currentTimeMillis() - uploadStartedAt > UPLOAD_TIMEOUT_MS) {
+            finishUpload();
+            return false;
+        }
+        return true;
+    }
+
+    public void awaitImageBytes(UUID uuid) {
+        if (uploading) awaitedImage = uuid;
+    }
+
+    public void onImageBytes(UUID uuid) {
+        if (uploading && uuid.equals(awaitedImage)) finishUpload();
+    }
+
+    public void finishUpload() {
+        uploading = false;
+        awaitedImage = null;
     }
 
     public void openFilePicker() {
-        if (uploading) return;
+        if (isUploading()) return;
         uploading = true;
+        uploadStartedAt = System.currentTimeMillis();
+        awaitedImage = null;
         new Thread(() -> {
+            boolean sent = false;
             try {
                 org.lwjgl.PointerBuffer filters = org.lwjgl.BufferUtils.createPointerBuffer(4);
                 filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.png"));
@@ -285,6 +310,7 @@ public class PaintInput {
                     try {
                         byte[] bytes = convertToPng(new File(path));
                         session.uploadImage(bytes);
+                        sent = true;
                     } catch (IOException e) {
                         Artistry.LOGGER.error("Failed to read selected image {}", path, e);
                     }
@@ -292,7 +318,7 @@ public class PaintInput {
                 if (widgets != null) widgets.setActiveTool(DrawingTool.BRUSH);
                 pixelPainter.setTool(DrawingTool.BRUSH);
             } finally {
-                uploading = false;
+                if (!sent) finishUpload();
             }
         }, "artistry-file-picker").start();
     }
