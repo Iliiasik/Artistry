@@ -32,6 +32,7 @@ public class PaintInput {
     private boolean isDrawing = false;
     private int drawingButton = -1;
     private DrawingTool toolBeforePipette = null;
+    private boolean pipettePicked = false;
     private boolean imageDragging = false;
     private boolean imageMode = false;
 
@@ -70,12 +71,13 @@ public class PaintInput {
     public boolean selectTool(DrawingTool tool) {
         if (imageMode) return false;
         toolBeforePipette = null;
+        pipettePicked = false;
         applyTool(tool);
         return true;
     }
 
     public boolean beginTemporaryPipette() {
-        if (imageMode || isDrawing || toolBeforePipette != null) return false;
+        if (imageMode || isDrawing || toolBeforePipette != null || pipettePicked) return false;
         if (pixelPainter.getTool() == DrawingTool.PIPETTE) return false;
         toolBeforePipette = pixelPainter.getTool();
         applyTool(DrawingTool.PIPETTE);
@@ -83,11 +85,18 @@ public class PaintInput {
     }
 
     public boolean endTemporaryPipette() {
-        if (toolBeforePipette == null) return false;
+        if (toolBeforePipette == null && !pipettePicked) return false;
         DrawingTool restored = toolBeforePipette;
         toolBeforePipette = null;
-        applyTool(restored);
+        pipettePicked = false;
+        if (restored != null) applyTool(restored);
         return true;
+    }
+
+    private void finishPipettePick() {
+        pipettePicked = toolBeforePipette != null;
+        toolBeforePipette = null;
+        applyTool(DrawingTool.BRUSH);
     }
 
     public boolean deleteSelectedImage() {
@@ -167,7 +176,7 @@ public class PaintInput {
                 } else if (blockIndex > 0) {
                     widgets.applyPickedBlock(blockIndex, secondary);
                 }
-                if (!endTemporaryPipette()) applyTool(DrawingTool.BRUSH);
+                finishPipettePick();
             }
             return true;
         }
