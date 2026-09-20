@@ -45,7 +45,7 @@ public class ArtistryConfig {
         public long batchIntervalMs = 50;
         public long cursorIntervalMs = 100;
         public long worldSyncIntervalMs = 250;
-        public long imageBytesPerSecond = 1024 * 1024;
+        public long imageBytesPerSecond = 512 * 1024;
 
         public static final long MIN_BATCH_INTERVAL_MS = 10;
         public static final long MAX_BATCH_INTERVAL_MS = 5000;
