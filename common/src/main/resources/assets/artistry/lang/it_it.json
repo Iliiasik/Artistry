@@ -28,5 +28,6 @@
   "option.artistry.batch_interval.tooltip": "Ogni quanto i tratti accumulati vengono inviati al server. Valori alti risparmiano traffico ma rendono a scatti il disegno degli altri giocatori.",
   "option.artistry.cursor_interval.tooltip": "Ogni quanto la posizione del tuo cursore viene inviata agli altri giocatori che modificano la stessa tela.",
   "option.artistry.world_sync_interval.tooltip": "Ogni quanto le tele si aggiornano per chi le guarda nel mondo invece di modificarle. Mai più spesso dell'intervallo del lotto di disegno.",
-  "option.artistry.image_bandwidth.tooltip": "Limite di velocità di caricamento delle immagini per giocatore. Valori bassi proteggono il server, ma le immagini grandi impiegano più tempo."
+  "option.artistry.image_bandwidth.tooltip": "Limite di velocità di caricamento delle immagini per giocatore. Valori bassi proteggono il server, ma le immagini grandi impiegano più tempo.",
+  "message.artistry.image_rate_limited": "Limite di caricamento immagini raggiunto, riprova tra poco"
 }

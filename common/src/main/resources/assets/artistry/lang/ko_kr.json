@@ -28,5 +28,6 @@
   "option.artistry.batch_interval.tooltip": "모아둔 붓질을 서버로 보내는 간격입니다. 값이 크면 트래픽은 줄지만 다른 사람의 그림이 끊겨 보입니다.",
   "option.artistry.cursor_interval.tooltip": "같은 캔버스를 편집하는 다른 사람에게 커서 위치를 보내는 간격입니다.",
   "option.artistry.world_sync_interval.tooltip": "편집하지 않고 월드에서 바라보는 사람에게 캔버스를 갱신하는 간격입니다. 그리기 일괄 처리 간격보다 짧아지지 않습니다.",
-  "option.artistry.image_bandwidth.tooltip": "플레이어당 이미지 업로드 속도 제한입니다. 값이 낮으면 서버 부담이 줄지만 큰 이미지는 오래 걸립니다."
+  "option.artistry.image_bandwidth.tooltip": "플레이어당 이미지 업로드 속도 제한입니다. 값이 낮으면 서버 부담이 줄지만 큰 이미지는 오래 걸립니다.",
+  "message.artistry.image_rate_limited": "이미지 업로드 한도에 도달했습니다. 잠시 후 다시 시도하세요"
 }

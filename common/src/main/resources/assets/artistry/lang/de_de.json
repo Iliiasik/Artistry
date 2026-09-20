@@ -28,5 +28,6 @@
   "option.artistry.batch_interval.tooltip": "Wie oft gesammelte Pinselstriche an den Server gesendet werden. Höhere Werte sparen Datenverkehr, lassen das Zeichnen anderer Spieler aber ruckeln.",
   "option.artistry.cursor_interval.tooltip": "Wie oft deine Cursorposition an andere Spieler gesendet wird, die dieselbe Leinwand bearbeiten.",
   "option.artistry.world_sync_interval.tooltip": "Wie oft Leinwände für Spieler aktualisiert werden, die sie in der Welt betrachten statt sie zu bearbeiten. Nie häufiger als das Zeichen-Batch-Intervall.",
-  "option.artistry.image_bandwidth.tooltip": "Geschwindigkeitsgrenze für Bild-Uploads pro Spieler. Niedrigere Werte schonen den Server, große Bilder brauchen aber länger."
+  "option.artistry.image_bandwidth.tooltip": "Geschwindigkeitsgrenze für Bild-Uploads pro Spieler. Niedrigere Werte schonen den Server, große Bilder brauchen aber länger.",
+  "message.artistry.image_rate_limited": "Bild-Upload-Limit erreicht, versuche es gleich noch einmal"
 }

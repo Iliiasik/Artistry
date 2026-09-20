@@ -44,8 +44,11 @@ public final class ServerPacketHandlers {
             ImageUploadAssembler.clear(player);
             return;
         }
-        if (PacketThrottle.imageThrottled(player.getUUID(), payload.chunk().length)) {
+        if (payload.offset() == 0
+                && PacketThrottle.imageThrottled(player.getUUID(), payload.total())) {
             ImageUploadAssembler.clear(player);
+            player.displayClientMessage(
+                    Component.translatable("message.artistry.image_rate_limited"), true);
             return;
         }
         byte[] full = ImageUploadAssembler.accept(player, payload);

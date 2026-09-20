@@ -28,5 +28,6 @@
   "option.artistry.batch_interval.tooltip": "ためた筆跡をサーバーへ送る間隔です。値を大きくすると通信量は減りますが、他の人の描画がカクついて見えます。",
   "option.artistry.cursor_interval.tooltip": "同じキャンバスを編集している他の人へカーソル位置を送る間隔です。",
   "option.artistry.world_sync_interval.tooltip": "編集せずに世界の中で眺めている人に対してキャンバスを更新する間隔です。描画バッチ間隔より短くはなりません。",
-  "option.artistry.image_bandwidth.tooltip": "プレイヤーごとの画像アップロード速度の上限です。値を下げるとサーバーの負荷は減りますが、大きな画像は時間がかかります。"
+  "option.artistry.image_bandwidth.tooltip": "プレイヤーごとの画像アップロード速度の上限です。値を下げるとサーバーの負荷は減りますが、大きな画像は時間がかかります。",
+  "message.artistry.image_rate_limited": "画像のアップロード上限に達しました。少し待ってからお試しください"
 }
