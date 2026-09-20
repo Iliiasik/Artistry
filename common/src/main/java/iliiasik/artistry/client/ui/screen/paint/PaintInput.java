@@ -32,6 +32,7 @@ public class PaintInput {
     private boolean isDrawing = false;
     private int drawingButton = -1;
     private DrawingTool toolBeforePipette = null;
+    private volatile boolean uploading = false;
     private boolean pipettePicked = false;
     private boolean imageDragging = false;
     private boolean imageMode = false;
@@ -261,28 +262,38 @@ public class PaintInput {
         }
     }
 
+    public boolean isUploading() {
+        return uploading;
+    }
+
     public void openFilePicker() {
+        if (uploading) return;
+        uploading = true;
         new Thread(() -> {
-            org.lwjgl.PointerBuffer filters = org.lwjgl.BufferUtils.createPointerBuffer(4);
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.png"));
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpg"));
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpeg"));
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.bmp"));
-            filters.flip();
+            try {
+                org.lwjgl.PointerBuffer filters = org.lwjgl.BufferUtils.createPointerBuffer(4);
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.png"));
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpg"));
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpeg"));
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.bmp"));
+                filters.flip();
 
-            String path = org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_openFileDialog(
-                    "Select Image", "", filters, "Image Files", false);
+                String path = org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_openFileDialog(
+                        "Select Image", "", filters, "Image Files", false);
 
-            if (path != null) {
-                try {
-                    byte[] bytes = convertToPng(new File(path));
-                    session.uploadImage(bytes);
-                } catch (IOException e) {
-                    Artistry.LOGGER.error("Failed to read selected image {}", path, e);
+                if (path != null) {
+                    try {
+                        byte[] bytes = convertToPng(new File(path));
+                        session.uploadImage(bytes);
+                    } catch (IOException e) {
+                        Artistry.LOGGER.error("Failed to read selected image {}", path, e);
+                    }
                 }
+                if (widgets != null) widgets.setActiveTool(DrawingTool.BRUSH);
+                pixelPainter.setTool(DrawingTool.BRUSH);
+            } finally {
+                uploading = false;
             }
-            if (widgets != null) widgets.setActiveTool(DrawingTool.BRUSH);
-            pixelPainter.setTool(DrawingTool.BRUSH);
         }, "artistry-file-picker").start();
     }
 

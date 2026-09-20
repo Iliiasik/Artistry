@@ -76,6 +76,27 @@ class ClientStateTest {
     }
 
     @Test
+    @DisplayName("A disabled widget greys out and comes back when it is enabled again")
+    void disabledWidgetGreysOut() throws InterruptedException {
+        HoverFadeHelper helper = new HoverFadeHelper();
+        int resting = helper.computeColor() & 0xFF;
+
+        for (int i = 0; i < 20; i++) {
+            Thread.sleep(10);
+            helper.update(true, true);
+        }
+        int disabled = helper.computeColor() & 0xFF;
+        assertTrue(disabled < resting, "a disabled widget must be darker than a resting one");
+
+        for (int i = 0; i < 40; i++) {
+            Thread.sleep(10);
+            helper.update(false, false);
+        }
+        int restored = helper.computeColor() & 0xFF;
+        assertTrue(restored > disabled, "enabling the widget again must brighten it back");
+    }
+
+    @Test
     @DisplayName("Losing hover darkens the widget back towards the resting brightness")
     void losingHoverDarkensWidget() throws InterruptedException {
         HoverFadeHelper helper = new HoverFadeHelper();

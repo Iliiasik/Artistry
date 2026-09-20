@@ -250,7 +250,10 @@ public class PaintScreen extends Screen {
         session.tickBatch();
         tickCursor();
         dims.calculate(width, height, session.isSigned());
-        if (widgets != null) widgets.layout();
+        if (widgets != null) {
+            widgets.layout();
+            widgets.setImageBusy(input != null && input.isUploading());
+        }
 
         context.blit(
                 ModTextures.FRAME,

@@ -145,6 +145,10 @@ public class PaintWidgets {
         setImageMode(imageMode);
     }
 
+    public void setImageBusy(boolean busy) {
+        if (toolSwitchWidget != null) toolSwitchWidget.setImageBusy(busy);
+    }
+
     public void layout() {
         if (toolSwitchWidget != null) {
             toolSwitchWidget.setPosition(dims.toolSwitchX, dims.toolSwitchY);

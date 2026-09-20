@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 public class ToolSwitchWidget extends AbstractWidget {
 
     private DrawingTool activeTool = DrawingTool.BRUSH;
+    private boolean imageBusy = false;
     private final Consumer<DrawingTool> onToolChanged;
 
     private final HoverFadeHelper hoverBrush   = new HoverFadeHelper();
@@ -35,6 +36,10 @@ public class ToolSwitchWidget extends AbstractWidget {
     public void setSize(int w, int h) {
         this.width = w;
         this.height = h;
+    }
+
+    public void setImageBusy(boolean busy) {
+        this.imageBusy = busy;
     }
 
     private int btnSize() {
@@ -79,7 +84,7 @@ public class ToolSwitchWidget extends AbstractWidget {
                 ModTextures.PIPETTE, ModTextures.PIPETTE_ACTIVE);
 
         if (!ClientServerSettings.imagesDisabled()) {
-            hoverImage.update(overImage(mouseX, mouseY));
+            hoverImage.update(overImage(mouseX, mouseY), imageBusy);
             drawTool(ctx, imageY(), hoverImage, false,
                     ModTextures.IMAGE, ModTextures.IMAGE);
         }
@@ -111,7 +116,7 @@ public class ToolSwitchWidget extends AbstractWidget {
             onToolChanged.accept(activeTool);
             return true;
         }
-        if (!ClientServerSettings.imagesDisabled() && overImage(mouseX, mouseY)) {
+        if (!ClientServerSettings.imagesDisabled() && !imageBusy && overImage(mouseX, mouseY)) {
             onToolChanged.accept(DrawingTool.IMAGE);
             return true;
         }
