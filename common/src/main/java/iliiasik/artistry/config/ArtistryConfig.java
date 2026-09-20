@@ -54,7 +54,7 @@ public class ArtistryConfig {
         public static final long MIN_WORLD_SYNC_INTERVAL_MS = 50;
         public static final long MAX_WORLD_SYNC_INTERVAL_MS = 5000;
         public static final long MIN_IMAGE_BYTES_PER_SECOND = 32 * 1024;
-        public static final long MAX_IMAGE_BYTES_PER_SECOND = 64L * 1024 * 1024;
+        public static final long MAX_IMAGE_BYTES_PER_SECOND = 8L * 1024 * 1024;
 
         public void validate() {
             if (imageBytesPerSecond < MIN_IMAGE_BYTES_PER_SECOND) {
