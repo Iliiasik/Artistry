@@ -4,18 +4,15 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import iliiasik.artistry.config.ArtistryConfig;
 import iliiasik.artistry.debug.ArtistryDebug;
-import iliiasik.artistry.network.ArtistryNetwork;
-import iliiasik.artistry.network.ServerSettingsS2CPacket;
+import iliiasik.artistry.network.ServerSettingsSync;
 import iliiasik.artistry.server.ImageStorage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.server.level.ServerPlayer;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
 
 public final class ArtistryCommands {
@@ -39,16 +36,8 @@ public final class ArtistryCommands {
     }
 
     private static int reloadConfig(CommandSourceStack source) {
-        ArtistryConfig cfg = ArtistryConfig.reload();
-        ServerSettingsS2CPacket packet = new ServerSettingsS2CPacket(
-                cfg.poster.disableImages, cfg.network.batchIntervalMs, cfg.network.cursorIntervalMs);
-
-        List<ServerPlayer> players = source.getServer().getPlayerList().getPlayers();
-        for (ServerPlayer player : players) {
-            ArtistryNetwork.sendToPlayer(player, packet);
-        }
-
-        int synced = players.size();
+        ArtistryConfig.reload();
+        int synced = ServerSettingsSync.broadcast(source.getServer());
         source.sendSuccess(() -> brand()
                 .append(label("Config reloaded, synced to "))
                 .append(value(String.valueOf(synced)))

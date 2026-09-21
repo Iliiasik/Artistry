@@ -82,10 +82,12 @@ public class PaintScreen extends Screen {
 
     public void receiveImageBytes(UUID uuid, byte[] bytes) {
         session.receiveImageBytes(uuid, bytes);
+        if (input != null) input.onImageBytes(uuid);
     }
 
     public void onImageUploaded(UUID uuid, int gridX, int gridY, int gridW, int gridH) {
         session.onImageUploaded(uuid, gridX, gridY, gridW, gridH);
+        if (input != null) input.awaitImageBytes(uuid);
     }
 
     public void receiveCursor(UUID uuid, float gx, float gy) {
@@ -96,8 +98,8 @@ public class PaintScreen extends Screen {
         session.removePresence(uuid);
     }
 
-    public void applySignature(@Nullable String playerName) {
-        session.applySignature(playerName);
+    public void applySignature(@Nullable String playerName, @Nullable UUID playerUuid, long signedAt) {
+        session.applySignature(playerName, playerUuid, signedAt);
         if (input != null) input.exitImageModeIfActive();
         rebuildWidgets();
     }
@@ -109,7 +111,7 @@ public class PaintScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        dims.calculate(width, height);
+        dims.calculate(width, height, session.isSigned());
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) localPlayerUuid = mc.player.getUUID();
@@ -249,8 +251,11 @@ public class PaintScreen extends Screen {
 
         session.tickBatch();
         tickCursor();
-        dims.calculate(width, height);
-        if (widgets != null) widgets.layout();
+        dims.calculate(width, height, session.isSigned());
+        if (widgets != null) {
+            widgets.layout();
+            widgets.setImageBusy(input != null && input.isUploading());
+        }
 
         context.blit(
                 ModTextures.FRAME,
@@ -277,7 +282,8 @@ public class PaintScreen extends Screen {
 
         String signerName = session.signerName();
         if (signerName != null) {
-            SignatureRenderer.render(context, this.font, signerName, dims);
+            SignatureRenderer.render(context, this.font, signerName,
+                    session.signerUuid(), session.signedAt(), dims);
             return;
         }
 

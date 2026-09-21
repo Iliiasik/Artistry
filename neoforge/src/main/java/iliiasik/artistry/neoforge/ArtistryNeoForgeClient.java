@@ -3,6 +3,7 @@ package iliiasik.artistry.neoforge;
 import iliiasik.artistry.Artistry;
 import iliiasik.artistry.block.entity.ModBlockEntities;
 import iliiasik.artistry.client.ArtistryClientEvents;
+import iliiasik.artistry.client.ui.screen.config.ArtistryConfigScreen;
 import iliiasik.artistry.debug.ArtistryDebug;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -11,6 +12,7 @@ import net.minecraft.world.InteractionResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
@@ -19,13 +21,16 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 @Mod(value = Artistry.MOD_ID, dist = Dist.CLIENT)
 public final class ArtistryNeoForgeClient {
 
-    public ArtistryNeoForgeClient(IEventBus modEventBus) {
+    public ArtistryNeoForgeClient(ModContainer container, IEventBus modEventBus) {
+        container.registerExtensionPoint(IConfigScreenFactory.class,
+                (owner, parent) -> new ArtistryConfigScreen(parent));
         modEventBus.addListener(ArtistryNeoForgeClient::onClientSetup);
         modEventBus.addListener(ArtistryNeoForgeClient::onRegisterRenderers);
         modEventBus.addListener(ArtistryNeoForgeClient::onRegisterReloadListeners);

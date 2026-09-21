@@ -124,8 +124,17 @@ public class PaintSession {
         return signature.playerName();
     }
 
-    public void applySignature(@Nullable String name) {
-        signature.applyRemote(name);
+    public void applySignature(@Nullable String name, @Nullable UUID uuid, long signedAt) {
+        signature.applyRemote(name, uuid, signedAt);
+    }
+
+    public long signedAt() {
+        return signature.signedAt();
+    }
+
+    @Nullable
+    public UUID signerUuid() {
+        return signature.playerUuid();
     }
 
     public void sign() {
@@ -141,6 +150,7 @@ public class PaintSession {
             flushImageMove();
         } else {
             saveToItem();
+            flushImageMove();
         }
     }
 
@@ -244,7 +254,7 @@ public class PaintSession {
         if (targetEntity != null && now - lastFlushTime >= ClientServerSettings.batchIntervalMs()) {
             flushPixels();
         }
-        if (targetEntity != null && pendingMoveUuid != null && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
+        if (pendingMoveUuid != null && now - lastImageSyncTime >= IMAGE_SYNC_INTERVAL_MS) {
             flushImageMove();
         }
     }

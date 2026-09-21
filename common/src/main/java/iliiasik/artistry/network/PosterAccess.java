@@ -117,7 +117,8 @@ public abstract class PosterAccess {
         @Override
         public void syncSignature() {
             ArtistryNetwork.sendNear(level, pos, null,
-                    new SyncSignatureS2CPacket(pos, poster.signature.playerName()));
+                    new SyncSignatureS2CPacket(pos, poster.signature.playerName(),
+                            poster.signature.playerUuid(), poster.signature.signedAt()));
         }
 
         @Override
@@ -241,7 +242,8 @@ public abstract class PosterAccess {
 
         @Override
         public void syncSignature() {
-            ArtistryNetwork.sendToPlayer(player, new SyncSignatureS2CPacket(null, signature.playerName()));
+            ArtistryNetwork.sendToPlayer(player, new SyncSignatureS2CPacket(null,
+                    signature.playerName(), signature.playerUuid(), signature.signedAt()));
         }
 
         @Override

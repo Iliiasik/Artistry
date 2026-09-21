@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.ui.widget;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.client.palette.PaintSwatch;
 import iliiasik.artistry.client.palette.PaintSwatches;
@@ -20,6 +21,14 @@ public class SwatchStripWidget extends AbstractWidget {
     private final PaintSwatches swatches;
     private final Runnable onPrimaryChanged;
 
+    private final HoverFadeHelper hoverSecondary = new HoverFadeHelper();
+    private final HoverFadeHelper[] hoverHistory = new HoverFadeHelper[PaintDimensions.HISTORY_CELLS];
+
+    {
+        for (int i = 0; i < hoverHistory.length; i++) {
+            hoverHistory[i] = new HoverFadeHelper();
+        }
+    }
 
     public SwatchStripWidget(PaintDimensions dims, PaintSwatches swatches, Runnable onPrimaryChanged) {
         super(dims.swatchStripX, dims.swatchStripY, dims.swatchStripW, dims.swatchStripH, Component.empty());
@@ -32,23 +41,26 @@ public class SwatchStripWidget extends AbstractWidget {
         this.visible = visible;
     }
 
+    public void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
+    }
+
     @Override
     protected void renderWidget(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         if (!visible) return;
         BlockPalette.ensureLoaded();
 
-        boolean overSecondary = isOverSecondary(mouseX, mouseY);
-        drawSwatch(ctx, swatches.secondary(),
-                overSecondary ? ModTextures.SECONDARY_COLOR_HOVER : ModTextures.SECONDARY_COLOR,
+        hoverSecondary.update(isOverSecondary(mouseX, mouseY));
+        drawSwatch(ctx, swatches.secondary(), ModTextures.SECONDARY_COLOR,
                 PaintDimensions.SECONDARY_TEXTURE_SIZE,
-                dims.secondaryX, dims.secondaryY, dims.secondarySize);
+                dims.secondaryX, dims.secondaryY, dims.secondarySize, hoverSecondary);
 
         for (int i = 0; i < PaintDimensions.HISTORY_CELLS; i++) {
-            boolean overCell = isOverHistory(mouseX, mouseY, i);
-            drawSwatch(ctx, swatches.history(i),
-                    overCell ? ModTextures.PREVIOUS_COLOR_HOVER : ModTextures.PREVIOUS_COLOR,
+            hoverHistory[i].update(isOverHistory(mouseX, mouseY, i));
+            drawSwatch(ctx, swatches.history(i), ModTextures.PREVIOUS_COLOR,
                     PaintDimensions.HISTORY_TEXTURE_SIZE,
-                    dims.historyX, historyCellY(i), dims.historySize);
+                    dims.historyX, historyCellY(i), dims.historySize, hoverHistory[i]);
         }
     }
 
@@ -69,8 +81,10 @@ public class SwatchStripWidget extends AbstractWidget {
     }
 
     private static void drawSwatch(GuiGraphics ctx, PaintSwatch swatch, ResourceLocation frame,
-                                   int textureSize, int x, int y, int size) {
+                                   int textureSize, int x, int y, int size, HoverFadeHelper hover) {
+        hover.applyShaderColor();
         ctx.blit(frame, x, y, size, size, 0f, 0f, textureSize, textureSize, textureSize, textureSize);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         int inset = Math.round((float) PaintDimensions.SWATCH_FRAME_BORDER * size / textureSize);
         int innerX = x + inset;

@@ -1,37 +1,46 @@
 package iliiasik.artistry.client.util;
 
+import iliiasik.artistry.Artistry;
 import net.minecraft.resources.ResourceLocation;
 
 public final class ModTextures {
 
-    /**
-     UI section
-     **/
+    public static final ResourceLocation FRAME            = Artistry.id("textures/ui/frame.png");
+    public static final ResourceLocation PALETTE_BLOCKS   = Artistry.id("textures/ui/palette_blocks.png");
+    public static final ResourceLocation PALETTE_HEX      = Artistry.id("textures/ui/palette_hex.png");
+    public static final ResourceLocation BRUSH            = Artistry.id("textures/ui/brush.png");
+    public static final ResourceLocation BRUSH_ACTIVE     = Artistry.id("textures/ui/brush_active.png");
+    public static final ResourceLocation ERASER           = Artistry.id("textures/ui/eraser.png");
+    public static final ResourceLocation ERASER_ACTIVE    = Artistry.id("textures/ui/eraser_active.png");
+    public static final ResourceLocation PIPETTE          = Artistry.id("textures/ui/pipette.png");
+    public static final ResourceLocation PIPETTE_ACTIVE   = Artistry.id("textures/ui/pipette_active.png");
+    public static final ResourceLocation IMAGE            = Artistry.id("textures/ui/image.png");
+    public static final ResourceLocation PIXELIZE         = Artistry.id("textures/ui/pixelize.png");
+    public static final ResourceLocation DELETE           = Artistry.id("textures/ui/delete.png");
+    public static final ResourceLocation SIZE_SWITCHER    = Artistry.id("textures/ui/size_switcher.png");
 
-    public static final ResourceLocation FRAME            = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/frame.png");
-    public static final ResourceLocation PALETTE_BLOCKS   = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/palette_blocks.png");
-    public static final ResourceLocation PALETTE_HEX      = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/palette_hex.png");
-    public static final ResourceLocation BRUSH            = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/brush.png");
-    public static final ResourceLocation BRUSH_ACTIVE     = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/brush_active.png");
-    public static final ResourceLocation ERASER           = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/eraser.png");
-    public static final ResourceLocation ERASER_ACTIVE    = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/eraser_active.png");
-    public static final ResourceLocation PIPETTE          = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/pipette.png");
-    public static final ResourceLocation PIPETTE_ACTIVE   = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/pipette_active.png");
-    public static final ResourceLocation IMAGE            = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/image.png");
-    public static final ResourceLocation PIXELIZE         = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/pixelize.png");
-    public static final ResourceLocation DELETE           = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/delete.png");
-    public static final ResourceLocation SIZE_SWITCHER    = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/size_switcher.png");
-    public static final ResourceLocation PALETTE_SWITCHER = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/palette_switcher.png");
-    public static final ResourceLocation SIZE_SCREEN      = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/size_screen.png");
-    public static final ResourceLocation IN_HAND_FRAME    = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/in_hand_frame.png");
-    public static final ResourceLocation SIGN             = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/sign.png");
-    public static final ResourceLocation SIGN_HOVER       = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/sign_hover.png");
-    public static final ResourceLocation BADGE            = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/badge.png");
-    public static final ResourceLocation WAX_SEAL         = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/wax_seal.png");
-    public static final ResourceLocation SECONDARY_COLOR       = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/secondary_color.png");
-    public static final ResourceLocation SECONDARY_COLOR_HOVER = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/secondary_color_hover.png");
-    public static final ResourceLocation PREVIOUS_COLOR        = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/previous_color.png");
-    public static final ResourceLocation PREVIOUS_COLOR_HOVER  = ResourceLocation.fromNamespaceAndPath("artistry", "textures/ui/previous_color_hover.png");
+    public static final int SIZE_ICON_TEXTURE_SIZE = 28;
+
+    public static final ResourceLocation[] SIZE_ICONS = {
+            Artistry.id("textures/ui/size_1.png"),
+            Artistry.id("textures/ui/size_2.png"),
+            Artistry.id("textures/ui/size_3.png"),
+            Artistry.id("textures/ui/size_4.png"),
+            Artistry.id("textures/ui/size_5.png")
+    };
+
+    public static final ResourceLocation PALETTE_SWITCHER = Artistry.id("textures/ui/palette_switcher.png");
+    public static final ResourceLocation SIZE_SCREEN      = Artistry.id("textures/ui/size_screen.png");
+    public static final ResourceLocation IN_HAND_FRAME    = Artistry.id("textures/ui/in_hand_frame.png");
+    public static final ResourceLocation SIGN             = Artistry.id("textures/ui/sign.png");
+    public static final ResourceLocation BADGE            = Artistry.id("textures/ui/badge.png");
+    public static final ResourceLocation DATE             = Artistry.id("textures/ui/date.png");
+    public static final ResourceLocation WAX_SEAL         = Artistry.id("textures/ui/wax_seal.png");
+    public static final ResourceLocation SECONDARY_COLOR = Artistry.id("textures/ui/secondary_color.png");
+    public static final ResourceLocation PREVIOUS_COLOR  = Artistry.id("textures/ui/previous_color.png");
+    public static final ResourceLocation ICON            = Artistry.id("textures/ui/icon.png");
+
+    public static final int ICON_TEXTURE_SIZE = 32;
 
     private ModTextures() {}
 }

@@ -2,12 +2,12 @@ package iliiasik.artistry.client.ui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import iliiasik.artistry.client.util.ModTextures;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 import java.util.function.IntConsumer;
 
@@ -15,7 +15,7 @@ public class SizeSwitcherWidget extends AbstractWidget {
     private static final ResourceLocation TEXTURE = ModTextures.SIZE_SWITCHER;
 
     private static final int[] SIZES = {1, 2, 3, 4, 5};
-    private static final int TEXT_COLOR = 0xFF666155;
+    private static final int BUTTON_TEXTURE_SIZE = 32;
 
     private int sizeIndex = 0;
     private final IntConsumer onSizeChanged;
@@ -30,6 +30,11 @@ public class SizeSwitcherWidget extends AbstractWidget {
         this.visible = visible;
     }
 
+    public void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
+    }
+
     public void setCurrentSize(int size) {
         for (int i = 0; i < SIZES.length; i++) {
             if (SIZES[i] == size) {
@@ -40,7 +45,7 @@ public class SizeSwitcherWidget extends AbstractWidget {
     }
 
     public boolean stepSize(int delta) {
-        int next = Math.clamp(sizeIndex + delta, 0, SIZES.length - 1);
+        int next = Mth.clamp(sizeIndex + delta, 0, SIZES.length - 1);
         if (next == sizeIndex) return false;
         sizeIndex = next;
         onSizeChanged.accept(SIZES[sizeIndex]);
@@ -60,13 +65,20 @@ public class SizeSwitcherWidget extends AbstractWidget {
                 32, 32,
                 32, 32
         );
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
-        String label = String.valueOf(SIZES[sizeIndex]);
-        Minecraft client = Minecraft.getInstance();
-        int textX = getX() + getWidth() / 2 - client.font.width(label) / 2;
-        int textY = getY() + getHeight() / 2 - 4;
-        ctx.drawString(client.font, label, textX, textY, TEXT_COLOR, false);
+        int icon = ModTextures.SIZE_ICON_TEXTURE_SIZE;
+        int iconW = Math.round((float) icon * getWidth() / BUTTON_TEXTURE_SIZE);
+        int iconH = Math.round((float) icon * getHeight() / BUTTON_TEXTURE_SIZE);
+        ctx.blit(
+                ModTextures.SIZE_ICONS[sizeIndex],
+                getX() + (getWidth() - iconW) / 2,
+                getY() + (getHeight() - iconH) / 2,
+                iconW, iconH,
+                0f, 0f,
+                icon, icon,
+                icon, icon
+        );
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
     @Override

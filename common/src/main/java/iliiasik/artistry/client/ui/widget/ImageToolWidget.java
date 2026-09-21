@@ -1,6 +1,7 @@
 package iliiasik.artistry.client.ui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.util.ModTextures;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -28,9 +29,14 @@ public class ImageToolWidget extends AbstractWidget {
         this.visible = visible;
     }
 
+    public void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
+    }
+
     private int btnSize() { return getWidth(); }
 
-    private int gap() { return Math.round(getWidth() * (6.0f / 64.0f)); }
+    private int gap() { return PaintDimensions.buttonGap(getWidth()); }
 
     private int deleteY()   { return getY(); }
     private int pixelizeY() { return getY() + btnSize() + gap(); }
@@ -48,11 +54,11 @@ public class ImageToolWidget extends AbstractWidget {
         hoverPixelize.update(onPixelize);
 
         hoverDelete.applyShaderColor();
-        ctx.blit(ModTextures.DELETE, getX(), deleteY(), btnSize(), btnSize(), 0f, 0f, 64, 64, 64, 64);
+        ctx.blit(ModTextures.DELETE, getX(), deleteY(), btnSize(), btnSize(), 0f, 0f, 32, 32, 32, 32);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         hoverPixelize.applyShaderColor();
-        ctx.blit(ModTextures.PIXELIZE, getX(), pixelizeY(), btnSize(), btnSize(), 0f, 0f, 64, 64, 64, 64);
+        ctx.blit(ModTextures.PIXELIZE, getX(), pixelizeY(), btnSize(), btnSize(), 0f, 0f, 32, 32, 32, 32);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 

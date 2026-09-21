@@ -1,10 +1,12 @@
 package iliiasik.artistry.client.ui.widget;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
 import java.util.function.Consumer;
 
@@ -37,6 +39,14 @@ public class HexInputWidget extends AbstractWidget {
 
     public boolean isVisible() {
         return visible;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
     }
 
     public void setText(String newText) {
@@ -98,6 +108,7 @@ public class HexInputWidget extends AbstractWidget {
             case 67  -> { if (ctrl) { copySelection(); return true; } }
             case 86  -> { if (ctrl) { pasteFromClipboard(); return true; } }
             case 88  -> { if (ctrl) { cutSelection(); return true; } }
+            default -> { return false; }
         }
         return false;
     }
@@ -119,7 +130,7 @@ public class HexInputWidget extends AbstractWidget {
     }
 
     private int clampCursor(int pos) {
-        return Math.clamp(pos, 1, Math.max(1, text.length()));
+        return Mth.clamp(pos, 1, Math.max(1, text.length()));
     }
 
     private void moveCursor(int newPos, boolean shift) {
@@ -223,7 +234,7 @@ public class HexInputWidget extends AbstractWidget {
     }
 
     private int screenXToCharIndex(int screenX) {
-        var renderer = Minecraft.getInstance().font;
+        Font renderer = Minecraft.getInstance().font;
         float ts = textScale();
         int virtualW = (int)(getWidth() / ts);
         int textOffsetX = (virtualW - renderer.width(text)) / 2;
@@ -243,7 +254,7 @@ public class HexInputWidget extends AbstractWidget {
     @Override
     protected void renderWidget(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         if (!visible) return;
-        var renderer = Minecraft.getInstance().font;
+        Font renderer = Minecraft.getInstance().font;
         float ts = textScale();
 
         int centerY = getY() + getHeight() / 2;

@@ -1,6 +1,7 @@
 package iliiasik.artistry.client.ui.widget;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import iliiasik.artistry.Artistry;
 import iliiasik.artistry.client.palette.BlockPalette;
 import iliiasik.artistry.client.palette.ColorPalette;
 import iliiasik.artistry.client.palette.PaintSwatch;
@@ -13,6 +14,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 import java.util.function.Consumer;
 
@@ -39,8 +41,8 @@ public class ColorPaletteWidget extends AbstractWidget {
     private static final int PRIMARY_OUTLINE   = 0xFFFFFFFF;
     private static final int SECONDARY_OUTLINE = 0xFFFFAA00;
 
-    private static final ResourceLocation SPECTRUM_ID = ResourceLocation.fromNamespaceAndPath("artistry", "palette_spectrum_cache");
-    private static final ResourceLocation HSV_ID      = ResourceLocation.fromNamespaceAndPath("artistry", "palette_hsv_cache");
+    private static final ResourceLocation SPECTRUM_ID = Artistry.id("palette_spectrum_cache");
+    private static final ResourceLocation HSV_ID      = Artistry.id("palette_hsv_cache");
     private static DynamicTexture spectrumTex;
     private static DynamicTexture hsvTex;
     private static float hsvBuiltHue = Float.NaN;
@@ -62,6 +64,11 @@ public class ColorPaletteWidget extends AbstractWidget {
 
     public void setVisible(boolean visible) {
         this.visible = visible;
+    }
+
+    public void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
     }
 
     public void setOnColorChanged(Consumer<Integer> callback) {
@@ -252,7 +259,7 @@ public class ColorPaletteWidget extends AbstractWidget {
     }
 
     private float clamp01(float v) {
-        return Math.clamp(v, 0f, 1f);
+        return Mth.clamp(v, 0f, 1f);
     }
 
     private void pickFromClick(double mouseX, double mouseY) {

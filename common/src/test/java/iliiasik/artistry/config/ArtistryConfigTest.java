@@ -226,6 +226,39 @@ class ArtistryConfigTest {
     }
 
     @Test
+    @DisplayName("Too many editors are clamped to the ceiling")
+    void maxEditorsIsClampedAtTheTop() throws IOException {
+        write("{\"poster\": {\"maxEditors\": 999}}");
+        assertEquals(64, ArtistryConfig.reload().poster.maxEditors);
+    }
+
+    @Test
+    @DisplayName("flush writes in memory edits back to disk")
+    void flushPersistsEdits() {
+        ArtistryConfig config = ArtistryConfig.reload();
+        config.client.posterViewDistance = 96;
+        config.poster.maxEditors = 5;
+
+        ArtistryConfig.flush();
+        ArtistryConfig reloaded = ArtistryConfig.reload();
+
+        assertEquals(96, reloaded.client.posterViewDistance);
+        assertEquals(5, reloaded.poster.maxEditors);
+    }
+
+    @Test
+    @DisplayName("flush clamps before writing")
+    void flushClampsBeforeWriting() {
+        ArtistryConfig config = ArtistryConfig.reload();
+        config.client.posterViewDistance = 99999;
+
+        ArtistryConfig.flush();
+
+        assertEquals(512, config.client.posterViewDistance);
+        assertEquals(512, ArtistryConfig.reload().client.posterViewDistance);
+    }
+
+    @Test
     @DisplayName("The written config can be read back unchanged")
     void writtenConfigIsStable() throws IOException {
         write("""

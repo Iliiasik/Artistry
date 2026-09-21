@@ -87,14 +87,26 @@ public final class ClientPacketHandler {
 
     public static void onImageUploaded(ImageUploadedS2CPacket payload) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof PaintScreen screen) {
-            if (payload.pos() == null || payload.pos().equals(screen.getTargetPos())) {
-                screen.onImageUploaded(
-                        payload.uuid(),
-                        payload.gridX(), payload.gridY(),
-                        payload.gridW(), payload.gridH()
-                );
-            }
+        if (mc.screen instanceof PaintScreen screen
+                && (payload.pos() == null || payload.pos().equals(screen.getTargetPos()))) {
+            screen.onImageUploaded(
+                    payload.uuid(),
+                    payload.gridX(), payload.gridY(),
+                    payload.gridW(), payload.gridH()
+            );
+            return;
+        }
+
+        BlockPos pos = payload.pos();
+        if (pos == null || mc.level == null) return;
+        if (mc.level.getBlockEntity(pos) instanceof PosterBlockEntity poster
+                && poster.imageLayer.findByUuid(payload.uuid()) == null) {
+            poster.imageLayer.addImage(new CanvasImage(
+                    payload.uuid(),
+                    payload.gridX(), payload.gridY(),
+                    payload.gridW(), payload.gridH()));
+            poster.imageLayer.clampToCanvas(poster.canvasData.canvasSize);
+            poster.imageLayer.markChanged();
         }
     }
 
@@ -154,11 +166,11 @@ public final class ClientPacketHandler {
         BlockPos pos = payload.pos();
         if (pos != null && mc.level != null
                 && mc.level.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
-            poster.signature.applyRemote(payload.playerName());
+            poster.signature.applyRemote(payload.playerName(), payload.playerUuid(), payload.signedAt());
         }
         if (mc.screen instanceof PaintScreen screen) {
             if (pos == null || pos.equals(screen.getTargetPos())) {
-                screen.applySignature(payload.playerName());
+                screen.applySignature(payload.playerName(), payload.playerUuid(), payload.signedAt());
             }
         }
     }

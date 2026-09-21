@@ -32,6 +32,12 @@ public class PaintInput {
     private boolean isDrawing = false;
     private int drawingButton = -1;
     private DrawingTool toolBeforePipette = null;
+    private static final long UPLOAD_TIMEOUT_MS = 30_000;
+
+    private volatile boolean uploading = false;
+    private volatile long uploadStartedAt = 0;
+    private volatile UUID awaitedImage = null;
+    private boolean pipettePicked = false;
     private boolean imageDragging = false;
     private boolean imageMode = false;
 
@@ -70,12 +76,13 @@ public class PaintInput {
     public boolean selectTool(DrawingTool tool) {
         if (imageMode) return false;
         toolBeforePipette = null;
+        pipettePicked = false;
         applyTool(tool);
         return true;
     }
 
     public boolean beginTemporaryPipette() {
-        if (imageMode || isDrawing || toolBeforePipette != null) return false;
+        if (imageMode || isDrawing || toolBeforePipette != null || pipettePicked) return false;
         if (pixelPainter.getTool() == DrawingTool.PIPETTE) return false;
         toolBeforePipette = pixelPainter.getTool();
         applyTool(DrawingTool.PIPETTE);
@@ -83,11 +90,18 @@ public class PaintInput {
     }
 
     public boolean endTemporaryPipette() {
-        if (toolBeforePipette == null) return false;
+        if (toolBeforePipette == null && !pipettePicked) return false;
         DrawingTool restored = toolBeforePipette;
         toolBeforePipette = null;
-        applyTool(restored);
+        pipettePicked = false;
+        if (restored != null) applyTool(restored);
         return true;
+    }
+
+    private void finishPipettePick() {
+        pipettePicked = toolBeforePipette != null;
+        toolBeforePipette = null;
+        applyTool(DrawingTool.BRUSH);
     }
 
     public boolean deleteSelectedImage() {
@@ -167,7 +181,7 @@ public class PaintInput {
                 } else if (blockIndex > 0) {
                     widgets.applyPickedBlock(blockIndex, secondary);
                 }
-                if (!endTemporaryPipette()) applyTool(DrawingTool.BRUSH);
+                finishPipettePick();
             }
             return true;
         }
@@ -252,28 +266,60 @@ public class PaintInput {
         }
     }
 
+    public boolean isUploading() {
+        if (!uploading) return false;
+        if (System.currentTimeMillis() - uploadStartedAt > UPLOAD_TIMEOUT_MS) {
+            finishUpload();
+            return false;
+        }
+        return true;
+    }
+
+    public void awaitImageBytes(UUID uuid) {
+        if (uploading) awaitedImage = uuid;
+    }
+
+    public void onImageBytes(UUID uuid) {
+        if (uploading && uuid.equals(awaitedImage)) finishUpload();
+    }
+
+    public void finishUpload() {
+        uploading = false;
+        awaitedImage = null;
+    }
+
     public void openFilePicker() {
+        if (isUploading()) return;
+        uploading = true;
+        uploadStartedAt = System.currentTimeMillis();
+        awaitedImage = null;
         new Thread(() -> {
-            org.lwjgl.PointerBuffer filters = org.lwjgl.BufferUtils.createPointerBuffer(4);
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.png"));
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpg"));
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpeg"));
-            filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.bmp"));
-            filters.flip();
+            boolean sent = false;
+            try {
+                org.lwjgl.PointerBuffer filters = org.lwjgl.BufferUtils.createPointerBuffer(4);
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.png"));
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpg"));
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.jpeg"));
+                filters.put(org.lwjgl.system.MemoryUtil.memASCII("*.bmp"));
+                filters.flip();
 
-            String path = org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_openFileDialog(
-                    "Select Image", "", filters, "Image Files", false);
+                String path = org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_openFileDialog(
+                        "Select Image", "", filters, "Image Files", false);
 
-            if (path != null) {
-                try {
-                    byte[] bytes = convertToPng(new File(path));
-                    session.uploadImage(bytes);
-                } catch (IOException e) {
-                    Artistry.LOGGER.error("Failed to read selected image {}", path, e);
+                if (path != null) {
+                    try {
+                        byte[] bytes = convertToPng(new File(path));
+                        session.uploadImage(bytes);
+                        sent = true;
+                    } catch (IOException e) {
+                        Artistry.LOGGER.error("Failed to read selected image {}", path, e);
+                    }
                 }
+                if (widgets != null) widgets.setActiveTool(DrawingTool.BRUSH);
+                pixelPainter.setTool(DrawingTool.BRUSH);
+            } finally {
+                if (!sent) finishUpload();
             }
-            if (widgets != null) widgets.setActiveTool(DrawingTool.BRUSH);
-            pixelPainter.setTool(DrawingTool.BRUSH);
         }, "artistry-file-picker").start();
     }
 

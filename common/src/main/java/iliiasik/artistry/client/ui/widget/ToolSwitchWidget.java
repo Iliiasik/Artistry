@@ -3,6 +3,7 @@ package iliiasik.artistry.client.ui.widget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import iliiasik.artistry.client.ClientServerSettings;
 import iliiasik.artistry.client.tools.DrawingTool;
+import iliiasik.artistry.client.ui.layout.PaintDimensions;
 import iliiasik.artistry.client.util.ModTextures;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -15,6 +16,7 @@ import java.util.function.Consumer;
 public class ToolSwitchWidget extends AbstractWidget {
 
     private DrawingTool activeTool = DrawingTool.BRUSH;
+    private boolean imageBusy = false;
     private final Consumer<DrawingTool> onToolChanged;
 
     private final HoverFadeHelper hoverBrush   = new HoverFadeHelper();
@@ -31,12 +33,21 @@ public class ToolSwitchWidget extends AbstractWidget {
         this.visible = visible;
     }
 
+    public void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
+    }
+
+    public void setImageBusy(boolean busy) {
+        this.imageBusy = busy;
+    }
+
     private int btnSize() {
         return getWidth();
     }
 
     private int gap() {
-        return Math.round(getWidth() * (6.0f / 64.0f));
+        return PaintDimensions.buttonGap(getWidth());
     }
 
     private int brushY()   { return getY(); }
@@ -73,7 +84,7 @@ public class ToolSwitchWidget extends AbstractWidget {
                 ModTextures.PIPETTE, ModTextures.PIPETTE_ACTIVE);
 
         if (!ClientServerSettings.imagesDisabled()) {
-            hoverImage.update(overImage(mouseX, mouseY));
+            hoverImage.update(overImage(mouseX, mouseY), imageBusy);
             drawTool(ctx, imageY(), hoverImage, false,
                     ModTextures.IMAGE, ModTextures.IMAGE);
         }
@@ -105,7 +116,7 @@ public class ToolSwitchWidget extends AbstractWidget {
             onToolChanged.accept(activeTool);
             return true;
         }
-        if (!ClientServerSettings.imagesDisabled() && overImage(mouseX, mouseY)) {
+        if (!ClientServerSettings.imagesDisabled() && !imageBusy && overImage(mouseX, mouseY)) {
             onToolChanged.accept(DrawingTool.IMAGE);
             return true;
         }

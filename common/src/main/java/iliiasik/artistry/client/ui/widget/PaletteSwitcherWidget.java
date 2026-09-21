@@ -26,6 +26,11 @@ public class PaletteSwitcherWidget extends AbstractWidget {
         this.visible = visible;
     }
 
+    public void setSize(int w, int h) {
+        this.width = w;
+        this.height = h;
+    }
+
     public void setMode(PaletteMode mode) {
         this.mode = mode;
     }

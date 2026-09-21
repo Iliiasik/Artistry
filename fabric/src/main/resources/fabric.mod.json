@@ -20,6 +20,9 @@
     ],
     "client": [
       "iliiasik.artistry.fabric.ArtistryFabricClient"
+    ],
+    "modmenu": [
+      "iliiasik.artistry.fabric.ArtistryModMenu"
     ]
   },
   "mixins": [
@@ -37,6 +40,9 @@
     "catalogue": {
       "banner": "${mod_id}_banner.png",
       "background": "${mod_id}_background.png"
+    },
+    "modmenu": {
+      "update_checker": true
     }
   }
 }
