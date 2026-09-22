@@ -1,5 +1,6 @@
 package iliiasik.artistry.client.image;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import iliiasik.artistry.data.CanvasImage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -8,6 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 public final class CanvasImageRenderer {
+
+    private static final float LOCKED_ALPHA = 0.5f;
+    private static final int LOCKED_OUTLINE = 0xFFFF4444;
 
     private CanvasImageRenderer() {}
 
@@ -37,14 +41,17 @@ public final class CanvasImageRenderer {
             int srcH = ClientImageCache.getHeight(img.uuid);
 
             if (lockedByOther) {
-                ctx.setColor(1f, 1f, 1f, 0.5f);
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                ctx.setColor(1f, 1f, 1f, LOCKED_ALPHA);
             }
 
             ctx.blit(tex, sx, sy, sw, sh, 0f, 0f, srcW, srcH, srcW, srcH);
 
             if (lockedByOther) {
                 ctx.setColor(1f, 1f, 1f, 1f);
-                ctx.renderOutline(sx, sy, sw, sh, 0xFFFF4444);
+                RenderSystem.disableBlend();
+                ctx.renderOutline(sx, sy, sw, sh, LOCKED_OUTLINE);
             }
 
             if (selected) {

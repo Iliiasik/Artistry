@@ -47,6 +47,14 @@ public final class ServerPacketHandlers {
         if (access.signature().isSigned()) return;
         try {
             UUID uuid = ImageStorage.save(payload.bytes());
+            CanvasImage duplicate = access.imageLayer().findByUuid(uuid);
+            if (duplicate != null) {
+                ArtistryNetwork.sendToPlayer(player, new ImageUploadedS2CPacket(
+                        access.posOrNull(), uuid,
+                        duplicate.gridX, duplicate.gridY, duplicate.gridW, duplicate.gridH));
+                ArtistryNetwork.sendToPlayer(player, new DeliverImageS2CPacket(uuid, payload.bytes()));
+                return;
+            }
             int canvasSize = access.canvasData().canvasSize;
             int gridW = Math.max(CanvasImage.MIN_GRID, canvasSize / 2);
             int gridH = Math.max(CanvasImage.MIN_GRID, canvasSize / 2);
