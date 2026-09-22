@@ -293,6 +293,7 @@ public class PaintInput {
         uploading = true;
         uploadStartedAt = System.currentTimeMillis();
         awaitedImage = null;
+        DrawingTool toolBeforePicker = pixelPainter.getTool();
         new Thread(() -> {
             boolean sent = false;
             try {
@@ -315,8 +316,8 @@ public class PaintInput {
                         Artistry.LOGGER.error("Failed to read selected image {}", path, e);
                     }
                 }
-                if (widgets != null) widgets.setActiveTool(DrawingTool.BRUSH);
-                pixelPainter.setTool(DrawingTool.BRUSH);
+                if (widgets != null) widgets.setActiveTool(toolBeforePicker);
+                pixelPainter.setTool(toolBeforePicker);
             } finally {
                 if (!sent) finishUpload();
             }
