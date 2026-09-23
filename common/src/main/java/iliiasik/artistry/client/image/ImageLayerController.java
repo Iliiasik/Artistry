@@ -15,6 +15,7 @@ public class ImageLayerController {
 
     private final CanvasImageLayer layer;
 
+    private UUID localPlayer = null;
     private UUID selectedUuid = null;
     private boolean moving = false;
     private ResizeHandle resizing = ResizeHandle.NONE;
@@ -26,6 +27,10 @@ public class ImageLayerController {
 
     public ImageLayerController(CanvasImageLayer layer) {
         this.layer = layer;
+    }
+
+    public void setLocalPlayer(UUID uuid) {
+        this.localPlayer = uuid;
     }
 
     public UUID getSelectedUuid() { return selectedUuid; }
@@ -43,7 +48,7 @@ public class ImageLayerController {
 
         for (int index = images.size() - 1; index >= 0; index--) {
             CanvasImage image = images.get(index);
-            if (image.isLocked() && !image.uuid.equals(selectedUuid)) continue;
+            if (heldByOther(image) && !image.uuid.equals(selectedUuid)) continue;
 
             ScreenRect rect = screenRect(image, drawX, drawY, cellScreenSize);
             if (!rect.contains(mouseX, mouseY)) continue;
@@ -66,6 +71,10 @@ public class ImageLayerController {
             return true;
         }
         return false;
+    }
+
+    private boolean heldByOther(CanvasImage image) {
+        return localPlayer == null ? image.isLocked() : image.isLockedByOther(localPlayer);
     }
 
     public void onDrag(double mouseX, double mouseY,

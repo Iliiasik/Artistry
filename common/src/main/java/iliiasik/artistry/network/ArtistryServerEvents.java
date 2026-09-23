@@ -23,8 +23,10 @@ public final class ArtistryServerEvents {
     }
 
     public static void onPlayerLeave(ServerPlayer player) {
-        PosterPresence.disconnect(player);
-        PacketThrottle.remove(player.getUUID());
-        ImageUploadAssembler.clear(player);
+        player.server.execute(() -> {
+            PosterPresence.disconnect(player);
+            PacketThrottle.remove(player.getUUID());
+            ImageUploadAssembler.clear(player);
+        });
     }
 }

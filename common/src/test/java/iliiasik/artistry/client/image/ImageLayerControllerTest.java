@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ImageLayerControllerTest {
@@ -42,6 +43,31 @@ class ImageLayerControllerTest {
 
     private static void drag(ImageLayerController controller, int gridX, int gridY) {
         controller.onDrag(gridX * PIXEL + 1, gridY * PIXEL + 1, 0, 0, DRAW_SIZE, CANVAS_SIZE, () -> {});
+    }
+
+    @Test
+    @DisplayName("An image still locked by the local player can be selected again")
+    void ownLockedImageIsSelectable() {
+        UUID me = UUID.randomUUID();
+        CanvasImage img = image(10, 10, 10, 10);
+        img.lockedByPlayer = me;
+        ImageLayerController controller = new ImageLayerController(layerWith(img));
+        controller.setLocalPlayer(me);
+
+        assertTrue(controller.trySelect(15 * PIXEL, 15 * PIXEL, 0, 0, DRAW_SIZE, CANVAS_SIZE));
+        assertEquals(img.uuid, controller.getSelectedUuid());
+    }
+
+    @Test
+    @DisplayName("An image locked by another player cannot be selected")
+    void foreignLockedImageIsSkipped() {
+        CanvasImage img = image(10, 10, 10, 10);
+        img.lockedByPlayer = UUID.randomUUID();
+        ImageLayerController controller = new ImageLayerController(layerWith(img));
+        controller.setLocalPlayer(UUID.randomUUID());
+
+        assertFalse(controller.trySelect(15 * PIXEL, 15 * PIXEL, 0, 0, DRAW_SIZE, CANVAS_SIZE));
+        assertEquals(null, controller.getSelectedUuid());
     }
 
     @Test

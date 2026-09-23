@@ -57,6 +57,7 @@ public class PaintInput {
 
     public void setLocalPlayer(UUID uuid) {
         this.localPlayerUuid = uuid;
+        imageController.setLocalPlayer(uuid);
     }
 
     public void exitImageModeIfActive() {
