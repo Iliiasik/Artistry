@@ -178,6 +178,7 @@ class PacketCodecTest {
         assertEquals(6, decodedFirst.gridW);
         assertEquals(7, decodedFirst.gridH);
         assertTrue(decodedFirst.pixelized);
+        assertEquals(5, decodedFirst.addedSeq);
 
         assertEquals(UUID_B, decoded.images().get(1).uuid);
     }

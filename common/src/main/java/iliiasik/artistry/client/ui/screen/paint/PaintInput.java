@@ -69,6 +69,17 @@ public class PaintInput {
         return true;
     }
 
+    public void dropInvalidSelection() {
+        if (!imageMode) return;
+        UUID selected = imageController.getSelectedUuid();
+        CanvasImage image = selected != null ? session.imageLayer().findByUuid(selected) : null;
+        if (image != null && (localPlayerUuid == null || !image.isLockedByOther(localPlayerUuid))) return;
+        imageDragging = false;
+        imageMode = false;
+        imageController.clearSelection();
+        if (widgets != null) widgets.setImageMode(false);
+    }
+
     public boolean isImageMode() {
         return imageMode;
     }
@@ -146,6 +157,7 @@ public class PaintInput {
             } else {
                 UUID newSelected = imageController.getSelectedUuid();
                 if (previousSelected != null && !previousSelected.equals(newSelected)) {
+                    session.flushImageMove();
                     session.lockImage(previousSelected, false);
                     session.lockImage(newSelected, true);
                 }
@@ -236,6 +248,7 @@ public class PaintInput {
     }
 
     private void exitImageMode() {
+        session.flushImageMove();
         if (imageMode && session.isWorld()) {
             UUID sel = imageController.getSelectedUuid();
             if (sel != null) {

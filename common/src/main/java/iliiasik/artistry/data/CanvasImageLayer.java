@@ -93,6 +93,17 @@ public class CanvasImageLayer {
         }
     }
 
+    public void replaceWith(List<CanvasImage> incoming) {
+        revision++;
+        images.clear();
+        long maxSeq = 0;
+        for (CanvasImage img : incoming) {
+            images.add(img);
+            if (img.addedSeq > maxSeq) maxSeq = img.addedSeq;
+        }
+        nextSeq = Math.max(nextSeq, maxSeq + 1);
+    }
+
     public ListTag toNbt() {
         ListTag list = new ListTag();
         for (CanvasImage img : images) {

@@ -59,12 +59,8 @@ public final class ClientPacketHandler {
         if (mc.level == null) return;
         BlockPos pos = payload.pos();
         if (mc.level.getBlockEntity(pos) instanceof PosterBlockEntity poster) {
-            poster.imageLayer.getImages().clear();
-            for (var img : payload.images()) {
-                poster.imageLayer.addImage(img);
-            }
+            poster.imageLayer.replaceWith(payload.images());
             poster.imageLayer.clampToCanvas(poster.canvasData.canvasSize);
-            poster.imageLayer.markChanged();
             PosterBlockEntityRenderer.clearPendingRequests(
                     payload.images().stream().map(i -> i.uuid).toList()
             );
@@ -111,7 +107,9 @@ public final class ClientPacketHandler {
     }
 
     public static void onImageEvicted(ImageEvictedS2CPacket payload) {
+        PaintScreen screen = Minecraft.getInstance().screen instanceof PaintScreen open ? open : null;
         for (UUID uuid : payload.uuids()) {
+            if (screen != null && screen.usesImage(uuid)) continue;
             ClientImageCache.evict(uuid);
         }
     }
