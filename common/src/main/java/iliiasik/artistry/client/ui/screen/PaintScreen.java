@@ -273,7 +273,7 @@ public class PaintScreen extends Screen {
         if (canvasData.isSizeChosen()) {
             CanvasImageRenderer.renderAll(context, session.imageLayer().getImages(),
                     dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize,
-                    imageController.getSelectedUuid(), localPlayerUuid);
+                    imageController.getSelectedUuid(), localPlayerUuid, session.presence());
         }
 
         if (editable() && input != null) input.renderHoverPreview(context, hoverMouseX, hoverMouseY);

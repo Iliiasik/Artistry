@@ -1,6 +1,7 @@
 package iliiasik.artistry.client.image;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import iliiasik.artistry.client.presence.CanvasPresence;
 import iliiasik.artistry.data.CanvasImage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -11,14 +12,18 @@ import java.util.UUID;
 public final class CanvasImageRenderer {
 
     private static final float LOCKED_ALPHA = 0.5f;
-    private static final int LOCKED_OUTLINE = 0xFFFF4444;
+    private static final float BACKDROP_ALPHA = 0.7f;
+    private static final int SELECTED_OUTLINE = 0xFFFFFFFF;
+    private static final int OPAQUE = 0xFF000000;
 
     private CanvasImageRenderer() {}
 
     public static void renderAll(GuiGraphics ctx, List<CanvasImage> images,
                                  int drawX, int drawY, int drawSize, int canvasSize,
-                                 UUID selectedUuid, UUID localPlayerUuid) {
+                                 UUID selectedUuid, UUID localPlayerUuid,
+                                 CanvasPresence presence) {
         double pixelSize = (double) drawSize / canvasSize;
+        boolean editing = selectedUuid != null;
 
         for (CanvasImage img : images) {
             int sx = drawX + (int)(img.gridX * pixelSize);
@@ -40,25 +45,38 @@ public final class CanvasImageRenderer {
             int srcW = ClientImageCache.getWidth(img.uuid);
             int srcH = ClientImageCache.getHeight(img.uuid);
 
-            if (lockedByOther) {
+            float alpha = alphaFor(selected, editing, lockedByOther);
+            boolean faded = alpha < 1f;
+
+            if (faded) {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
-                ctx.setColor(1f, 1f, 1f, LOCKED_ALPHA);
+                ctx.setColor(1f, 1f, 1f, alpha);
             }
 
             ctx.blit(tex, sx, sy, sw, sh, 0f, 0f, srcW, srcH, srcW, srcH);
 
-            if (lockedByOther) {
+            if (faded) {
                 ctx.setColor(1f, 1f, 1f, 1f);
                 RenderSystem.disableBlend();
-                ctx.renderOutline(sx, sy, sw, sh, LOCKED_OUTLINE);
+            }
+
+            if (lockedByOther && presence != null) {
+                ctx.renderOutline(sx, sy, sw, sh, OPAQUE | presence.colorFor(img.lockedByPlayer));
             }
 
             if (selected) {
-                ctx.renderOutline(sx, sy, sw, sh, 0xFFFFFFFF);
+                ctx.renderOutline(sx, sy, sw, sh, SELECTED_OUTLINE);
                 renderCornerHandles(ctx, sx, sy, sw, sh);
             }
         }
+    }
+
+    private static float alphaFor(boolean selected, boolean editing, boolean lockedByOther) {
+        if (selected) return 1f;
+        if (editing) return BACKDROP_ALPHA;
+        if (lockedByOther) return LOCKED_ALPHA;
+        return 1f;
     }
 
     private static void renderCornerHandles(GuiGraphics ctx, int sx, int sy, int sw, int sh) {
