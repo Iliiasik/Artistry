@@ -210,6 +210,7 @@ public class PaintSession {
     }
 
     public void lockImage(UUID uuid, boolean lock) {
+        if (lock) mirrorImageLayerToWorld();
         ArtistryNetwork.sendToServer(new LockCanvasImageC2SPacket(target(), uuid, lock));
     }
 
