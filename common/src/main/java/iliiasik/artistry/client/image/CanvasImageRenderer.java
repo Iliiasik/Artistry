@@ -23,7 +23,7 @@ public final class CanvasImageRenderer {
                                  UUID selectedUuid, UUID localPlayerUuid,
                                  CanvasPresence presence) {
         double pixelSize = (double) drawSize / canvasSize;
-        boolean editing = selectedUuid != null;
+        boolean editing = selectedUuid != null && othersPresent(images, presence, localPlayerUuid);
 
         for (CanvasImage img : images) {
             int sx = drawX + (int)(img.gridX * pixelSize);
@@ -70,6 +70,19 @@ public final class CanvasImageRenderer {
                 renderCornerHandles(ctx, sx, sy, sw, sh);
             }
         }
+    }
+
+    private static boolean othersPresent(List<CanvasImage> images, CanvasPresence presence, UUID localPlayerUuid) {
+        if (presence != null) {
+            for (CanvasPresence.RemoteCursor cursor : presence.cursors()) {
+                if (!cursor.uuid.equals(localPlayerUuid)) return true;
+            }
+        }
+        if (localPlayerUuid == null) return false;
+        for (CanvasImage img : images) {
+            if (img.isLockedByOther(localPlayerUuid)) return true;
+        }
+        return false;
     }
 
     private static float alphaFor(boolean selected, boolean editing, boolean lockedByOther) {
