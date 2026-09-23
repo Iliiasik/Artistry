@@ -143,6 +143,26 @@ class PaintInputTest {
     }
 
     @Test
+    @DisplayName("Losing the image mid-drag ends the drag without sending a move")
+    void evictionDuringDragIsHarmless() {
+        double x = (first.gridX + first.gridW / 2.0) * PIXEL;
+        double y = (first.gridY + first.gridH / 2.0) * PIXEL;
+        assertTrue(input.mouseClicked(x, y, 0));
+        input.mouseDragged(x + PIXEL, y, 0);
+
+        session.applyImageLayerSync(List.of(second.copy()));
+        input.dropInvalidSelection();
+        TestNetworkHelper.reset();
+
+        assertFalse(input.mouseDragged(x + 2 * PIXEL, y, 0));
+        assertFalse(input.mouseReleased(0));
+        session.flushImageMove();
+
+        assertFalse(input.isImageMode());
+        assertEquals(-1, indexOfMove(first.uuid));
+    }
+
+    @Test
     @DisplayName("Removing an unselected image keeps the selection")
     void unrelatedEvictionKeepsSelection() {
         clickCenter(first);
