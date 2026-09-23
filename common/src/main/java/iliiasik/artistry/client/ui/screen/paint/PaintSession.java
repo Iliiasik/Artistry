@@ -325,10 +325,7 @@ public class PaintSession {
     }
 
     public void applyImageLayerSync(List<CanvasImage> images) {
-        imageLayer.getImages().clear();
-        for (CanvasImage img : images) {
-            imageLayer.addImage(img);
-        }
+        imageLayer.replaceWith(images);
         imageLayer.clampToCanvas(canvasData.canvasSize);
         requestMissingImages();
     }

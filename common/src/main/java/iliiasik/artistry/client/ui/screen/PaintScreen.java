@@ -74,10 +74,16 @@ public class PaintScreen extends Screen {
 
     public void applyImageLayerSync(List<CanvasImage> images) {
         session.applyImageLayerSync(images);
+        if (input != null) input.dropInvalidSelection();
     }
 
     public void applyImageLockSync(UUID imageUuid, @Nullable UUID playerUuid) {
         session.applyImageLockSync(imageUuid, playerUuid);
+        if (input != null) input.dropInvalidSelection();
+    }
+
+    public boolean usesImage(UUID uuid) {
+        return session.imageLayer().findByUuid(uuid) != null;
     }
 
     public void receiveImageBytes(UUID uuid, byte[] bytes) {
@@ -87,7 +93,10 @@ public class PaintScreen extends Screen {
 
     public void onImageUploaded(UUID uuid, int gridX, int gridY, int gridW, int gridH) {
         session.onImageUploaded(uuid, gridX, gridY, gridW, gridH);
-        if (input != null) input.awaitImageBytes(uuid);
+        if (input != null) {
+            input.awaitImageBytes(uuid);
+            input.dropInvalidSelection();
+        }
     }
 
     public void receiveCursor(UUID uuid, float gx, float gy) {
@@ -273,7 +282,7 @@ public class PaintScreen extends Screen {
         if (canvasData.isSizeChosen()) {
             CanvasImageRenderer.renderAll(context, session.imageLayer().getImages(),
                     dims.drawingAreaX, dims.drawingAreaY, dims.drawingAreaSize, canvasData.canvasSize,
-                    imageController.getSelectedUuid(), localPlayerUuid);
+                    imageController.getSelectedUuid(), localPlayerUuid, session.presence());
         }
 
         if (editable() && input != null) input.renderHoverPreview(context, hoverMouseX, hoverMouseY);

@@ -58,6 +58,14 @@ public final class ServerPacketHandlers {
         if (access.signature().isSigned()) return;
         try {
             UUID uuid = ImageStorage.save(full);
+            CanvasImage duplicate = access.imageLayer().findByUuid(uuid);
+            if (duplicate != null) {
+                ArtistryNetwork.sendToPlayer(player, new ImageUploadedS2CPacket(
+                        access.posOrNull(), uuid,
+                        duplicate.gridX, duplicate.gridY, duplicate.gridW, duplicate.gridH));
+                ArtistryNetwork.deliverImage(player, uuid, full);
+                return;
+            }
             int canvasSize = access.canvasData().canvasSize;
             int gridW = Math.max(CanvasImage.MIN_GRID, canvasSize / 2);
             int gridH = Math.max(CanvasImage.MIN_GRID, canvasSize / 2);
@@ -76,12 +84,17 @@ public final class ServerPacketHandlers {
         }
     }
 
+    private static boolean lockedByOther(CanvasImage image, ServerPlayer player) {
+        return image.lockedByPlayer != null && !image.lockedByPlayer.equals(player.getUUID());
+    }
+
     public static void onMoveImage(MoveCanvasImageC2SPacket payload, ServerPlayer player) {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
         if (access.signature().isSigned()) return;
         CanvasImage img = access.imageLayer().findByUuid(payload.uuid());
         if (img == null) return;
+        if (lockedByOther(img, player)) return;
         img.gridX = payload.gridX();
         img.gridY = payload.gridY();
         img.gridW = payload.gridW();
@@ -95,6 +108,8 @@ public final class ServerPacketHandlers {
         PosterAccess access = PosterAccess.resolve(player, payload.target());
         if (access == null) return;
         if (access.signature().isSigned()) return;
+        CanvasImage target = access.imageLayer().findByUuid(payload.uuid());
+        if (target == null || lockedByOther(target, player)) return;
         access.imageLayer().removeImage(payload.uuid());
         access.persist();
         access.syncImageLayer();
@@ -106,6 +121,7 @@ public final class ServerPacketHandlers {
         if (access.signature().isSigned()) return;
         CanvasImage img = access.imageLayer().findByUuid(payload.uuid());
         if (img == null) return;
+        if (lockedByOther(img, player)) return;
         img.pixelized = !img.pixelized;
         access.persist();
         access.syncImageLayer();

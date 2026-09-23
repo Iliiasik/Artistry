@@ -31,6 +31,7 @@ public record SyncImageLayerS2CPacket(BlockPos pos, List<CanvasImage> images) im
             buf.writeInt(img.gridW);
             buf.writeInt(img.gridH);
             buf.writeBoolean(img.pixelized);
+            buf.writeLong(img.addedSeq);
             boolean locked = img.lockedByPlayer != null;
             buf.writeBoolean(locked);
             if (locked) {
@@ -48,6 +49,7 @@ public record SyncImageLayerS2CPacket(BlockPos pos, List<CanvasImage> images) im
             UUID uuid = new UUID(buf.readLong(), buf.readLong());
             CanvasImage img = new CanvasImage(uuid, buf.readInt(), buf.readInt(), buf.readInt(), buf.readInt());
             img.pixelized = buf.readBoolean();
+            img.addedSeq = buf.readLong();
             if (buf.readBoolean()) {
                 img.lockedByPlayer = new UUID(buf.readLong(), buf.readLong());
             }

@@ -48,8 +48,8 @@ public class ImageLayerController {
             ScreenRect rect = screenRect(image, drawX, drawY, cellScreenSize);
             if (!rect.contains(mouseX, mouseY)) continue;
 
+            if (!image.uuid.equals(selectedUuid)) layer.moveToTop(image.uuid);
             selectedUuid = image.uuid;
-            layer.moveToTop(image.uuid);
 
             ResizeHandle handle = detectHandle(mouseX, mouseY, rect);
             if (handle == ResizeHandle.NONE) {

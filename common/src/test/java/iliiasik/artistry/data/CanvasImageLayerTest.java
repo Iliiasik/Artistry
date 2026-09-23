@@ -151,6 +151,30 @@ class CanvasImageLayerTest {
     }
 
     @Test
+    @DisplayName("A synced layer evicts the same image as the server after reordering")
+    void replaceWithKeepsEvictionOrder() {
+        CanvasImageLayer server = new CanvasImageLayer();
+        CanvasImage[] added = new CanvasImage[CanvasImageLayer.MAX_IMAGES];
+        for (int i = 0; i < added.length; i++) {
+            added[i] = image(i, i, 4, 4);
+            server.addImage(added[i]);
+        }
+        server.moveToTop(added[0].uuid);
+
+        CanvasImageLayer client = new CanvasImageLayer();
+        client.replaceWith(server.getImages().stream().map(CanvasImage::copy).toList());
+
+        assertEquals(added[0].uuid, client.getImages().get(CanvasImageLayer.MAX_IMAGES - 1).uuid);
+
+        CanvasImage upload = image(9, 9, 4, 4);
+        List<UUID> serverEvicted = server.addImage(upload);
+        List<UUID> clientEvicted = client.addImage(upload.copy());
+
+        assertEquals(List.of(added[0].uuid), serverEvicted);
+        assertEquals(serverEvicted, clientEvicted);
+    }
+
+    @Test
     @DisplayName("Layer NBT round trip preserves order and sequence numbers")
     void layerNbtRoundTrip() {
         CanvasImageLayer layer = new CanvasImageLayer();

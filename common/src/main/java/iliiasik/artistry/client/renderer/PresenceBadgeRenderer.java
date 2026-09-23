@@ -16,8 +16,6 @@ import java.util.UUID;
 
 public class PresenceBadgeRenderer {
 
-    private static final float BADGE_SATURATION = 0.6f;
-    private static final float BADGE_VALUE = 0.9f;
     private static final float BORDER_LIGHTEN = 0.45f;
 
     public static void renderAll(GuiGraphics context, CanvasPresence presence,
@@ -28,27 +26,24 @@ public class PresenceBadgeRenderer {
         if (mc.getConnection() == null) return;
         double pixelSize = (double) areaSize / canvasSize;
 
-        Set<UUID> shownViaLock = new HashSet<>();
+        Set<UUID> holdingImage = new HashSet<>();
         for (CanvasImage img : images) {
             UUID owner = img.lockedByPlayer;
             if (owner == null || owner.equals(localPlayerUuid)) continue;
-            shownViaLock.add(owner);
-            float cx = (float) (areaX + (img.gridX + img.gridW / 2.0) * pixelSize);
-            float cy = (float) (areaY + (img.gridY + img.gridH / 2.0) * pixelSize);
-            drawBadge(context, mc, owner, cx, cy, true);
+            holdingImage.add(owner);
         }
 
         for (CanvasPresence.RemoteCursor c : presence.cursors()) {
             if (c.uuid.equals(localPlayerUuid)) continue;
-            if (shownViaLock.contains(c.uuid)) continue;
+            if (holdingImage.contains(c.uuid)) continue;
             float px = (float) (areaX + c.curGx * pixelSize);
             float py = (float) (areaY + c.curGy * pixelSize);
-            drawBadge(context, mc, c.uuid, px, py, false);
+            drawBadge(context, mc, presence, c.uuid, px, py);
         }
     }
 
-    private static void drawBadge(GuiGraphics context, Minecraft mc, UUID uuid,
-                                  float x, float y, boolean centered) {
+    private static void drawBadge(GuiGraphics context, Minecraft mc, CanvasPresence presence, UUID uuid,
+                                  float x, float y) {
         String name = resolveName(mc, uuid);
         if (name == null) return;
         Font tr = mc.font;
@@ -59,24 +54,17 @@ public class PresenceBadgeRenderer {
         int w = textW + padX * 2;
         int r = h / 2;
 
-        int rgb = colorFor(uuid);
+        int rgb = presence.colorFor(uuid);
         int fill = (0xCC << 24) | rgb;
         int border = (0xE6 << 24) | lighten(rgb);
         int dot = (0xE6 << 24) | rgb;
 
-        int bx;
-        int by;
-        if (centered) {
-            bx = Math.round(x - w / 2.0f);
-            by = Math.round(y - h / 2.0f);
-        } else {
-            int dotX = Math.round(x);
-            int dotY = Math.round(y);
-            int half = 2;
-            context.fill(dotX - half, dotY - half, dotX + half, dotY + half, dot);
-            bx = dotX + 5;
-            by = dotY + 5;
-        }
+        int dotX = Math.round(x);
+        int dotY = Math.round(y);
+        int half = 2;
+        context.fill(dotX - half, dotY - half, dotX + half, dotY + half, dot);
+        int bx = dotX + 5;
+        int by = dotY + 5;
 
         fillRoundedRect(context, bx, by, w, h, r, fill);
         strokeRoundedRect(context, bx, by, w, h, r, border);
@@ -128,11 +116,6 @@ public class PresenceBadgeRenderer {
         return entry.getProfile().getName();
     }
 
-    private static int colorFor(UUID uuid) {
-        float hue = (uuid.hashCode() & 0xFFFF) / 65535.0f;
-        return hueToColor(hue);
-    }
-
     private static int lighten(int rgb) {
         int r = (rgb >> 16) & 0xFF;
         int g = (rgb >> 8) & 0xFF;
@@ -143,23 +126,4 @@ public class PresenceBadgeRenderer {
         return (r << 16) | (g << 8) | b;
     }
 
-    private static int hueToColor(float h) {
-        float s = BADGE_SATURATION;
-        float v = BADGE_VALUE;
-        int i = (int) (h * 6) % 6;
-        float f = h * 6 - (int) (h * 6);
-        float p = v * (1 - s);
-        float q = v * (1 - f * s);
-        float t = v * (1 - (1 - f) * s);
-        float r, g, b;
-        switch (i) {
-            case 0 -> { r = v; g = t; b = p; }
-            case 1 -> { r = q; g = v; b = p; }
-            case 2 -> { r = p; g = v; b = t; }
-            case 3 -> { r = p; g = q; b = v; }
-            case 4 -> { r = t; g = p; b = v; }
-            default -> { r = v; g = p; b = q; }
-        }
-        return ((int) (r * 255) << 16) | ((int) (g * 255) << 8) | (int) (b * 255);
-    }
 }

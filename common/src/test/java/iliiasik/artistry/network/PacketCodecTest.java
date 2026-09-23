@@ -234,6 +234,7 @@ class PacketCodecTest {
         assertEquals(6, decodedFirst.gridW);
         assertEquals(7, decodedFirst.gridH);
         assertTrue(decodedFirst.pixelized);
+        assertEquals(5, decodedFirst.addedSeq);
 
         CanvasImage decodedSecond = decoded.images().get(1);
         assertEquals(UUID_B, decodedSecond.uuid);
